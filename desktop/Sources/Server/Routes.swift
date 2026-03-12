@@ -1,10 +1,10 @@
 import Foundation
 
 /// Route handler for the local HTTP server.
-/// Maps paths to service methods.
+/// Maps paths to service methods and endpoint handlers.
 final class RouteHandler {
-    private let fileService = FileService()
-    private let shellService = ShellService()
+    private let fileEndpoints = FileEndpoints()
+    private let shellEndpoints = ShellEndpoints()
     private let clipboardService = ClipboardService()
     private let screenshotService = ScreenshotService()
     private let browserService = BrowserService()
@@ -22,19 +22,25 @@ final class RouteHandler {
 
         // File operations
         case ("POST", "/files/read"):
-            return fileService.handleRead(request)
+            return fileEndpoints.handleRead(request)
         case ("POST", "/files/write"):
-            return fileService.handleWrite(request)
+            return fileEndpoints.handleWrite(request)
         case ("POST", "/files/list"):
-            return fileService.handleList(request)
+            return fileEndpoints.handleList(request)
         case ("POST", "/files/delete"):
-            return fileService.handleDelete(request)
+            return fileEndpoints.handleDelete(request)
         case ("POST", "/files/mkdir"):
-            return fileService.handleMkdir(request)
+            return fileEndpoints.handleMkdir(request)
 
         // Shell execution
+        case ("POST", "/shell/execute"):
+            return shellEndpoints.handleExecute(request)
+        case (_, "/shell/allowlist"):
+            return shellEndpoints.handleAllowlist(request)
+
+        // Legacy shell endpoint (redirects to new)
         case ("POST", "/shell/exec"):
-            return shellService.handleExec(request)
+            return shellEndpoints.handleExecute(request)
 
         // Clipboard
         case ("GET", "/clipboard/read"):
@@ -46,14 +52,22 @@ final class RouteHandler {
         case ("POST", "/screenshot"):
             return screenshotService.handleCapture(request)
 
-        // Browser (stub)
-        case ("POST", "/browser/navigate"):
-            return browserService.handleNavigate(request)
+        // Browser automation (CDP)
+        case ("POST", "/browser/open"):
+            return BrowserEndpoints.handleOpen(request, service: browserService)
+        case ("POST", "/browser/screenshot"):
+            return BrowserEndpoints.handleScreenshot(request, service: browserService)
         case ("POST", "/browser/execute"):
-            return browserService.handleExecute(request)
+            return BrowserEndpoints.handleExecute(request, service: browserService)
+        case ("POST", "/browser/fill"):
+            return BrowserEndpoints.handleFill(request, service: browserService)
+        case ("POST", "/browser/click"):
+            return BrowserEndpoints.handleClick(request, service: browserService)
+        case ("POST", "/browser/wait"):
+            return BrowserEndpoints.handleWait(request, service: browserService)
 
         // Catch-all
-        case (_, _) where request.method != "GET" && request.method != "POST":
+        case (_, _) where request.method != "GET" && request.method != "POST" && request.method != "DELETE":
             return .error("Method not allowed", status: 405)
         default:
             return .error("Not found", status: 404)

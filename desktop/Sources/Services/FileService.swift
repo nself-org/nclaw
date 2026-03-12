@@ -21,6 +21,15 @@ final class FileService {
 
     // MARK: - Sandbox Validation
 
+    /// Resolve and validate a path against the sandbox.
+    /// Returns the standardized absolute path if within allowed directories, nil otherwise.
+    func resolvedPath(_ path: String) -> String? {
+        switch validatePath(path) {
+        case .success(let resolved): return resolved
+        case .failure: return nil
+        }
+    }
+
     private func validatePath(_ path: String) -> Result<String, ServiceError> {
         let resolved = (path as NSString).expandingTildeInPath
         let standardized = (resolved as NSString).standardizingPath
