@@ -88,6 +88,7 @@ class SttService {
     required void Function(String transcript, bool isFinal) onResult,
     void Function()? onDone,
     void Function(String error)? onError,
+    void Function(double level)? onSoundLevel,
     String locale = 'en-US',
   }) async {
     if (!_ready || _stt.isListening) return;
@@ -96,6 +97,7 @@ class SttService {
       onResult: (result) {
         onResult(result.recognizedWords, result.finalResult);
       },
+      onSoundLevelChange: onSoundLevel,
       localeId: locale,
       listenOptions: SpeechListenOptions(
         onDevice: false,

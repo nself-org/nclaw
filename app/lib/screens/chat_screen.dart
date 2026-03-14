@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/chat_provider.dart';
 import '../providers/connection_provider.dart';
+import '../widgets/voice_chat_widget.dart';
 import 'thread_list_screen.dart';
 
 /// Full-screen chat UI for the nClaw AI assistant.
@@ -469,7 +470,7 @@ class _TierBadge extends StatelessWidget {
   }
 }
 
-/// Bottom input bar with text field and send/loading button.
+/// Bottom input bar with text field, mic button, and send/loading button.
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool isStreaming;
@@ -490,6 +491,16 @@ class _InputBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
         child: Row(
           children: [
+            // Mic button — opens VoiceChatWidget overlay.
+            VoiceMicButton(
+              onTranscript: (text) {
+                controller.text = text;
+                controller.selection = TextSelection.collapsed(
+                  offset: text.length,
+                );
+              },
+            ),
+            const SizedBox(width: 4),
             Expanded(
               child: TextField(
                 controller: controller,
