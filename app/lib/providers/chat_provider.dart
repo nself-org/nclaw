@@ -199,6 +199,12 @@ class ChatState {
   /// when the active session changes.
   final BreakoutSuggestion? breakoutSuggestion;
 
+  /// Non-null when a search is active — contains results from the backend.
+  final List<ChatSession>? searchResults;
+
+  /// The current search query string (empty = no search).
+  final String searchQuery;
+
   const ChatState({
     this.sessions = const [],
     this.activeSessionId,
@@ -208,6 +214,8 @@ class ChatState {
     this.currentProjectId,
     this.isLoading = false,
     this.breakoutSuggestion,
+    this.searchResults,
+    this.searchQuery = '',
   });
 
   /// The currently active session, if any.
@@ -233,6 +241,9 @@ class ChatState {
     bool? isLoading,
     BreakoutSuggestion? breakoutSuggestion,
     bool clearBreakout = false,
+    List<ChatSession>? searchResults,
+    bool clearSearch = false,
+    String? searchQuery,
   }) {
     return ChatState(
       sessions: sessions ?? this.sessions,
@@ -244,6 +255,8 @@ class ChatState {
       isLoading: isLoading ?? this.isLoading,
       breakoutSuggestion:
           clearBreakout ? null : (breakoutSuggestion ?? this.breakoutSuggestion),
+      searchResults: clearSearch ? null : (searchResults ?? this.searchResults),
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -522,6 +535,79 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   /// Dismiss the current breakout suggestion banner.
   void dismissBreakout() => state = state.copyWith(clearBreakout: true);
+
+  // -------------------------------------------------------------------------
+  // Session mutations (archive, rename, move)
+  // -------------------------------------------------------------------------
+
+  /// Archive [sessionId] on the server and remove it from the local list.
+  Future<void> archiveSession(String sessionId) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      await _patch('$base/claw/sessions/$sessionId', {'archived': true});
+    }
+    final updated = state.sessions.where((s) => s.id != sessionId).toList();
+    final newActive = state.activeSessionId == sessionId
+        ? (updated.isNotEmpty ? updated.first.id : null)
+        : state.activeSessionId;
+    state = state.copyWith(sessions: updated, activeSessionId: newActive);
+  }
+
+  /// Rename [sessionId] to [title] on the server and update local state.
+  Future<void> renameSession(String sessionId, String title) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      await _patch('$base/claw/sessions/$sessionId', {'title': title});
+    }
+    _updateSession(sessionId, (s) => s.copyWith(title: title));
+  }
+
+  /// Move [sessionId] to [projectId] (null to remove from project).
+  Future<void> moveSessionToProject(
+      String sessionId, String? projectId) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      await _patch('$base/claw/sessions/$sessionId',
+          {'project_id': projectId});
+    }
+    _updateSession(
+        sessionId, (s) => s.copyWith(projectId: projectId ?? s.projectId));
+  }
+
+  // -------------------------------------------------------------------------
+  // Search
+  // -------------------------------------------------------------------------
+
+  /// Search sessions via GET /claw/sessions/search?q=.
+  Future<void> searchSessions(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) {
+      state = state.copyWith(clearSearch: true, searchQuery: '');
+      return;
+    }
+    state = state.copyWith(searchQuery: q);
+    final base = _serverUrl;
+    if (base.isEmpty) return;
+    final data = await _get('$base/claw/sessions/search?q=${Uri.encodeQueryComponent(q)}');
+    if (data == null) return;
+    // Response is either {"sessions": [...]} or a plain array.
+    final raw = data['sessions'] as List<dynamic>? ??
+        (data.values.firstOrNull is List
+            ? data.values.firstOrNull as List<dynamic>
+            : []);
+    final results = raw
+        .whereType<Map<String, dynamic>>()
+        .map(ChatSession.fromJson)
+        .toList();
+    // Only apply if query is still the same (debounce guard).
+    if (state.searchQuery == q) {
+      state = state.copyWith(searchResults: results);
+    }
+  }
+
+  /// Clear the current search and return to the full session list.
+  void clearSearch() =>
+      state = state.copyWith(clearSearch: true, searchQuery: '');
 
   // -------------------------------------------------------------------------
   // Messaging
