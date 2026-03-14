@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/chat_provider.dart';
 import '../providers/connection_provider.dart';
+import '../services/tts_service.dart';
 import '../widgets/voice_chat_widget.dart';
 import 'thread_list_screen.dart';
 
@@ -19,16 +20,95 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  // TTS state ----------------------------------------------------------------
+  final TtsService _tts = TtsService();
+  String? _playingMessageId;
+  // Pending sentences for sentence-by-sentence streaming TTS.
+  final List<String> _ttsSentenceQueue = [];
+  bool _ttsBusy = false;
+
+  // Auto-play: play the last assistant message when streaming completes.
+  // Toggled from voice settings (T-1115). Defaults to off.
+  // ignore: prefer_final_fields — will be mutated by VoiceSettingsScreen (T-1115)
+  bool _autoPlay = false;
+
+  // Sentence splitter — splits on . ! ? followed by whitespace or end.
+  static final RegExp _sentenceEnd = RegExp(r'(?<=[.!?])\s+');
+
+  @override
+  void initState() {
+    super.initState();
+    _tts.initialize();
+    _tts.onComplete(_onTtsComplete);
+  }
+
   @override
   void dispose() {
+    _tts.stop();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  // -------------------------------------------------------------------------
+  // TTS helpers
+  // -------------------------------------------------------------------------
+
+  void _onTtsComplete() {
+    if (_ttsSentenceQueue.isNotEmpty) {
+      final next = _ttsSentenceQueue.removeAt(0);
+      _tts.speak(next);
+    } else {
+      if (mounted) setState(() { _ttsBusy = false; });
+    }
+  }
+
+  /// Speak a full text as a sentence queue. Sets [_playingMessageId].
+  Future<void> _playMessage(String messageId, String text) async {
+    await _tts.stop();
+    final sentences = text
+        .split(_sentenceEnd)
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (sentences.isEmpty) return;
+    setState(() {
+      _playingMessageId = messageId;
+      _ttsBusy = true;
+      _ttsSentenceQueue
+        ..clear()
+        ..addAll(sentences.skip(1));
+    });
+    await _tts.speak(sentences.first);
+  }
+
+  Future<void> _stopTts() async {
+    await _tts.stop();
+    setState(() {
+      _playingMessageId = null;
+      _ttsBusy = false;
+      _ttsSentenceQueue.clear();
+    });
+  }
+
+  void _onStreamingComplete(List<ChatMessage> messages) {
+    if (!_autoPlay) return;
+    final last = messages.lastWhere(
+      (m) => m.role == 'assistant',
+      orElse: () => messages.last,
+    );
+    if (last.role == 'assistant' && last.content.isNotEmpty) {
+      _playMessage(last.id, last.content);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+
   void _sendMessage() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
+
+    _stopTts(); // stop any playing TTS when user sends a new message
 
     final serverUrl =
         ref.read(connectionProvider).activeServer?.url ?? '';
@@ -117,6 +197,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final sessionTags = chatState.activeSession?.tags ?? const [];
     final breakout = chatState.breakoutSuggestion;
 
+    // Auto-play: fire when streaming transitions to done.
+    ref.listen<bool>(
+      chatProvider.select((s) => s.isStreaming),
+      (previous, current) {
+        if (previous == true && current == false) {
+          _onStreamingComplete(ref.read(chatProvider).messages);
+        }
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(sessionTitle),
@@ -185,8 +275,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       // Reversed list — index 0 is the last message.
                       final msg =
                           messages[messages.length - 1 - index];
+                      final isPlayingThis =
+                          _playingMessageId == msg.id && _ttsBusy;
                       return _MessageBubble(
                         message: msg,
+                        isPlaying: isPlayingThis,
+                        onPlayToggle: msg.role == 'assistant'
+                            ? () {
+                                if (isPlayingThis) {
+                                  _stopTts();
+                                } else {
+                                  _playMessage(msg.id, msg.content);
+                                }
+                              }
+                            : null,
                         onBranch: activeId != null
                             ? () => ref
                                 .read(chatProvider.notifier)
@@ -247,10 +349,21 @@ class _EmptyChat extends StatelessWidget {
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
 
+  /// Whether TTS is currently playing this message.
+  final bool isPlaying;
+
+  /// Called when the user taps the speaker icon. Null hides the button.
+  final VoidCallback? onPlayToggle;
+
   /// Called when the user selects "Branch from here". Null disables the option.
   final VoidCallback? onBranch;
 
-  const _MessageBubble({required this.message, this.onBranch});
+  const _MessageBubble({
+    required this.message,
+    this.isPlaying = false,
+    this.onPlayToggle,
+    this.onBranch,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -320,8 +433,27 @@ class _MessageBubble extends StatelessWidget {
                   child: isUser
                       ? _UserBubble(content: message.content, theme: theme)
                       : _AssistantBubble(
-                          content: message.content, theme: theme),
+                          content: message.content,
+                          theme: theme,
+                          isPlaying: isPlaying,
+                        ),
                 ),
+                // Per-message TTS play/stop button (assistant only).
+                if (onPlayToggle != null) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Icon(
+                      isPlaying ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+                      size: 18,
+                    ),
+                    color: isPlaying
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    tooltip: isPlaying ? 'Stop' : 'Play',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onPlayToggle,
+                  ),
+                ],
                 if (isUser) const SizedBox(width: 8),
               ],
             ),
@@ -379,12 +511,18 @@ class _UserBubble extends StatelessWidget {
 class _AssistantBubble extends StatelessWidget {
   final String content;
   final ThemeData theme;
+  final bool isPlaying;
 
-  const _AssistantBubble({required this.content, required this.theme});
+  const _AssistantBubble({
+    required this.content,
+    required this.theme,
+    this.isPlaying = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.75,
       ),
@@ -397,6 +535,12 @@ class _AssistantBubble extends StatelessWidget {
           bottomLeft: Radius.circular(18),
           bottomRight: Radius.circular(18),
         ),
+        border: isPlaying
+            ? Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                width: 1.5,
+              )
+            : null,
       ),
       child: Text(
         content,
