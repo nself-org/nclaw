@@ -72,6 +72,24 @@ class ChatProject {
         systemPrompt: json['system_prompt'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
+
+  ChatProject copyWith({
+    String? id,
+    String? name,
+    String? color,
+    String? emoji,
+    String? systemPrompt,
+    DateTime? createdAt,
+  }) {
+    return ChatProject(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      color: color ?? this.color,
+      emoji: emoji ?? this.emoji,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
 
 /// A chat session.
@@ -393,6 +411,60 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(projects: projects);
   }
 
+  /// Create a new project on the server and add it to local state.
+  Future<void> createProject(
+    String name, {
+    String? color,
+    String? emoji,
+    String? systemPrompt,
+  }) async {
+    final base = _serverUrl;
+    if (base.isEmpty) return;
+
+    final data = await _post('$base/claw/projects', body: {
+      'name': name,
+      'color': ?color,
+      'emoji': ?emoji,
+      if (systemPrompt != null && systemPrompt.isNotEmpty)
+        'system_prompt': systemPrompt,
+    });
+    if (data == null) return;
+
+    final project = ChatProject.fromJson(data);
+    state = state.copyWith(projects: [project, ...state.projects]);
+  }
+
+  /// Rename a project on the server and in local state.
+  Future<void> renameProject(String id, String name) async {
+    await _patchProject(id, {'name': name});
+    _updateProject(id, (p) => p.copyWith(name: name));
+  }
+
+  /// Change a project's colour on the server and in local state.
+  Future<void> changeProjectColor(String id, String color) async {
+    await _patchProject(id, {'color': color});
+    _updateProject(id, (p) => p.copyWith(color: color));
+  }
+
+  /// Change a project's emoji icon on the server and in local state.
+  Future<void> changeProjectEmoji(String id, String emoji) async {
+    await _patchProject(id, {'emoji': emoji});
+    _updateProject(id, (p) => p.copyWith(emoji: emoji));
+  }
+
+  /// Update a project's system prompt on the server and in local state.
+  Future<void> updateProjectSystemPrompt(String id, String prompt) async {
+    await _patchProject(id, {'system_prompt': prompt});
+    _updateProject(id, (p) => p.copyWith(systemPrompt: prompt));
+  }
+
+  /// Archive a project and remove it from local state.
+  Future<void> archiveProject(String id) async {
+    await _patchProject(id, {'archived': true});
+    final updated = state.projects.where((p) => p.id != id).toList();
+    state = state.copyWith(projects: updated);
+  }
+
   // -------------------------------------------------------------------------
   // Sessions
   // -------------------------------------------------------------------------
@@ -710,6 +782,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
+
+  Future<void> _patchProject(String id, Map<String, dynamic> body) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      await _patch('$base/claw/projects/$id', body);
+    }
+  }
+
+  void _updateProject(String id, ChatProject Function(ChatProject) transform) {
+    final updated =
+        state.projects.map((p) => p.id == id ? transform(p) : p).toList();
+    state = state.copyWith(projects: updated);
+  }
 
   void _ensureLocalSession() {
     if (state.sessions.isNotEmpty) return;
