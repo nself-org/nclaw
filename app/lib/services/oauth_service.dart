@@ -188,7 +188,7 @@ class OAuthService {
       'status': 'done',
       'result': {
         'code': code,
-        if (state case final s?) 'state': s,
+        'state': ?state,
         'callback_url': callbackUrl.toString(),
       },
     });

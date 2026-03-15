@@ -225,7 +225,7 @@ class _KnowledgeSearchSheetState extends ConsumerState<_KnowledgeSearchSheet> {
                       controller: scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       itemCount: state.results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (ctx, i) =>
                           _ChunkCard(chunk: state.results[i]),
                     ),
