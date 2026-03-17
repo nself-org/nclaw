@@ -1,9 +1,13 @@
 import SwiftUI
+import AuthenticationServices
 
 // MARK: - Onboarding View
 
 struct OnboardingView: View {
     var onComplete: () -> Void
+
+    // Tab selection
+    @State private var selectedTab: OnboardingTab = .pairWithCode
 
     // Pair-with-code state
     @State private var serverURL: String = ""
@@ -15,16 +19,26 @@ struct OnboardingView: View {
     @State private var isPairing: Bool = false
 
     // Direct sign-in state
-    @State private var showDirectSignIn: Bool = false
     @State private var directServerURL: String = ""
     @State private var directEmail: String = ""
     @State private var directPassword: String = ""
     @State private var directError: String?
     @State private var isSigningIn: Bool = false
 
+    // Passkey sign-in state
+    @State private var passkeyServerURL: String = ""
+    @State private var passkeyError: String?
+    @State private var isPasskeyAuthenticating: Bool = false
+
     private let accent = Color(red: 0.388, green: 0.4, blue: 0.945)
 
-    // MARK: - Flow state
+    // MARK: - Tab + Flow state
+
+    enum OnboardingTab: String, CaseIterable {
+        case pairWithCode = "Pair with Code"
+        case signInDirectly = "Sign In Directly"
+        case signInWithPasskey = "Sign In with Passkey"
+    }
 
     enum PairFlowState {
         case enterCode
@@ -40,20 +54,35 @@ struct OnboardingView: View {
 
             Divider()
 
+            // Tab selector — all three options at the same level
+            Picker("", selection: $selectedTab) {
+                ForEach(OnboardingTab.allCases, id: \.self) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            Divider()
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    pairWithCodeSection
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    directSignInSection
+                    switch selectedTab {
+                    case .pairWithCode:
+                        pairWithCodeSection
+                    case .signInDirectly:
+                        directSignInSection
+                    case .signInWithPasskey:
+                        passkeySignInSection
+                    }
                 }
                 .padding(20)
             }
         }
         .background(Color(NSColor.windowBackgroundColor))
-        .frame(width: 420, height: 440)
+        .frame(width: 460, height: 460)
     }
 
     // MARK: - Header
@@ -171,58 +200,91 @@ struct OnboardingView: View {
 
     private var directSignInSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button(action: { showDirectSignIn.toggle() }) {
-                HStack(spacing: 6) {
-                    Image(systemName: showDirectSignIn ? "chevron.down" : "chevron.right")
+            Label("Sign in with email & password", systemImage: "envelope")
+                .font(.subheadline.weight(.semibold))
+
+            Text("Use this if your server is already configured and you just need to authenticate.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Server URL  (e.g. https://api.myserver.com)", text: $directServerURL)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: directServerURL) { _ in directError = nil }
+
+                TextField("Email", text: $directEmail)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: directEmail) { _ in directError = nil }
+
+                SecureField("Password", text: $directPassword)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: directPassword) { _ in directError = nil }
+                    .onSubmit { directSignIn() }
+
+                if let error = directError {
+                    Text(error)
                         .font(.caption)
-                    Text("Sign in with email & password")
-                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.red)
                 }
-                .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
 
-            if showDirectSignIn {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Use this if your server is already configured and you just need to authenticate.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    TextField("Server URL  (e.g. https://api.myserver.com)", text: $directServerURL)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: directServerURL) { _ in directError = nil }
-
-                    TextField("Email", text: $directEmail)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: directEmail) { _ in directError = nil }
-
-                    SecureField("Password", text: $directPassword)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: directPassword) { _ in directError = nil }
-                        .onSubmit { directSignIn() }
-
-                    if let error = directError {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-
-                    Button(action: directSignIn) {
-                        HStack(spacing: 6) {
-                            if isSigningIn {
-                                ProgressView().scaleEffect(0.7).frame(width: 14, height: 14)
-                            }
-                            Text("Sign in")
+                Button(action: directSignIn) {
+                    HStack(spacing: 6) {
+                        if isSigningIn {
+                            ProgressView().scaleEffect(0.7).frame(width: 14, height: 14)
                         }
+                        Text("Sign in")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(accent)
-                    .disabled(directServerURL.trimmingCharacters(in: .whitespaces).isEmpty
-                        || directEmail.trimmingCharacters(in: .whitespaces).isEmpty
-                        || directPassword.isEmpty
-                        || isSigningIn)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .disabled(directServerURL.trimmingCharacters(in: .whitespaces).isEmpty
+                    || directEmail.trimmingCharacters(in: .whitespaces).isEmpty
+                    || directPassword.isEmpty
+                    || isSigningIn)
             }
+        }
+    }
+
+    // MARK: - Passkey Sign-In Section (T-1371)
+
+    private var passkeySignInSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Sign in with Passkey", systemImage: "person.badge.key")
+                .font(.subheadline.weight(.semibold))
+
+            Text("Opens your browser for passkey authentication. After signing in, the app pairs automatically via the nclaw:// URL scheme.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Server URL  (e.g. https://claw.myserver.com)", text: $passkeyServerURL)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: passkeyServerURL) { _ in passkeyError = nil }
+
+                if let error = passkeyError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                Button(action: startPasskeyAuth) {
+                    HStack(spacing: 6) {
+                        if isPasskeyAuthenticating {
+                            ProgressView().scaleEffect(0.7).frame(width: 14, height: 14)
+                        }
+                        Image(systemName: "globe")
+                        Text("Open Browser to Sign In")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .disabled(passkeyServerURL.trimmingCharacters(in: .whitespaces).isEmpty
+                    || isPasskeyAuthenticating)
+            }
+
+            Text("After authenticating, the browser will redirect back to the app automatically.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
     }
 
@@ -341,6 +403,60 @@ struct OnboardingView: View {
         }
     }
 
+    // MARK: - Passkey auth via ASWebAuthenticationSession (T-1371)
+
+    private func startPasskeyAuth() {
+        let trimmedURL = passkeyServerURL.trimmingCharacters(in: .whitespaces)
+
+        guard validateURL(trimmedURL) else {
+            passkeyError = "Invalid URL. Include scheme and host (e.g. https://claw.myserver.com)."
+            return
+        }
+
+        var base = trimmedURL
+        if base.hasSuffix("/") { base = String(base.dropLast()) }
+
+        guard let loginURL = URL(string: base + "/login") else {
+            passkeyError = "Could not construct login URL."
+            return
+        }
+
+        isPasskeyAuthenticating = true
+        passkeyError = nil
+
+        let session = ASWebAuthenticationSession(
+            url: loginURL,
+            callbackURLScheme: "nclaw"
+        ) { callbackURL, error in
+            DispatchQueue.main.async {
+                self.isPasskeyAuthenticating = false
+
+                if let error = error as? ASWebAuthenticationSessionError,
+                   error.code == .canceledLogin {
+                    self.passkeyError = "Sign-in cancelled."
+                    return
+                }
+
+                guard let callback = callbackURL,
+                      let components = URLComponents(url: callback, resolvingAgainstBaseURL: false),
+                      let token = components.queryItems?.first(where: { $0.name == "token" })?.value,
+                      !token.isEmpty
+                else {
+                    self.passkeyError = "Authentication failed or token missing in callback."
+                    return
+                }
+
+                self.completeSetup(serverURL: trimmedURL, token: token)
+            }
+        }
+
+        // macOS 10.15+: presentationContextProvider must be set.
+        // Use a helper that satisfies the protocol without requiring a window reference here.
+        session.presentationContextProvider = PasskeyPresentationContext()
+        session.prefersEphemeralWebBrowserSession = false
+        session.start()
+    }
+
     private func completeSetup(serverURL: String, token: String) {
         // Derive WebSocket URL from HTTP server URL
         // e.g. https://api.myserver.com -> wss://api.myserver.com/claw/ws
@@ -387,6 +503,7 @@ struct OnboardingView: View {
 enum PairingError: Error {
     case invalidURL
     case wrongCode
+    case expiredCode
     case wrongCredentials
     case serverError(Int)
     case decodingError
@@ -395,7 +512,8 @@ enum PairingError: Error {
     var userMessage: String {
         switch self {
         case .invalidURL: return "Invalid server URL."
-        case .wrongCode: return "Invalid or expired code. Run `nself claw pair` again."
+        case .wrongCode: return "Invalid or already-used code. Run `nself claw pair` again."
+        case .expiredCode: return "Code expired. Run `nself claw pair` again to get a new one."
         case .wrongCredentials: return "Wrong email or password."
         case .serverError(let code): return "Server error (\(code)). Check server logs."
         case .decodingError: return "Unexpected server response format."
@@ -425,6 +543,8 @@ enum PairingAPI {
             return // success — user_id not needed locally
         case 400, 404, 422:
             throw PairingError.wrongCode
+        case 410:
+            throw PairingError.expiredCode
         default:
             throw PairingError.serverError(http.statusCode)
         }
@@ -521,5 +641,18 @@ enum PairingAPI {
         if base.hasSuffix("/") { base = String(base.dropLast()) }
         guard let url = URL(string: base + path) else { throw PairingError.invalidURL }
         return url
+    }
+}
+
+// MARK: - Passkey Presentation Context (T-1371)
+
+/// Satisfies ASWebAuthenticationPresentationContextProviding for menu-bar apps
+/// that may not have a key window at the moment the session starts.
+final class PasskeyPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        // Use the key window if available; otherwise use any visible window.
+        return NSApplication.shared.keyWindow
+            ?? NSApplication.shared.windows.first(where: { $0.isVisible })
+            ?? ASPresentationAnchor()
     }
 }

@@ -8,6 +8,9 @@ final class RouteHandler {
     private let clipboardService = ClipboardService()
     private let screenshotService = ScreenshotService()
     private let browserService = BrowserService()
+    // T-1351: Daemon capability routes
+    private let editorContextService = EditorContextService()
+    private let terminalBufferService = TerminalBufferService()
 
     func handle(_ request: HTTPRequest) -> HTTPResponse {
         switch (request.method, request.path) {
@@ -42,15 +45,29 @@ final class RouteHandler {
         case ("POST", "/shell/exec"):
             return shellEndpoints.handleExecute(request)
 
-        // Clipboard
+        // Clipboard — T-1351 canonical paths (also keeping legacy /clipboard/read + /clipboard/write)
+        case ("GET", "/clipboard"):
+            return clipboardService.handleRead()
+        case ("POST", "/clipboard"):
+            return clipboardService.handleWriteText(request)
         case ("GET", "/clipboard/read"):
             return clipboardService.handleRead()
         case ("POST", "/clipboard/write"):
             return clipboardService.handleWrite(request)
 
-        // Screenshot
+        // Screenshot — T-1351 canonical path (also keeping legacy /screenshot)
+        case ("GET", "/screen"):
+            return screenshotService.handleCapture(request)
         case ("POST", "/screenshot"):
             return screenshotService.handleCapture(request)
+
+        // T-1351: Editor context (active file via Accessibility API)
+        case ("GET", "/context"):
+            return editorContextService.handleGetContext(request)
+
+        // T-1351: Terminal buffer
+        case ("GET", "/terminal"):
+            return terminalBufferService.handleGetTerminal(request)
 
         // Browser automation (CDP)
         case ("POST", "/browser/open"):

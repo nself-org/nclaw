@@ -16,6 +16,15 @@ let package = Package(
             path: "Sources",
             resources: [
                 .process("../Resources")
+            ],
+            // T-1371: Info.plist registers the nclaw:// URL scheme for ASWebAuthenticationSession.
+            infoPlistSettings: [
+                "CFBundleURLTypes": [
+                    [
+                        "CFBundleURLName": "org.nself.nclaw",
+                        "CFBundleURLSchemes": ["nclaw"]
+                    ]
+                ]
             ]
         )
     ]

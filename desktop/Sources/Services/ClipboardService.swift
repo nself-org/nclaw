@@ -44,4 +44,18 @@ final class ClipboardService {
             return .error(error.localizedDescription, status: error.httpStatus)
         }
     }
+
+    /// T-1351: POST /clipboard — body: {"text": "..."}
+    func handleWriteText(_ request: HTTPRequest) -> HTTPResponse {
+        struct Params: Decodable { let text: String }
+        guard let params = request.jsonBody(as: Params.self) else {
+            return .error("Missing 'text' in request body")
+        }
+        switch write(params.text) {
+        case .success(let msg):
+            return .json(["message": msg])
+        case .failure(let error):
+            return .error(error.localizedDescription, status: error.httpStatus)
+        }
+    }
 }

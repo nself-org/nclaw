@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 @main
 struct nClawApp: App {
@@ -37,7 +38,11 @@ struct nClawApp: App {
                     .close()
                 connectionManager.reconnectWithSavedCredentials()
             }
-            .frame(width: 420, height: 440)
+            .frame(width: 460, height: 460)
+            // T-1371: Also reconnect when credentials arrive via nclaw:// URL scheme.
+            .onReceive(NotificationCenter.default.publisher(for: .nClawCredentialsUpdated)) { _ in
+                connectionManager.reconnectWithSavedCredentials()
+            }
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -47,6 +52,14 @@ struct nClawApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         ClawLogger.info("nClaw daemon started")
+
+        // Register the nclaw:// custom URL scheme handler (T-1371).
+        NSAppleEventManager.shared().setEventHandler(
+            self,
+            andSelector: #selector(handleGetURLEvent(_:withReplyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL)
+        )
 
         // Show onboarding if no JWT exists in Keychain.
         if KeychainHelper.load(key: "nclaw-jwt-token") == nil {
@@ -58,6 +71,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         ClawLogger.info("nClaw daemon shutting down")
+    }
+
+    // MARK: - nclaw:// URL scheme handler (T-1371)
+
+    /// Handles nclaw://auth?token={jwt} callbacks from ASWebAuthenticationSession.
+    ///
+    /// Extracts the JWT, stores it in Keychain as NClaw_JWT, then closes any open
+    /// onboarding window and reconnects with the new credentials.
+    @objc private func handleGetURLEvent(
+        _ event: NSAppleEventDescriptor,
+        withReplyEvent _: NSAppleEventDescriptor
+    ) {
+        guard
+            let urlString = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
+            let url = URL(string: urlString),
+            url.scheme == "nclaw",
+            url.host == "auth",
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            let token = components.queryItems?.first(where: { $0.name == "token" })?.value,
+            !token.isEmpty
+        else {
+            ClawLogger.error("nclaw:// callback received but token missing or URL malformed")
+            return
+        }
+
+        ClawLogger.info("nclaw:// auth callback received — storing JWT")
+        _ = KeychainHelper.save(key: "NClaw_JWT", value: token)
+        // Also store under the legacy key so ConnectionManager picks it up.
+        _ = KeychainHelper.save(key: "nclaw-jwt-token", value: token)
+
+        DispatchQueue.main.async {
+            // Close any open onboarding window.
+            NSApplication.shared.windows
+                .first { $0.title.hasPrefix("Setup") }?
+                .close()
+
+            // Reconnect with the new token.
+            // Post a notification that ConnectionManager observes.
+            NotificationCenter.default.post(name: .nClawCredentialsUpdated, object: nil)
+        }
     }
 
     // MARK: - Private
@@ -112,4 +165,11 @@ final class OnboardingWindowController: NSWindowController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) not used")
     }
+}
+
+// MARK: - Notification Names (T-1371)
+
+extension Notification.Name {
+    /// Posted by AppDelegate when a new JWT arrives via the nclaw:// URL scheme.
+    static let nClawCredentialsUpdated = Notification.Name("nClawCredentialsUpdated")
 }

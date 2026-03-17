@@ -14,7 +14,8 @@ struct DeviceCapability: Codable {
         return DeviceCapability(
             type: "capabilities",
             device_id: persistentDeviceId(),
-            actions: ["file_op", "shell", "clipboard", "screenshot"],
+            // T-1351: added context_watch (editor file), terminal (shell buffer)
+            actions: ["file_op", "shell", "clipboard", "screenshot", "context_watch", "terminal"],
             platform: "macos",
             version: "1.0"
         )

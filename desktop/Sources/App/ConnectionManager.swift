@@ -19,9 +19,15 @@ enum ConnectionState: String {
 final class ConnectionManager: ObservableObject {
     @Published var state: ConnectionState = .disconnected
     @Published var config: ServerConfig
+    /// T-1352: The path of the file currently being watched. Shown in claw-web chat header.
+    @Published var watchingFile: String? = nil
 
     private var webSocket: ClawWebSocket?
     private var actionHandler: ActionHandler?
+    // T-1352: Active file watcher
+    private let fileWatcher = ActiveFileWatcher()
+    // T-1354: Clipboard change watcher
+    private let clipboardWatcher = ClipboardWatcher()
 
     var statusColor: Color {
         switch state {
@@ -70,6 +76,11 @@ final class ConnectionManager: ObservableObject {
             onStateChange: { [weak self] newState in
                 Task { @MainActor in
                     self?.state = newState
+                    if newState == .connected {
+                        self?.startWatchers()
+                    } else if newState == .disconnected {
+                        self?.stopWatchers()
+                    }
                 }
             },
             onAction: { [weak self] action in
@@ -83,10 +94,41 @@ final class ConnectionManager: ObservableObject {
     }
 
     func disconnect() {
+        stopWatchers()
         webSocket?.disconnect()
         webSocket = nil
         actionHandler = nil
         state = .disconnected
+    }
+
+    // MARK: - Watchers (T-1352, T-1354)
+
+    private func startWatchers() {
+        // T-1352: Active file context watcher
+        fileWatcher.start { [weak self] msg in
+            Task { @MainActor in
+                self?.watchingFile = msg.file
+                self?.webSocket?.send(msg)
+            }
+        }
+
+        // T-1354: Clipboard watcher
+        clipboardWatcher.start { [weak self] event in
+            Task { @MainActor in
+                let msg: [String: String] = [
+                    "type": "clipboard_update",
+                    "content_type": event.contentType,
+                    "preview": event.preview
+                ]
+                self?.webSocket?.sendDict(msg)
+            }
+        }
+    }
+
+    private func stopWatchers() {
+        fileWatcher.stop()
+        clipboardWatcher.stop()
+        watchingFile = nil
     }
 
     /// Called after onboarding completes. Reloads the saved server URL

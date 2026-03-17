@@ -41,6 +41,17 @@ final class ClawWebSocket {
         connection?.send(content: data, contentContext: ctx, isComplete: true, completion: .idempotent)
     }
 
+    /// Send a plain [String: String] dictionary as a JSON WebSocket message.
+    func sendDict(_ dict: [String: String]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: dict) else {
+            ClawLogger.error("Failed to encode WebSocket dict message")
+            return
+        }
+        let meta = NWProtocolWebSocket.Metadata(opcode: .text)
+        let ctx = NWConnection.ContentContext(identifier: "ws-text", metadata: [meta])
+        connection?.send(content: data, contentContext: ctx, isComplete: true, completion: .idempotent)
+    }
+
     // MARK: - Private
 
     private func attemptConnect() {
