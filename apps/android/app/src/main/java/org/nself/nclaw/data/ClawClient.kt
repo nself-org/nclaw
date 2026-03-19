@@ -3,20 +3,17 @@ package org.nself.nclaw.data
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import org.nself.nclaw.NClaw
+import java.util.UUID
 
 class ClawClient(private val context: Context) {
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
 
     private val prefs by lazy {
         context.getSharedPreferences("nclaw_settings", Context.MODE_PRIVATE)
@@ -30,37 +27,83 @@ class ClawClient(private val context: Context) {
         get() = prefs.getString("api_key", "") ?: ""
         set(value) = prefs.edit().putString("api_key", value).apply()
 
-    suspend fun sendMessage(text: String): String = withContext(Dispatchers.IO) {
+    private var clawInstance: NClaw? = null
+    private var lastURL: String = ""
+    private var lastKey: String = ""
+
+    private var webSocket: WebSocket? = null
+    private val httpClient = OkHttpClient()
+    private val deviceId = UUID.randomUUID().toString()
+
+    private fun connectWebSocketIfNeeded() {
         val baseURL = serverURL.trimEnd('/')
+        if (baseURL.isBlank()) return
+
+        val wsUrl = "$baseURL/claw/ws?user_id=android_user&last_seq=0".replace("http", "ws")
+        val request = Request.Builder()
+            .url(wsUrl)
+            .addHeader("Authorization", apiKey)
+            .build()
+
+        webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                println("WebSocket connected")
+                registerCapabilities(webSocket)
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                println("WebSocket received: $text")
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                println("WebSocket disconnected")
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                println("WebSocket error: ${t.message}")
+            }
+        })
+    }
+
+    private fun registerCapabilities(webSocket: WebSocket) {
+        val payload = JSONObject().apply {
+            put("type", "capabilities")
+            put("device_id", deviceId)
+            put("platform", "android")
+            put("version", "1.0")
+            put("actions", JSONArray(listOf("clipboard_read", "clipboard_write", "location")))
+        }
+        webSocket.send(payload.toString())
+    }
+
+    suspend fun sendMessage(text: String): String = withContext(Dispatchers.IO) {
+        val currentURL = serverURL
+        val currentKey = apiKey
+        
+        val baseURL = currentURL.trimEnd('/')
         if (baseURL.isBlank()) {
             throw ClawException("Server URL not configured. Check settings.")
         }
 
-        val json = JSONObject().apply {
-            put("message", text)
+        if (clawInstance == null || lastURL != baseURL || lastKey != currentKey) {
+            clawInstance?.disconnect()
+            try {
+                clawInstance = NClaw(baseURL, currentKey)
+            } catch (e: Exception) {
+                throw ClawException("Failed to connect to NClaw: ${e.message}")
+            }
+            lastURL = baseURL
+            lastKey = currentKey
+            connectWebSocketIfNeeded()
         }
 
-        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val claw = clawInstance ?: throw ClawException("NClaw instance is null")
 
-        val requestBuilder = Request.Builder()
-            .url("$baseURL/claw/chat")
-            .post(body)
-
-        val key = apiKey
-        if (key.isNotBlank()) {
-            requestBuilder.addHeader("Authorization", "Bearer $key")
+        try {
+            claw.sendMessage(text)
+        } catch (e: Exception) {
+            throw ClawException("Server error: ${e.message}")
         }
-
-        val response = client.newCall(requestBuilder.build()).execute()
-        val responseBody = response.body?.string() ?: ""
-
-        if (!response.isSuccessful) {
-            throw ClawException("Server error (${response.code}): $responseBody")
-        }
-
-        val responseJson = JSONObject(responseBody)
-        responseJson.optString("reply", "")
-            .ifBlank { throw ClawException("Empty reply from server.") }
     }
 }
 

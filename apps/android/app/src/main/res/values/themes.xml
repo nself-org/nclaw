@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NClaw" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/nself_primary</item>
+        <item name="colorOnPrimary">@color/nself_on_primary</item>
+        <item name="colorSecondary">@color/nself_secondary</item>
+        <item name="colorOnSecondary">@color/nself_on_secondary</item>
+        <item name="android:colorBackground">@color/nself_background</item>
+        <item name="colorSurface">@color/nself_surface</item>
+        <item name="colorOnSurface">@color/nself_on_surface</item>
+        <item name="android:statusBarColor">@color/nself_background</item>
+        <item name="android:navigationBarColor">@color/nself_background</item>
+    </style>
+</resources>

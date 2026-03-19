@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nself_primary">#6366F1</color>
+    <color name="nself_background">#0F0F1A</color>
+    <color name="nself_on_primary">#FFFFFF</color>
+    <color name="nself_surface">#1A1A2E</color>
+    <color name="nself_on_surface">#E0E0E0</color>
+    <color name="nself_secondary">#818CF8</color>
+    <color name="nself_on_secondary">#FFFFFF</color>
+</resources>

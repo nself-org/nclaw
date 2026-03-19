@@ -1,6 +1,7 @@
 import Foundation
+import NClaw
 
-final class ClawClient {
+final class ClawClient: NSObject, URLSessionWebSocketDelegate {
     private static let serverURLKey = "nclaw_server_url"
     private static let apiKeyKey = "nclaw_api_key"
 
@@ -13,63 +14,124 @@ final class ClawClient {
         get { UserDefaults.standard.string(forKey: apiKeyKey) ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: apiKeyKey) }
     }
+    
+    private var clawInstance: NClaw?
+    private var lastURL: String = ""
+    private var lastKey: String = ""
+    private var webSocketTask: URLSessionWebSocketTask?
+    
+    // Default device ID (in a real app, store this in Keychain after pairing)
+    private var deviceId = UUID().uuidString
+
+    override init() {
+        super.init()
+    }
+
+    func connectWebSocketIfNeeded() {
+        let baseURL = ClawClient.serverURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !baseURL.isEmpty, let url = URL(string: "\(baseURL)/claw/ws?user_id=ios_user&last_seq=0") else { return }
+        
+        let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        var request = URLRequest(url: url)
+        request.setValue(ClawClient.apiKey, forHTTPHeaderField: "Authorization")
+        
+        webSocketTask = session.webSocketTask(with: request)
+        webSocketTask?.resume()
+        receiveMessage()
+    }
+
+    private func receiveMessage() {
+        webSocketTask?.receive { [weak self] result in
+            switch result {
+            case .failure(let error):
+                print("WebSocket error: \(error)")
+            case .success(let message):
+                switch message {
+                case .string(let text):
+                    print("WebSocket received: \(text)")
+                case .data(let data):
+                    print("WebSocket received data: \(data)")
+                @unknown default:
+                    break
+                }
+                self?.receiveMessage()
+            }
+        }
+    }
+
+    func registerCapabilities() {
+        let payload: [String: Any] = [
+            "type": "capabilities",
+            "device_id": deviceId,
+            "actions": ["clipboard_read", "clipboard_write", "location"],
+            "platform": "ios",
+            "version": "1.0"
+        ]
+        
+        if let data = try? JSONSerialization.data(withJSONObject: payload),
+           let jsonString = String(data: data, encoding: .utf8) {
+            let message = URLSessionWebSocketTask.Message.string(jsonString)
+            webSocketTask?.send(message) { error in
+                if let error = error {
+                    print("Failed to send capabilities: \(error)")
+                }
+            }
+        }
+    }
+
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        print("WebSocket connected")
+        registerCapabilities()
+    }
+
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        print("WebSocket disconnected")
+    }
 
     func sendMessage(_ text: String) async throws -> String {
-        let baseURL = ClawClient.serverURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard let url = URL(string: "\(baseURL)/claw/chat") else {
+        let currentURL = ClawClient.serverURL
+        let currentKey = ClawClient.apiKey
+        
+        let baseURL = currentURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !baseURL.isEmpty else {
             throw ClawError.invalidURL
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let key = ClawClient.apiKey
-        if !key.isEmpty {
-            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        
+        if clawInstance == nil || lastURL != baseURL || lastKey != currentKey {
+            clawInstance?.disconnect()
+            clawInstance = try NClaw(serverURL: baseURL, apiKey: currentKey)
+            lastURL = baseURL
+            lastKey = currentKey
+            connectWebSocketIfNeeded()
         }
-
-        let body: [String: Any] = [
-            "message": text
-        ]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ClawError.invalidResponse
+        
+        guard let claw = clawInstance else {
+            throw ClawError.connectionFailed
         }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw ClawError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
+        
+        do {
+            return try await claw.sendMessage(text)
+        } catch let error as NClawError {
+            throw error
+        } catch {
+            throw ClawError.serverError(statusCode: 500, message: error.localizedDescription)
         }
-
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let reply = json["reply"] as? String else {
-            throw ClawError.decodingFailed
-        }
-
-        return reply
     }
 }
 
 enum ClawError: LocalizedError {
     case invalidURL
-    case invalidResponse
+    case connectionFailed
     case serverError(statusCode: Int, message: String)
-    case decodingFailed
 
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid server URL. Check your settings."
-        case .invalidResponse:
-            return "Received an invalid response from the server."
+        case .connectionFailed:
+            return "Failed to initialize the FFI connection."
         case .serverError(let code, let message):
             return "Server error (\(code)): \(message)"
-        case .decodingFailed:
-            return "Failed to decode the server response."
         }
     }
 }
