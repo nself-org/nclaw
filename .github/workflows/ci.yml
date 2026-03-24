@@ -34,7 +34,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Run tests
-        run: flutter test
+        run: flutter test --update-goldens && flutter test
 
   flutter-build-android:
     name: Flutter Build Android
