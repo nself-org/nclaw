@@ -2,7 +2,7 @@
 //! Opens URL in a hidden Tauri WebView, waits for load, extracts text or screenshot,
 //! sends result back via WS.
 
-use tauri::Manager;
+use tauri::{Listener, Manager};
 
 /// Handle a browser_open command from the server.
 /// Modes: "text" (extract page text), "screenshot" (capture page image as base64).

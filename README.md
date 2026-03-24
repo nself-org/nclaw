@@ -7,13 +7,15 @@ Connects to your own nSelf server running the `nself-claw` pro plugin. You own y
 ## Structure
 
 ```
+app/              Flutter client (iOS, Android, macOS, web)
 apps/
-  ios/          SwiftUI app for iOS and macOS
-  android/      Kotlin + Jetpack Compose app for Android
-  web/          React/Next.js browser client
+  ios/            SwiftUI native client for iOS and macOS
+  android/        Kotlin + Jetpack Compose native client for Android
+  desktop/        Tauri desktop client
+desktop/          Swift Package for macOS native integration
 libs/
-  libnclaw/     Shared Rust FFI library (types, protocol, E2E encryption)
-backend/        nSelf backend config for self-hosters
+  libnclaw/       Shared Rust FFI library (types, protocol, E2E encryption)
+backend/          nSelf backend config for self-hosters
 ```
 
 ## Requirements

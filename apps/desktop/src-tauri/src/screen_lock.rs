@@ -2,6 +2,7 @@
 //! Detects macOS screen lock via CoreGraphics CGSessionCopyCurrentDictionary.
 //! Reports state changes to the server via WS.
 
+use tauri::Manager;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static SCREEN_LOCKED: AtomicBool = AtomicBool::new(false);

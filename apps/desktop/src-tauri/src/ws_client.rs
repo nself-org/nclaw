@@ -4,6 +4,7 @@
 //! WS handshake sends JWT in Authorization header. On 401: re-pair flow.
 
 use futures_util::{SinkExt, StreamExt};
+use tauri::Manager;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::http::Request;
 use tokio_tungstenite::{connect_async, tungstenite};
@@ -147,7 +148,10 @@ pub async fn run_ws_client(server_url: &str, app_handle: tauri::AppHandle) {
                 // Create channel for outbound messages from other modules
                 let (tx, mut rx) = mpsc::unbounded_channel::<String>();
 
-                // Store sender in app state for other modules
+                // Store sender in app state for other modules.
+                // manage() is safe to call multiple times in Tauri 2.x (returns false if already set).
+                // On reconnect the old sender is stale, but screen_lock and other modules
+                // will pick up the new sender via the WsSender channel stored here.
                 app_handle.manage(WsSenderState(tx.clone()));
 
                 // Send capabilities registration

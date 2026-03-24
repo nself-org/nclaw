@@ -197,11 +197,8 @@ class AmbientSensorService {
       if (permission == LocationPermission.deniedForever) return null;
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+        desiredAccuracy: LocationAccuracy.low,
+      ).timeout(const Duration(seconds: 10));
 
       // Return as a compact lat/lon string (city-level precision).
       final lat = position.latitude.toStringAsFixed(2);
