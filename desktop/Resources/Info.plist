@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- T-2727: Microphone access for voice input transcription -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>nClaw uses your microphone for voice input, which is transcribed and sent to your AI assistant.</string>
+
     <!-- T-1371: nclaw:// custom URL scheme for ASWebAuthenticationSession passkey callback -->
     <key>CFBundleURLTypes</key>
     <array>

@@ -11,9 +11,16 @@ final class RouteHandler {
     // T-1351: Daemon capability routes
     private let editorContextService = EditorContextService()
     private let terminalBufferService = TerminalBufferService()
+    // T-2727: Audio capture + transcription
+    private let audioEndpoints = AudioEndpoints()
+    // T-2729: Sandbox filesystem access for AI tools
+    private let sandboxFSEndpoints = SandboxFSEndpoints()
 
     func handle(_ request: HTTPRequest) -> HTTPResponse {
-        switch (request.method, request.path) {
+        // T-2729: Sandbox FS routes use query params, so match on path prefix.
+        let basePath = request.path.components(separatedBy: "?").first ?? request.path
+
+        switch (request.method, basePath) {
 
         // Health check
         case ("GET", "/health"):
@@ -102,6 +109,26 @@ final class RouteHandler {
         case ("POST", "/browser/wait"):
             guard isBrowserEnabled() else { return .error("Browser automation not enabled", status: 403) }
             return BrowserEndpoints.handleWait(request, service: browserService)
+
+        // T-2727: Audio capture + Whisper transcription
+        case ("POST", "/companion/audio/start"):
+            return audioEndpoints.handleStartRecording(request)
+        case ("POST", "/companion/audio/stop"):
+            return audioEndpoints.handleStopRecording(request)
+        case ("POST", "/companion/audio/transcribe"):
+            return audioEndpoints.handleTranscribe(request)
+
+        // T-2729: Sandbox filesystem access for AI tools
+        case ("GET", "/companion/fs/list"):
+            return sandboxFSEndpoints.handleList(request)
+        case ("GET", "/companion/fs/read"):
+            return sandboxFSEndpoints.handleRead(request)
+        case ("GET", "/companion/fs/search"):
+            return sandboxFSEndpoints.handleSearch(request)
+        case ("GET", "/companion/fs/roots"):
+            return sandboxFSEndpoints.handleRoots(request)
+        case ("POST", "/companion/fs/grant"):
+            return sandboxFSEndpoints.handleGrant(request)
 
         // Catch-all
         case (_, _) where request.method != "GET" && request.method != "POST" && request.method != "DELETE":

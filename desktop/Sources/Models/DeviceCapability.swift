@@ -12,7 +12,7 @@ struct DeviceCapability: Codable {
 
     static func current() -> DeviceCapability {
         // T-1413: include "browser" capability only when user has enabled it
-        var actions = ["file_op", "shell", "clipboard", "screenshot", "context_watch", "terminal"]
+        var actions = ["file_op", "shell", "clipboard", "screenshot", "context_watch", "terminal", "audio", "sandbox_fs"]
         if UserDefaults.standard.bool(forKey: "NClaw_BrowserEnabled") {
             actions.append("browser")
         }

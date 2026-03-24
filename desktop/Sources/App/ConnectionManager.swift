@@ -28,6 +28,8 @@ final class ConnectionManager: ObservableObject {
     private let fileWatcher = ActiveFileWatcher()
     // T-1354: Clipboard change watcher
     private let clipboardWatcher = ClipboardWatcher()
+    // T-2726: Ambient OS context streamer
+    private let ambientContext = AmbientContextService()
 
     var statusColor: Color {
         switch state {
@@ -123,11 +125,19 @@ final class ConnectionManager: ObservableObject {
                 self?.webSocket?.sendDict(msg)
             }
         }
+
+        // T-2726: Ambient OS context streamer (active app + window + clipboard preview)
+        ambientContext.start { [weak self] msg in
+            Task { @MainActor in
+                self?.webSocket?.send(msg)
+            }
+        }
     }
 
     private func stopWatchers() {
         fileWatcher.stop()
         clipboardWatcher.stop()
+        ambientContext.stop()
         watchingFile = nil
     }
 
