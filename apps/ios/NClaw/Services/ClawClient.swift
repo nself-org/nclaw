@@ -7,15 +7,54 @@ import UIKit
 final class ClawClient: NSObject, URLSessionWebSocketDelegate {
     private static let serverURLKey = "nclaw_server_url"
     private static let apiKeyKey = "nclaw_api_key"
+    private static let keychainService = "org.nself.nclaw"
 
     static var serverURL: String {
         get { UserDefaults.standard.string(forKey: serverURLKey) ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: serverURLKey) }
     }
 
+    /// API key stored in iOS Keychain for security (not UserDefaults).
     static var apiKey: String {
-        get { UserDefaults.standard.string(forKey: apiKeyKey) ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: apiKeyKey) }
+        get {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: keychainService,
+                kSecAttrAccount as String: apiKeyKey,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne
+            ]
+            var result: AnyObject?
+            let status = SecItemCopyMatching(query as CFDictionary, &result)
+            guard status == errSecSuccess, let data = result as? Data,
+                  let key = String(data: data, encoding: .utf8) else {
+                // Fallback to UserDefaults for migration from old storage
+                return UserDefaults.standard.string(forKey: apiKeyKey) ?? ""
+            }
+            return key
+        }
+        set {
+            // Delete existing entry first
+            let deleteQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: keychainService,
+                kSecAttrAccount as String: apiKeyKey
+            ]
+            SecItemDelete(deleteQuery as CFDictionary)
+
+            guard !newValue.isEmpty, let data = newValue.data(using: .utf8) else { return }
+            let addQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: keychainService,
+                kSecAttrAccount as String: apiKeyKey,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            ]
+            SecItemAdd(addQuery as CFDictionary, nil)
+
+            // Also keep in UserDefaults for backwards compat
+            UserDefaults.standard.set(newValue, forKey: apiKeyKey)
+        }
     }
     
     private var clawInstance: NClaw?
@@ -36,7 +75,7 @@ final class ClawClient: NSObject, URLSessionWebSocketDelegate {
 
     func connectWebSocketIfNeeded() {
         let baseURL = ClawClient.serverURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard !baseURL.isEmpty, let url = URL(string: "\(baseURL)/claw/ws?user_id=ios_user&last_seq=0") else { return }
+        guard !baseURL.isEmpty, let url = URL(string: "\(baseURL)/claw/ws?device_id=\(deviceId)&last_seq=0") else { return }
         
         let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         var request = URLRequest(url: url)
