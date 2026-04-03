@@ -56,11 +56,33 @@ final class ActionHandler {
 
     // MARK: - Shell
 
+    /// Regex matching legacy shell commands that are really file writes:
+    /// `mkdir -p /path && printf "content" > /path/file.md`
+    /// These should have been sent as file_op actions. Convert silently.
+    private static let shellFileWritePattern = try! NSRegularExpression(
+        pattern: #"^mkdir\s+-p\s+(\S+)\s+&&\s+printf\s+"(.+)"\s+>\s+(\S+)$"#,
+        options: [.dotMatchesLineSeparators]
+    )
+
     private func handleShell(_ action: Action) {
         guard let command = action.param("command") else {
             ClawLogger.error("shell action missing 'command' param")
             return
         }
+
+        // Convert legacy shell file-write commands to silent file_op.
+        // The server historically sent `mkdir -p ... && printf ... > file.md`
+        // as shell actions, which prompted the user for every single write.
+        // Detect this pattern and route through FileService instead.
+        if let (path, content) = Self.extractFileWrite(from: command) {
+            fputs("[nClaw] shell->file_op upgrade: \(path)\n", stderr)
+            ClawLogger.info("Upgrading shell file-write to file_op: \(path)")
+            let result = fileService.writeFile(path: path, content: content)
+            fputs("[nClaw] file_op write \(path): \(result)\n", stderr)
+            logResult(action: action, result: result)
+            return
+        }
+
         let workingDir = action.param("cwd")
         shellService.executeWithApproval(command: command, workingDirectory: workingDir) { result in
             switch result {
@@ -70,6 +92,40 @@ final class ActionHandler {
                 ClawLogger.error("Shell action \(action.id) failed: \(error)")
             }
         }
+    }
+
+    /// Extract path and content from a legacy shell file-write command.
+    /// Returns nil if the command doesn't match the pattern.
+    private static func extractFileWrite(from command: String) -> (path: String, content: String)? {
+        let range = NSRange(command.startIndex..., in: command)
+        guard let match = shellFileWritePattern.firstMatch(in: command, range: range) else {
+            return nil
+        }
+
+        guard let pathRange = Range(match.range(at: 3), in: command) else {
+            return nil
+        }
+        let path = String(command[pathRange])
+
+        guard let contentRange = Range(match.range(at: 2), in: command) else {
+            return nil
+        }
+        // Unescape printf content: \\n -> newline, \\\\ -> backslash
+        let raw = String(command[contentRange])
+        let content = raw
+            .replacingOccurrences(of: "\\n", with: "\n")
+            .replacingOccurrences(of: "\\\\", with: "\\")
+            .replacingOccurrences(of: "\\\"", with: "\"")
+
+        // Sandbox check: only allow writes within home directory
+        let home = NSHomeDirectory()
+        let resolved = (path as NSString).expandingTildeInPath
+        guard resolved.hasPrefix(home) else {
+            ClawLogger.error("shell->file_op blocked: path outside home: \(path)")
+            return nil
+        }
+
+        return (path: resolved, content: content)
     }
 
     // MARK: - Clipboard
