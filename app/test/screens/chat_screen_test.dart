@@ -85,7 +85,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Empty-state prompt text
-      expect(find.text('Ask \u014BClaw anything'), findsOneWidget);
+      expect(find.text('Ask \u0273Claw anything'), findsOneWidget);
 
       // No spinner in non-streaming empty state
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -123,7 +123,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
 
       // Prompt text hidden while streaming
-      expect(find.text('Ask \u014BClaw anything'), findsNothing);
+      expect(find.text('Ask \u0273Claw anything'), findsNothing);
     });
 
     testWidgets('AppBar displays the active session title',

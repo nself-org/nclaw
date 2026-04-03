@@ -52,7 +52,7 @@ void main() {
       await tester.pumpWidget(_wrap(const OnboardingScreen()));
       await tester.pump(); // first frame
 
-      expect(find.text('Welcome to \u014BClaw'), findsOneWidget);
+      expect(find.text('Welcome to \u0273Claw'), findsOneWidget);
       expect(find.text('Step 1 of 7'), findsOneWidget);
     });
 
