@@ -28,7 +28,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -54,16 +54,18 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             TabBar(
               controller: _tabController,
               tabs: const [
-                Tab(text: 'Sign in'),
-                Tab(text: 'Pair with code'),
+                Tab(icon: Icon(Icons.qr_code_scanner, size: 20), text: 'Scan QR'),
+                Tab(icon: Icon(Icons.pin, size: 20), text: 'Enter Code'),
+                Tab(icon: Icon(Icons.link, size: 20), text: 'Direct URL'),
               ],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _SignInTab(authService: _authService),
+                  _ScanQrTab(authService: _authService, tabController: _tabController),
                   _PairWithCodeTab(authService: _authService),
+                  _SignInTab(authService: _authService),
                 ],
               ),
             ),
@@ -75,7 +77,100 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
 }
 
 // =============================================================================
-// Tab 1 — Sign in (email + password)
+// Tab 1 — Scan QR
+// =============================================================================
+
+class _ScanQrTab extends ConsumerStatefulWidget {
+  final AuthService authService;
+  final TabController tabController;
+  const _ScanQrTab({required this.authService, required this.tabController});
+
+  @override
+  ConsumerState<_ScanQrTab> createState() => _ScanQrTabState();
+}
+
+class _ScanQrTabState extends ConsumerState<_ScanQrTab> {
+  bool _scanned = false;
+
+  void _handleDetect(BarcodeCapture capture) {
+    if (_scanned) return;
+    final barcode = capture.barcodes.firstOrNull;
+    final value = barcode?.rawValue;
+    if (value == null) return;
+
+    final uri = Uri.tryParse(value);
+    if (uri != null && uri.scheme == 'nclaw' && uri.host == 'pair') {
+      final server = uri.queryParameters['server'];
+      final code = uri.queryParameters['code'];
+      if (server != null && code != null) {
+        setState(() => _scanned = true);
+        ref.read(pendingPairProvider.notifier).state =
+            PairParams(serverUrl: server, code: code.toUpperCase());
+        // Switch to the Enter Code tab to complete pairing.
+        widget.tabController.animateTo(1);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          'Point your camera at the QR code shown by nclaw.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    MobileScanner(onDetect: _handleDetect),
+                    if (_scanned)
+                      Container(
+                        color: Colors.black54,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle,
+                                  size: 64, color: theme.colorScheme.primary),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Code scanned',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Tab 2 — Sign in (email + password, "Direct URL")
 // =============================================================================
 
 class _SignInTab extends ConsumerStatefulWidget {
@@ -270,7 +365,7 @@ class _SignInTabState extends ConsumerState<_SignInTab> {
 }
 
 // =============================================================================
-// Tab 2 — Pair with code (6-char short code from nclaw CLI or /pair TG command)
+// Tab 3 — Pair with code (6-char short code from nclaw CLI or /pair TG command)
 // =============================================================================
 
 /// Two-step flow:
@@ -324,22 +419,6 @@ class _PairWithCodeTabState extends ConsumerState<_PairWithCodeTab> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _scanQrCode() async {
-    final raw = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const _QrScanScreen()),
-    );
-    if (raw == null || !mounted) return;
-
-    final uri = Uri.tryParse(raw);
-    if (uri != null && uri.scheme == 'nclaw' && uri.host == 'pair') {
-      final server = uri.queryParameters['server'];
-      final code = uri.queryParameters['code'];
-      if (server != null) _urlController.text = server;
-      if (code != null) _codeController.text = code.toUpperCase();
-    }
   }
 
   Future<void> _handleVerify() async {
@@ -504,15 +583,6 @@ class _PairWithCodeTabState extends ConsumerState<_PairWithCodeTab> {
                 }
                 return null;
               },
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _scanQrCode,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Scan QR code'),
-              ),
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 8),
@@ -689,53 +759,4 @@ class _UpperCaseTextFormatter extends TextInputFormatter {
   }
 }
 
-// =============================================================================
-// QR scan screen
-// =============================================================================
-
-/// Full-screen camera view that scans `nclaw://pair?...` QR codes.
-/// Pops with the raw URI string on a successful scan, or null if dismissed.
-class _QrScanScreen extends StatelessWidget {
-  const _QrScanScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Scan pairing code')),
-      body: Stack(
-        children: [
-          MobileScanner(
-            onDetect: (capture) {
-              final barcode = capture.barcodes.firstOrNull;
-              final value = barcode?.rawValue;
-              if (value != null && value.startsWith('nclaw://')) {
-                Navigator.pop(context, value);
-              }
-            },
-          ),
-          // Overlay hint
-          Positioned(
-            bottom: 48,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Point camera at the QR code shown by nclaw',
-                  style: TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// QR scanning is now handled inline by _ScanQrTab above.

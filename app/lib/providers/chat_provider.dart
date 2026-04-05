@@ -800,6 +800,86 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   // -------------------------------------------------------------------------
+  // Message mutations (T-7562, T-7563)
+  // -------------------------------------------------------------------------
+
+  /// Edit a message's content locally and on the server.
+  Future<void> editMessage(String sessionId, String messageId, String newContent) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      await _patch('$base/claw/sessions/$sessionId/messages/$messageId', {
+        'content': newContent,
+      });
+    }
+    _updateSession(sessionId, (s) {
+      final msgs = s.messages.map((m) {
+        if (m.id == messageId) {
+          return ChatMessage(
+            id: m.id,
+            role: m.role,
+            content: newContent,
+            tierSource: m.tierSource,
+            modelUsed: m.modelUsed,
+            latencyMs: m.latencyMs,
+            inputTokens: m.inputTokens,
+            outputTokens: m.outputTokens,
+            knowledgeUsed: m.knowledgeUsed,
+            memoriesUsed: m.memoriesUsed,
+            createdAt: m.createdAt,
+          );
+        }
+        return m;
+      }).toList();
+      return s.copyWith(messages: msgs);
+    });
+  }
+
+  /// Delete a message locally and on the server.
+  Future<void> deleteMessage(String sessionId, String messageId) async {
+    final base = _serverUrl;
+    if (base.isNotEmpty) {
+      try {
+        await http
+            .delete(Uri.parse('$base/claw/sessions/$sessionId/messages/$messageId'))
+            .timeout(const Duration(seconds: 10));
+      } catch (_) {}
+    }
+    _updateSession(sessionId, (s) {
+      return s.copyWith(messages: s.messages.where((m) => m.id != messageId).toList());
+    });
+  }
+
+  /// Regenerate the last assistant response by re-sending the last user message.
+  Future<void> regenerateLastResponse(String serverUrl) async {
+    final session = state.activeSession;
+    if (session == null) return;
+    final msgs = session.messages;
+    if (msgs.isEmpty) return;
+
+    // Find the last user message.
+    String? lastUserMsg;
+    for (int i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role == 'user') {
+        lastUserMsg = msgs[i].content;
+        break;
+      }
+    }
+    if (lastUserMsg == null) return;
+
+    // Remove the last assistant message.
+    if (msgs.last.role == 'assistant') {
+      _updateSession(session.id, (s) {
+        final updated = [...s.messages];
+        updated.removeLast();
+        return s.copyWith(messages: updated);
+      });
+    }
+
+    // Re-send.
+    await sendMessage(lastUserMsg, serverUrl);
+  }
+
+  // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
 

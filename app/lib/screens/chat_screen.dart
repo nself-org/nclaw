@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as markdownpkg;
+import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter_highlight/themes/atom-one-dark.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../providers/chat_provider.dart';
 import '../providers/connection_provider.dart';
@@ -38,6 +43,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   // ignore: prefer_final_fields — will be mutated by VoiceSettingsScreen (T-1115)
   bool _autoPlay = false;
 
+  // Message editing state (T-7562).
+  final TextEditingController _editController = TextEditingController();
+
   // Sentence splitter — splits on . ! ? followed by whitespace or end.
   static final RegExp _sentenceEnd = RegExp(r'(?<=[.!?])\s+');
 
@@ -52,6 +60,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _tts.stop();
     _textController.dispose();
+    _editController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -109,6 +118,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   // -------------------------------------------------------------------------
+
+  void _showEditDialog(BuildContext context, ChatMessage msg, String sessionId) {
+    _editController.text = msg.content;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit message'),
+        content: TextField(
+          controller: _editController,
+          maxLines: 6,
+          minLines: 2,
+          autofocus: true,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final newText = _editController.text.trim();
+              if (newText.isNotEmpty && newText != msg.content) {
+                ref.read(chatProvider.notifier).editMessage(
+                    sessionId, msg.id, newText);
+              }
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _sendMessage() {
     final text = _textController.text.trim();
@@ -315,30 +360,53 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     reverse: true,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
-                    itemCount: messages.length,
+                    itemCount: messages.length + (isStreaming ? 1 : 0),
                     itemBuilder: (context, index) {
+                      // Typing indicator at index 0 (bottom of reversed list).
+                      if (isStreaming && index == 0) {
+                        return const _TypingIndicator();
+                      }
+                      final msgIndex = isStreaming ? index - 1 : index;
                       // Reversed list — index 0 is the last message.
                       final msg =
-                          messages[messages.length - 1 - index];
+                          messages[messages.length - 1 - msgIndex];
                       final isPlayingThis =
                           _playingMessageId == msg.id && _ttsBusy;
-                      return _MessageBubble(
-                        message: msg,
-                        isPlaying: isPlayingThis,
-                        onPlayToggle: msg.role == 'assistant'
-                            ? () {
-                                if (isPlayingThis) {
-                                  _stopTts();
-                                } else {
-                                  _playMessage(msg.id, msg.content);
+                      return _MessageReveal(
+                        key: ValueKey(msg.id),
+                        child: _MessageBubble(
+                          message: msg,
+                          isPlaying: isPlayingThis,
+                          onPlayToggle: msg.role == 'assistant'
+                              ? () {
+                                  if (isPlayingThis) {
+                                    _stopTts();
+                                  } else {
+                                    _playMessage(msg.id, msg.content);
+                                  }
                                 }
-                              }
-                            : null,
-                        onBranch: activeId != null
-                            ? () => ref
-                                .read(chatProvider.notifier)
-                                .branchSession(activeId)
-                            : null,
+                              : null,
+                          onBranch: activeId != null
+                              ? () => ref
+                                  .read(chatProvider.notifier)
+                                  .branchSession(activeId)
+                              : null,
+                          onEdit: msg.role == 'user' && activeId != null
+                              ? () => _showEditDialog(context, msg, activeId)
+                              : null,
+                          onDelete: activeId != null
+                              ? () => ref
+                                  .read(chatProvider.notifier)
+                                  .deleteMessage(activeId, msg.id)
+                              : null,
+                          onRegenerate: msg.role == 'assistant' && activeId != null
+                              ? () {
+                                  final serverUrl =
+                                      ref.read(connectionProvider).activeServer?.url ?? '';
+                                  ref.read(chatProvider.notifier).regenerateLastResponse(serverUrl);
+                                }
+                              : null,
+                        ),
                       );
                     },
                   ),
@@ -371,7 +439,10 @@ class _EmptyChat extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (isStreaming) {
-      return const Center(child: CircularProgressIndicator());
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: _ShimmerLoader(),
+      );
     }
 
     return Center(
@@ -409,11 +480,23 @@ class _MessageBubble extends StatelessWidget {
   /// Called when the user selects "Branch from here". Null disables the option.
   final VoidCallback? onBranch;
 
+  /// Called when the user selects "Edit". Null hides the option.
+  final VoidCallback? onEdit;
+
+  /// Called when the user selects "Delete". Null hides the option.
+  final VoidCallback? onDelete;
+
+  /// Called when the user selects "Regenerate". Null hides the option.
+  final VoidCallback? onRegenerate;
+
   const _MessageBubble({
     required this.message,
     this.isPlaying = false,
     this.onPlayToggle,
     this.onBranch,
+    this.onEdit,
+    this.onDelete,
+    this.onRegenerate,
   });
 
   @override
@@ -442,6 +525,24 @@ class _MessageBubble extends StatelessWidget {
                   );
                 },
               ),
+              if (onEdit != null)
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Edit'),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onEdit!();
+                  },
+                ),
+              if (onRegenerate != null)
+                ListTile(
+                  leading: const Icon(Icons.refresh_outlined),
+                  title: const Text('Regenerate'),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onRegenerate!();
+                  },
+                ),
               if (onBranch != null)
                 ListTile(
                   leading: const Icon(Icons.call_split_outlined),
@@ -449,6 +550,17 @@ class _MessageBubble extends StatelessWidget {
                   onTap: () {
                     Navigator.of(ctx).pop();
                     onBranch!();
+                  },
+                ),
+              if (onDelete != null)
+                ListTile(
+                  leading: Icon(Icons.delete_outline,
+                      color: theme.colorScheme.error),
+                  title: Text('Delete',
+                      style: TextStyle(color: theme.colorScheme.error)),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onDelete!();
                   },
                 ),
             ],
@@ -579,7 +691,7 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-/// Assistant message card (dark, left-aligned).
+/// Assistant message card (dark, left-aligned) with markdown + syntax highlighting.
 class _AssistantBubble extends StatelessWidget {
   final String content;
   final ThemeData theme;
@@ -614,10 +726,56 @@ class _AssistantBubble extends StatelessWidget {
               )
             : null,
       ),
-      child: Text(
-        content,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurface,
+      child: MarkdownBody(
+        data: content,
+        selectable: true,
+        styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+          p: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+          code: theme.textTheme.bodySmall?.copyWith(
+            backgroundColor: theme.colorScheme.surface,
+            fontFamily: 'monospace',
+          ),
+          codeblockDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xFF282C34),
+          ),
+        ),
+        builders: {
+          'code': _CodeBlockBuilder(),
+        },
+      ),
+    );
+  }
+}
+
+/// Custom markdown code block builder that uses flutter_highlight for syntax
+/// coloring (T-7561).
+class _CodeBlockBuilder extends MarkdownElementBuilder {
+  @override
+  Widget? visitElementAfter(
+      markdownpkg.Element element, TextStyle? preferredStyle) {
+    // Only handle fenced code blocks (which have a 'language' attribute or
+    // appear as block-level <code> inside <pre>).
+    final language = element.attributes['language'] ?? '';
+    final code = element.textContent;
+
+    if (language.isEmpty && !code.contains('\n')) {
+      // Inline code — let default rendering handle it.
+      return null;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: HighlightView(
+        code,
+        language: language.isNotEmpty ? language : 'plaintext',
+        theme: atomOneDarkTheme,
+        padding: const EdgeInsets.all(12),
+        textStyle: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 13,
         ),
       ),
     );
@@ -1017,5 +1175,194 @@ class _SessionTagsBar extends StatelessWidget {
       case 'planning': return const Color(0xFF8B5CF6);
       default:         return const Color(0xFF6B7280);
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message reveal animation (T-7565)
+// ---------------------------------------------------------------------------
+
+/// Wraps a message widget with a fade+slide-in animation on first build.
+class _MessageReveal extends StatefulWidget {
+  final Widget child;
+  const _MessageReveal({super.key, required this.child});
+
+  @override
+  State<_MessageReveal> createState() => _MessageRevealState();
+}
+
+class _MessageRevealState extends State<_MessageReveal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Typing indicator (T-7566)
+// ---------------------------------------------------------------------------
+
+/// Animated "..." dots shown while waiting for AI response.
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+            child: Icon(
+              Icons.smart_toy_outlined,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+            ),
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(3, (i) {
+                    final delay = i * 0.2;
+                    final t = (_controller.value - delay).clamp(0.0, 1.0);
+                    final bounce = (t < 0.5) ? t * 2 : (1.0 - t) * 2;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Transform.translate(
+                        offset: Offset(0, -4 * bounce),
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.3 + 0.4 * bounce),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shimmer skeleton loader (T-7570)
+// ---------------------------------------------------------------------------
+
+/// Skeleton placeholder shown instead of a spinner during initial streaming.
+class _ShimmerLoader extends StatelessWidget {
+  const _ShimmerLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final baseColor = theme.colorScheme.surfaceContainerHighest;
+    final highlightColor = theme.colorScheme.surface;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _shimmerLine(width: double.infinity),
+          const SizedBox(height: 10),
+          _shimmerLine(width: 260),
+          const SizedBox(height: 10),
+          _shimmerLine(width: 200),
+        ],
+      ),
+    );
+  }
+
+  Widget _shimmerLine({required double width}) {
+    return Container(
+      width: width,
+      height: 14,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
   }
 }
