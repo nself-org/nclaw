@@ -11,8 +11,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Should show the pairing screen heading and the default Sign in tab.
+    // Should show the pairing screen heading and the default Scan QR tab.
     expect(find.text('Connect to your server'), findsOneWidget);
-    expect(find.text('Sign in'), findsWidgets); // tab label + button
+    expect(find.text('Scan QR'), findsWidgets); // tab label
   });
 }
