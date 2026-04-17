@@ -54,8 +54,11 @@ cd backend
 # Initialize nSelf project
 nself init
 
-# Install required Pro plugins
-nself plugin install ai claw mux voice browser
+# Install required Pro plugins (ai + claw + mux)
+nself plugin install ai claw mux
+
+# Optional ɳClaw-bundle plugins (voice, browser, google, notify, cron, claw-web)
+nself plugin install voice browser google notify cron claw-web
 
 # Generate docker-compose and config
 nself build

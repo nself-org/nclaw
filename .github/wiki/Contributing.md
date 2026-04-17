@@ -140,7 +140,7 @@ cd app && flutter analyze && flutter test
 5. Open a PR using the [PR template](../.github/PULL_REQUEST_TEMPLATE.md)
 6. A maintainer will review within a few days
 
-PRs that add new Pro plugin dependencies will not be accepted — the client must work with the plugins that are already required (`ai`, `claw`, `mux`, `voice`, `browser`).
+PRs that add new Pro plugin dependencies will not be accepted. The client must work with the currently-required plugins (`ai`, `claw`, `mux`) plus the optional ɳClaw-bundle plugins (`claw-web`, `voice`, `browser`, `google`, `notify`, `cron`). See [Plugin Requirements](https://github.com/nself-org/claw/wiki/Plugin-Requirements).
 
 ---
 

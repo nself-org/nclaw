@@ -4,15 +4,26 @@ Self-hosting guide for the nClaw backend. The backend is a standard nSelf stack 
 
 ## Required plugins
 
-All five plugins are Pro tier (requires a license key):
+Three plugins are required to run the core backend; six more are optional ɳClaw-bundle members that unlock additional features.
 
-| Plugin | What it provides |
-|--------|-----------------|
-| `ai` | AI provider routing, model management, streaming |
-| `claw` | Conversation management, memory, tool dispatch, personas |
-| `mux` | Messaging pipeline, email integration, webhook routing |
-| `voice` | Speech-to-text and text-to-speech |
-| `browser` | Browser automation via Chrome DevTools Protocol (CDP) |
+### Required (3)
+
+| Plugin | Tier | What it provides |
+|--------|------|-----------------|
+| `ai` | Pro (max) | AI provider routing, model management, streaming |
+| `claw` | Pro (max) | Conversation management, memory, tool dispatch, personas |
+| `mux` | Pro | Messaging pipeline, email integration, webhook routing |
+
+### Optional ɳClaw bundle (6)
+
+| Plugin | Tier | What it provides |
+|--------|------|-----------------|
+| `claw-web` | Pro (max) | Web client surface (separate web app served by the plugin) |
+| `voice` | Pro (max) | Speech-to-text and text-to-speech |
+| `browser` | Pro (max) | Browser automation via Chrome DevTools Protocol (CDP) |
+| `google` | Pro | Gmail / Calendar / Drive integration |
+| `notify` | Pro | Push notifications (FCM, APNs) |
+| `cron` | Pro | Scheduled jobs / proactive triggers |
 
 ## Prerequisites
 
@@ -31,8 +42,11 @@ nself init
 # 2. Register your Pro license key
 nself license set nself_pro_YOURKEY
 
-# 3. Install the required Pro plugins
-nself plugin install ai claw mux voice browser
+# 3a. Install the required Pro plugins
+nself plugin install ai claw mux
+
+# 3b. Optional ɳClaw-bundle plugins
+nself plugin install claw-web voice browser google notify cron
 
 # 4. Generate docker-compose and service config
 nself build
