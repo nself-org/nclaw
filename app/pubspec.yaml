@@ -1,7 +1,7 @@
 name: nself_claw
 description: "ɳClaw — personal AI assistant with infinite memory"
 publish_to: none
-version: 1.1.0+11
+version: 1.0.9+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -55,7 +55,7 @@ dependencies:
 
   # Camera & scanning
   mobile_scanner: 7.2.0
-  app_links: 6.3.4
+  app_links: 6.3.3
 
   # Voice & speech
   speech_to_text: 7.0.0
