@@ -1,0 +1,18 @@
+ɳClaw is a personal AI assistant with infinite, self-organizing memory. You just talk to it. It auto-detects topics, branches conversations, and builds a knowledge graph that compounds over time.
+
+Your life, organized by topic — not by "New Chat".
+
+Key features:
+
+- Chat with your own AI model hosted on a server you control
+- Automatic topic detection — conversations branch into focused threads
+- Infinite memory that remembers facts, decisions, people, and preferences
+- Voice conversations with speech-to-text and text-to-speech
+- Share content from any app into your knowledge graph
+- Home-screen widget for quick capture and recent conversations
+- Morning briefings, daily digest, and proactive reminders
+- Offline-first — keep working when the network is flaky
+- End-to-end encryption with locally-held keys
+- Connects to self-hosted nSelf backends — your data stays yours
+
+ɳClaw is part of the nSelf ecosystem. Core is MIT-licensed open source. Premium features unlock via the ɳClaw plugin bundle.

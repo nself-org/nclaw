@@ -1,0 +1,8 @@
+# S22-T07: Release keystore config template.
+# Copy to `key.properties` (gitignored) and fill in from ~/.claude/vault.env.
+# CI writes this file from ANDROID_* Actions Secrets.
+
+storeFile=/absolute/path/to/claw-release.jks
+storePassword=REPLACE_WITH_ANDROID_KEYSTORE_PASSWORD
+keyAlias=REPLACE_WITH_ANDROID_KEY_ALIAS
+keyPassword=REPLACE_WITH_ANDROID_KEY_PASSWORD

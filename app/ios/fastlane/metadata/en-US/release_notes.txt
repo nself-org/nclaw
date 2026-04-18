@@ -1,0 +1,10 @@
+Version 1.1.1
+
+- Full feature parity with the web client
+- Push notifications (APNs) with rich thread grouping
+- Universal Links: tap any claw.nself.org link to open in-app
+- Encrypted local database (SQLCipher) for at-rest protection
+- Offline-first sync with automatic reconciliation
+- Deep links to topics and memories: nclaw://topics/:id, nclaw://memories/:id
+- Share Extension and Notification Service Extension
+- Performance and stability fixes throughout
