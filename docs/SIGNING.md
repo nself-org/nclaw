@@ -1,7 +1,7 @@
 # ɳClaw — Code Signing & Distribution Guide
 
 Source-of-truth for all signing material, App Store / Play Store enrollment,
-and release workflow for the `nself-org/claw` repo. This document never
+and release workflow for the `nself-org/nclaw` repo. This document never
 contains actual keys — only key IDs, vault variable names, and workflow.
 
 ---

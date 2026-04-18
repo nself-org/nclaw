@@ -4,13 +4,13 @@ Contributions are welcome. nClaw is an open-source AI assistant client licensed 
 
 ## Quick links
 
-- [Wiki: Contributing](https://github.com/nself-org/claw/wiki/Contributing) — Full dev setup, code style, and testing guide
-- [Wiki: Architecture](https://github.com/nself-org/claw/wiki/Architecture) — How the pieces fit together
-- [GitHub Issues](https://github.com/nself-org/claw/issues) — Bug reports and feature requests
+- [Wiki: Contributing](https://github.com/nself-org/nclaw/wiki/Contributing) — Full dev setup, code style, and testing guide
+- [Wiki: Architecture](https://github.com/nself-org/nclaw/wiki/Architecture) — How the pieces fit together
+- [GitHub Issues](https://github.com/nself-org/nclaw/issues) — Bug reports and feature requests
 
 ## Reporting bugs
 
-Open a [GitHub Issue](https://github.com/nself-org/claw/issues/new) with:
+Open a [GitHub Issue](https://github.com/nself-org/nclaw/issues/new) with:
 
 - A clear description of the problem
 - Steps to reproduce
@@ -22,7 +22,7 @@ For security vulnerabilities, do NOT open a public issue. See [.github/SECURITY.
 
 ## Requesting features
 
-Open a [GitHub Issue](https://github.com/nself-org/claw/issues/new) labeled `enhancement`. Describe:
+Open a [GitHub Issue](https://github.com/nself-org/nclaw/issues/new) labeled `enhancement`. Describe:
 
 - The problem you want to solve
 - Your proposed solution
@@ -41,7 +41,7 @@ Open a [GitHub Issue](https://github.com/nself-org/claw/issues/new) labeled `enh
 ### Steps
 
 ```bash
-git clone https://github.com/nself-org/claw.git
+git clone https://github.com/nself-org/nclaw.git
 cd claw
 
 # Build libnclaw
@@ -58,7 +58,7 @@ nself plugin install ai claw mux voice browser
 nself build && nself start
 ```
 
-See the [full setup guide](https://github.com/nself-org/claw/wiki/Getting-Started) in the wiki.
+See the [full setup guide](https://github.com/nself-org/nclaw/wiki/Getting-Started) in the wiki.
 
 ## PR guidelines
 

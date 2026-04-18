@@ -13,7 +13,7 @@ By the end of this guide you will:
 - Rust stable toolchain for libnclaw (`rustc --version`). Install: [rustup.rs](https://rustup.rs/).
 - Apple Developer account ($99/yr) with a registered Bundle ID.
 - A physical iOS device (iOS 16+) or iOS Simulator.
-- A pro license key (ɳClaw Bundle, $0.99/mo) — see the [README](https://github.com/nself-org/claw#readme) Requirements section.
+- A pro license key (ɳClaw Bundle, $0.99/mo) — see the [README](https://github.com/nself-org/nclaw#readme) Requirements section.
 
 ## Steps
 
@@ -22,7 +22,7 @@ By the end of this guide you will:
 Clone the repo and pull Dart packages.
 
 ```bash
-git clone https://github.com/nself-org/claw.git
+git clone https://github.com/nself-org/nclaw.git
 cd claw/app
 flutter pub get
 ```

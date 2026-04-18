@@ -87,7 +87,7 @@ See `~/Sites/nself/.claude/docs/sport/F04-PLUGIN-INVENTORY-PRO.md` and `F06-BUND
 
 ## Resources
 
-- [GitHub: nself-org/claw](https://github.com/nself-org/claw) — this repo
+- [GitHub: nself-org/nclaw](https://github.com/nself-org/nclaw) — this repo
 - [claw.nself.org](https://claw.nself.org) — ɳClaw product page (separate `web/claw/` site)
 - [nself.org](https://nself.org) — ɳSelf platform
 - [nself.org/pricing](https://nself.org/pricing) — pro plugin licensing

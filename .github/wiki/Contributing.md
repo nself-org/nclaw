@@ -18,7 +18,7 @@ For a shorter overview, see [CONTRIBUTING.md](../../../CONTRIBUTING.md) at the r
 ### 2. Clone and set up
 
 ```bash
-git clone https://github.com/nself-org/claw.git
+git clone https://github.com/nself-org/nclaw.git
 cd claw
 ```
 
@@ -140,10 +140,10 @@ cd app && flutter analyze && flutter test
 5. Open a PR using the [PR template](../.github/PULL_REQUEST_TEMPLATE.md)
 6. A maintainer will review within a few days
 
-PRs that add new Pro plugin dependencies will not be accepted. The client must work with the currently-required plugins (`ai`, `claw`, `mux`) plus the optional ɳClaw-bundle plugins (`claw-web`, `voice`, `browser`, `google`, `notify`, `cron`). See [Plugin Requirements](https://github.com/nself-org/claw/wiki/Plugin-Requirements).
+PRs that add new Pro plugin dependencies will not be accepted. The client must work with the currently-required plugins (`ai`, `claw`, `mux`) plus the optional ɳClaw-bundle plugins (`claw-web`, `voice`, `browser`, `google`, `notify`, `cron`). See [Plugin Requirements](https://github.com/nself-org/nclaw/wiki/Plugin-Requirements).
 
 ---
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/nself-org/claw/issues). For security issues, see [SECURITY.md](../SECURITY.md) — do not open a public issue.
+Use [GitHub Issues](https://github.com/nself-org/nclaw/issues). For security issues, see [SECURITY.md](../SECURITY.md) — do not open a public issue.

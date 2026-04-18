@@ -79,7 +79,7 @@ See [backend/README.md](../../../backend/README.md) for the full self-hosting gu
 ## Clone the repo
 
 ```bash
-git clone https://github.com/nself-org/claw.git
+git clone https://github.com/nself-org/nclaw.git
 cd claw
 ```
 

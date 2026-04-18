@@ -1,8 +1,8 @@
 # ɳClaw
 
-[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/nself-org/claw/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/nself-org/nclaw/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![coverage](https://codecov.io/gh/nself-org/claw/branch/main/graph/badge.svg)](https://codecov.io/gh/nself-org/claw)
+[![coverage](https://codecov.io/gh/nself-org/nclaw/branch/main/graph/badge.svg)](https://codecov.io/gh/nself-org/nclaw)
 <!-- VERSION_BADGE -->
 
 Open-source AI assistant client for iOS, Android, macOS, and web. Powered by your own ɳSelf backend.
@@ -134,12 +134,12 @@ backend/          ɳSelf backend config for self-hosters
 
 ɳClaw ships from one Flutter codebase to five platforms, plus a Tauri desktop app and a macOS menu-bar daemon. The wiki has a per-platform build guide for each:
 
-- [iOS Build Guide](https://github.com/nself-org/claw/wiki/iOS-Build-Guide): Xcode 15+, signing, TestFlight, App Store
-- [Android Build Guide](https://github.com/nself-org/claw/wiki/Android-Build-Guide): Android Studio Hedgehog+, NDK, FCM, Play Console
-- [macOS Build Guide](https://github.com/nself-org/claw/wiki/macOS-Build-Guide): universal binary, notarization, DMG, Sparkle
-- [Web Build Guide](https://github.com/nself-org/claw/wiki/Web-Build-Guide): Flutter web, CanvasKit vs HTML, WASM / REST fallback for FFI
-- [Desktop Build Guide](https://github.com/nself-org/claw/wiki/Desktop-Build-Guide): Tauri (Linux deb / rpm / AppImage; Windows MSIX / installer)
-- [libnclaw Dev Guide](https://github.com/nself-org/claw/wiki/libnclaw-Dev-Guide): Rust FFI library workflow
+- [iOS Build Guide](https://github.com/nself-org/nclaw/wiki/iOS-Build-Guide): Xcode 15+, signing, TestFlight, App Store
+- [Android Build Guide](https://github.com/nself-org/nclaw/wiki/Android-Build-Guide): Android Studio Hedgehog+, NDK, FCM, Play Console
+- [macOS Build Guide](https://github.com/nself-org/nclaw/wiki/macOS-Build-Guide): universal binary, notarization, DMG, Sparkle
+- [Web Build Guide](https://github.com/nself-org/nclaw/wiki/Web-Build-Guide): Flutter web, CanvasKit vs HTML, WASM / REST fallback for FFI
+- [Desktop Build Guide](https://github.com/nself-org/nclaw/wiki/Desktop-Build-Guide): Tauri (Linux deb / rpm / AppImage; Windows MSIX / installer)
+- [libnclaw Dev Guide](https://github.com/nself-org/nclaw/wiki/libnclaw-Dev-Guide): Rust FFI library workflow
 
 For the fastest macOS dev loop:
 
@@ -172,23 +172,23 @@ Bundle pricing: the ɳClaw Bundle is $0.99/mo. ɳSelf+ ($49.99/yr) covers every 
 
 ## Backend Setup
 
-See [backend/README.md](backend/README.md) for the full self-hosting guide, including environment variable reference, plugin setup, and troubleshooting. Wiki: [Getting Started](https://github.com/nself-org/claw/wiki/Getting-Started).
+See [backend/README.md](backend/README.md) for the full self-hosting guide, including environment variable reference, plugin setup, and troubleshooting. Wiki: [Getting Started](https://github.com/nself-org/nclaw/wiki/Getting-Started).
 
 ## Documentation
 
-The [wiki](https://github.com/nself-org/claw/wiki) is the primary documentation surface. Key pages:
+The [wiki](https://github.com/nself-org/nclaw/wiki) is the primary documentation surface. Key pages:
 
-- [Architecture Deep Dive](https://github.com/nself-org/claw/wiki/Architecture-Deep-Dive): layers, data flow, plugin map, security
-- [AI Chat](https://github.com/nself-org/claw/wiki/AI-Chat): chat surface, streaming, attachments
-- [Memory](https://github.com/nself-org/claw/wiki/Memory): auto-topics, knowledge graph, search
-- [Personas](https://github.com/nself-org/claw/wiki/Personas): multi-persona setup
-- [Tool Calls](https://github.com/nself-org/claw/wiki/Tool-Calls): function calling, audit trail
-- [E2E Encryption](https://github.com/nself-org/claw/wiki/E2E-Encryption): threat model, key management
-- [Troubleshooting](https://github.com/nself-org/claw/wiki/Troubleshooting): common errors
+- [Architecture Deep Dive](https://github.com/nself-org/nclaw/wiki/Architecture-Deep-Dive): layers, data flow, plugin map, security
+- [AI Chat](https://github.com/nself-org/nclaw/wiki/AI-Chat): chat surface, streaming, attachments
+- [Memory](https://github.com/nself-org/nclaw/wiki/Memory): auto-topics, knowledge graph, search
+- [Personas](https://github.com/nself-org/nclaw/wiki/Personas): multi-persona setup
+- [Tool Calls](https://github.com/nself-org/nclaw/wiki/Tool-Calls): function calling, audit trail
+- [E2E Encryption](https://github.com/nself-org/nclaw/wiki/E2E-Encryption): threat model, key management
+- [Troubleshooting](https://github.com/nself-org/nclaw/wiki/Troubleshooting): common errors
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, code style, and PR guidelines. The [wiki](https://github.com/nself-org/claw/wiki) has detailed architecture and feature documentation.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, code style, and PR guidelines. The [wiki](https://github.com/nself-org/nclaw/wiki) has detailed architecture and feature documentation.
 
 ## License
 

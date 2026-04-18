@@ -55,6 +55,6 @@
 
 **External Links**
 
-- [GitHub: nself-org/claw](https://github.com/nself-org/claw)
+- [GitHub: nself-org/nclaw](https://github.com/nself-org/nclaw)
 - [claw.nself.org](https://claw.nself.org)
 - [nself.org/pricing](https://nself.org/pricing)

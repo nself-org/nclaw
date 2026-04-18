@@ -46,7 +46,7 @@ cat > "$OUTPUT_DIR/linux/latest.json" << LINUX
   "url": "${BASE_URL}/linux/Claw-${VERSION}-x86_64.AppImage",
   "sha256": "",
   "release_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "release_notes": "https://github.com/nself-org/claw/releases/tag/v${VERSION}"
+  "release_notes": "https://github.com/nself-org/nclaw/releases/tag/v${VERSION}"
 }
 LINUX
 echo "Generated: $OUTPUT_DIR/linux/latest.json"
