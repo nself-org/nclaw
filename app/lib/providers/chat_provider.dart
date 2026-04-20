@@ -446,8 +446,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     final data = await _post('$base/claw/projects', body: {
       'name': name,
-      'color': ?color,
-      'emoji': ?emoji,
+      if (color != null) 'color': color,
+      if (emoji != null) 'emoji': emoji,
       if (systemPrompt != null && systemPrompt.isNotEmpty)
         'system_prompt': systemPrompt,
     });
