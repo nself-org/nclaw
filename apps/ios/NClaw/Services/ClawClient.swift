@@ -10,7 +10,7 @@ import UIKit
 
 final class ClawClient: NSObject, URLSessionWebSocketDelegate {
     private static let serverURLKey = "nclaw_server_url"
-    private static let keychainService = "org.nself.nclaw"
+    private static let keychainService = "com.nself.claw"
     private static let accessTokenKey = "nclaw_access_token"
     private static let refreshTokenKey = "nclaw_refresh_token"
 

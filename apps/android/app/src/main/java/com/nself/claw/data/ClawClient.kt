@@ -1,4 +1,4 @@
-package org.nself.nclaw.data
+package com.nself.claw.data
 
 import android.content.Context
 import android.os.Handler
@@ -12,7 +12,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONArray
 import org.json.JSONObject
-import org.nself.nclaw.NClaw
+import com.nself.claw.NClaw
 import java.util.UUID
 
 class ClawClient(context: Context) {

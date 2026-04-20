@@ -1,4 +1,4 @@
-package org.nself.nclaw.ui
+package com.nself.claw.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.nself.nclaw.data.ClawClient
-import org.nself.nclaw.data.Message
+import com.nself.claw.data.ClawClient
+import com.nself.claw.data.Message
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
 

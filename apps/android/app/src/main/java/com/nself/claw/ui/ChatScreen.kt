@@ -1,4 +1,4 @@
-package org.nself.nclaw.ui
+package com.nself.claw.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +40,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.nself.nclaw.data.Message
+import com.nself.claw.data.Message
 
 private val NClawBackground = Color(0xFF0F0F1A)
 private val NClawAccent = Color(0xFF6366F1)

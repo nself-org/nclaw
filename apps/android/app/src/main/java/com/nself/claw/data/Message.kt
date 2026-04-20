@@ -1,4 +1,4 @@
-package org.nself.nclaw.data
+package com.nself.claw.data
 
 import java.util.UUID
 

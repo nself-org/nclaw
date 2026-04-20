@@ -1,12 +1,12 @@
 # nClaw ProGuard Rules
 
 # Keep NClaw native methods (libnclaw FFI)
--keepclasseswithmembernames class org.nself.nclaw.** {
+-keepclasseswithmembernames class com.nself.claw.** {
     native <methods>;
 }
 
 # Keep data classes used for JSON serialization
--keepclassmembers class org.nself.nclaw.data.** {
+-keepclassmembers class com.nself.claw.data.** {
     <fields>;
     <init>(...);
 }

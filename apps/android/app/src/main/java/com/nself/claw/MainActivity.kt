@@ -1,4 +1,4 @@
-package org.nself.nclaw
+package com.nself.claw
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,8 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import org.nself.nclaw.ui.ChatScreen
-import org.nself.nclaw.ui.SettingsScreen
+import com.nself.claw.ui.ChatScreen
+import com.nself.claw.ui.SettingsScreen
 
 private val NClawBackground = Color(0xFF0F0F1A)
 private val NClawAccent = Color(0xFF6366F1)

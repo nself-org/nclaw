@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "org.nself.nclaw"
+    namespace = "com.nself.claw"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "org.nself.nclaw"
+        applicationId = "com.nself.claw"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

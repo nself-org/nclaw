@@ -13,7 +13,7 @@ SwiftUI chat client for nClaw AI assistant. Connects to a self-hosted nSelf serv
 This scaffold does not include an `.xcodeproj` file. To build:
 
 1. Open Xcode and create a new project: File > New > Project > App (SwiftUI)
-2. Set the product name to `NClaw` and bundle identifier to `org.nself.nclaw`
+2. Set the product name to `NClaw` and bundle identifier to `com.nself.claw`
 3. Set the deployment target to iOS 17.0 / macOS 14.0
 4. Replace the generated source files with the files in `NClaw/`
 5. Build and run

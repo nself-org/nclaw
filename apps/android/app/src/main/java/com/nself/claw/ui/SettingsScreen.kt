@@ -1,4 +1,4 @@
-package org.nself.nclaw.ui
+package com.nself.claw.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import org.nself.nclaw.data.ClawClient
+import com.nself.claw.data.ClawClient
 
 private val NClawBackground = Color(0xFF0F0F1A)
 private val NClawAccent = Color(0xFF6366F1)
