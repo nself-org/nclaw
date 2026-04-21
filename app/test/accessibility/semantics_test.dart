@@ -55,7 +55,9 @@ void main() {
         ),
       );
 
-      final semanticsNode = tester.getSemantics(find.byType(Semantics).first);
+      final semanticsNode = tester.getSemantics(
+        find.bySemanticsLabel(RegExp('Design resources')),
+      );
       expect(semanticsNode.label, contains('Design resources'));
       expect(semanticsNode.hasFlag(SemanticsFlag.isButton), isTrue);
     });
