@@ -64,7 +64,7 @@ jobs:
             --wait
           xcrun stapler staple "nClaw-${GITHUB_REF_NAME#v}-macos.dmg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-artifacts
           path: |
@@ -130,7 +130,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           echo "Package .rpm for version $VERSION"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-android-artifacts
           path: |
@@ -162,7 +162,7 @@ jobs:
         run: |
           echo "Sign with signtool using certificate from secrets"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-artifacts
           path: app/build/windows/x64/runner/Release/*.msix
