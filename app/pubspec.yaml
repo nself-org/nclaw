@@ -11,6 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Localisation
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
   # UI
   cupertino_icons: ^1.0.8
   shimmer: ^3.0.0
