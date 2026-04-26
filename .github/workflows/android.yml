@@ -34,6 +34,12 @@ jobs:
         with:
           fetch-depth: 0  # Full history for git-based versionCode
 
+      - uses: actions/checkout@v4
+        with:
+          repository: nself-org/plugins-pro
+          path: plugins-pro
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:

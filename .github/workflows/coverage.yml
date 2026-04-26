@@ -21,6 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/checkout@v4
+        with:
+          repository: nself-org/plugins-pro
+          path: plugins-pro
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'

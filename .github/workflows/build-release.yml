@@ -19,6 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/checkout@v4
+        with:
+          repository: nself-org/plugins-pro
+          path: plugins-pro
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -41,6 +47,12 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nself-org/plugins-pro
+          path: plugins-pro
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-java@v4
         with:
@@ -72,6 +84,12 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nself-org/plugins-pro
+          path: plugins-pro
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: subosito/flutter-action@v2
         with:
