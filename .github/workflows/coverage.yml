@@ -12,6 +12,9 @@ on:
 env:
   COVERAGE_FLOOR: 30
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   flutter-coverage:
     name: Flutter coverage gate (nclaw)

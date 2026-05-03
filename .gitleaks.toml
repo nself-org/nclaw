@@ -60,17 +60,31 @@ regex = '''nself_pro_[a-zA-Z0-9]{32,}'''
 tags = ["nself", "license", "secret"]
 
 [allowlist]
-description = "Allow known test fixtures and documentation examples"
+description = "Allow known test fixtures, documentation examples, and verified false positives"
 paths = [
   '''.gitleaks.toml''',
   '''qa/gitleaks-acceptance-test\.md''',
   '''testdata/.*''',
   '''test/.*fixtures.*''',
   '''\.github/workflows/gitleaks\.yml''',
+  '''\.github/wiki/Changelog\.md''',
 ]
 regexes = [
   '''sk_live_FAKE_TEST_FOR_CI_GATE''',
   '''AKIA_FAKE_TEST_KEY_DO_NOT_USE''',
   '''AIza_FAKE_GOOGLE_KEY_DO_NOT_USE''',
   '''nself_pro_FAKE_TEST_KEY_DO_NOT_USE''',
+  # False positive: SQLite encryption key lookup constant (not a secret value)
+  # app/lib/services/encrypted_db_service.dart:29 — constant string used as FlutterSecureStorage key name
+  '''nclaw\.db\.passphrase\.v1''',
+  # False positive: XChaCha20-Poly1305 is a cipher suite name, not a secret
+  # .github/wiki/Changelog.md — appears in technical documentation describing encryption primitives
+  '''XChaCha20-Poly1305''',
+]
+# Fingerprint-based suppression for specific known false positive commits (gitleaks v8)
+commits = [
+  # encrypted_db_service.dart _passphraseKey constant — storage key name, not a secret
+  "670c936362bb0c1b574dd8882bfd1c49a1939b95",
+  # Changelog.md XChaCha20-Poly1305 cipher name in v0.9.x documentation
+  "a722d27b1d9cacfae46e7e6968138bb58557d538",
 ]
