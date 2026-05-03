@@ -9,6 +9,9 @@ on:
       - 'libs/libnclaw/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   # ============================================================
   # Rust tests — run on all platforms

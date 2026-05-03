@@ -11,6 +11,9 @@ on:
       - "app/pubspec.yaml"
       - "app/pubspec.lock"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   pub-get:
     strategy:

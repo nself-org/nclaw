@@ -9,6 +9,9 @@ on:
       - 'app/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   analyze:
     name: Analyze & Test
