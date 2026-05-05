@@ -54,7 +54,7 @@ jobs:
           path: plugins-pro
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
