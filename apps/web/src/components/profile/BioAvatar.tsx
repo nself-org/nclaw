@@ -105,7 +105,7 @@ export function BioAvatar(): React.ReactElement {
             height: AVATAR_SIZE,
             background: resolvedAvatarUrl
               ? undefined
-              : 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+              : 'linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%)',
           }}
           onMouseEnter={() => setIsAvatarHovered(true)}
           onMouseLeave={() => setIsAvatarHovered(false)}

@@ -9,8 +9,8 @@ import 'package:nself_claw/theme/brand_theme.dart';
 
 void main() {
   group('BrandColors tokens', () {
-    test('primary is nSelf indigo', () {
-      expect(BrandColors.primary, const Color(0xFF6366F1));
+    test('primary is nSelf sky-500', () {
+      expect(BrandColors.primary, const Color(0xFF0EA5E9));
     });
 
     test('all semantic colors are defined', () {

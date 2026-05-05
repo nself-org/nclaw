@@ -76,7 +76,7 @@ Edit `app/web/manifest.json` to enable Progressive Web App install:
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0F0F1A",
-  "theme_color": "#6366F1",
+  "theme_color": "#0EA5E9",
   "icons": [
     {"src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png"},
     {"src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png"}

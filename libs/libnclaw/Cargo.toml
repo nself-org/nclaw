@@ -6,7 +6,7 @@ description = "Shared types, protocol, and E2E encryption for nClaw clients"
 license = "MIT"
 
 [lib]
-crate-type = ["lib", "cdylib", "staticlib"]
+crate-type = ["lib"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

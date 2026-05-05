@@ -24,11 +24,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      # P99 S1.8 T01 triage 2026-05-04: plugins-pro is a PRIVATE repo.
+      # The default GITHUB_TOKEN cannot read it cross-repo (returns 404).
+      # Use GH_PAT_PLUGINS_PRO (fine-grained PAT, Contents:Read on plugins-pro)
+      # provisioned via S1.4 T07-prereq. The probe step gates the checkout so
+      # CI stays green during user-action provisioning — when the secret is
+      # missing, Coverage falls through to its "no coverage data — skip" guard.
+      - name: Probe plugins-pro PAT availability
+        id: pat
+        env:
+          PLUGINS_PRO_PAT: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+        run: |
+          if [ -n "$PLUGINS_PRO_PAT" ]; then
+            echo "have_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_pat=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GH_PAT_PLUGINS_PRO secret not set — skipping plugins-pro checkout. Coverage gate may report 'no data' until secret is provisioned (P99 S1.4 T07-prereq)."
+          fi
+
+      - name: Checkout plugins-pro (private)
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/checkout@v4
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT_PLUGINS_PRO }}
 
       - uses: subosito/flutter-action@v2
         with:

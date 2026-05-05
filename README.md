@@ -38,7 +38,7 @@ libnclaw is the single source of truth for types and protocol. All clients consu
 - **Docker** (for the ɳSelf backend)
 - **Xcode** (iOS/macOS builds) or **Android Studio** (Android builds)
 
-Pro plugins require a Pro tier license ($1.99/mo or $19.99/yr). See [nself.org/pricing](https://nself.org/pricing) for details.
+Pro plugins require the ɳClaw Bundle ($0.99/mo / $9.99/yr) or ɳSelf+ ($3.99/mo / $39.99/yr). See [nself.org/pricing](https://nself.org/pricing) for details.
 
 ## Quick Start
 
@@ -168,7 +168,7 @@ cd app && flutter pub get && flutter run -d macos
 | `claw-budget` | Pro | Budget / spending intelligence (per F06) |
 | `claw-news` | Pro | News digest and briefing (per F06) |
 
-Bundle pricing: the ɳClaw Bundle is $0.99/mo. ɳSelf+ ($49.99/yr) covers every bundle plus every nSelf app. See the [ɳClaw bundle](https://nself.org/pricing) for details. Bundle membership is canonical in `.claude/docs/sport/F06-BUNDLE-INVENTORY.md` (internal reference).
+Bundle pricing: the ɳClaw Bundle is $0.99/mo / $9.99/yr. ɳSelf+ ($3.99/mo / $39.99/yr) covers all 6 bundles plus every nSelf app. See the [ɳClaw bundle](https://nself.org/pricing) for details. Bundle membership is canonical in `.claude/docs/sport/F06-BUNDLE-INVENTORY.md` (internal reference).
 
 ## Backend Setup
 

@@ -12,7 +12,7 @@ import 'thread_list_screen.dart';
 
 /// 8 colour presets for projects.
 const _presetColors = <Color>[
-  Color(0xFF6366F1), // indigo — nSelf brand
+  Color(0xFF0EA5E9), // sky-500 — nSelf brand
   Color(0xFF3B82F6), // blue
   Color(0xFF22C55E), // green
   Color(0xFFEF4444), // red
@@ -24,7 +24,7 @@ const _presetColors = <Color>[
 
 /// Hex strings matching [_presetColors] in the same order.
 const _presetColorHexStrings = <String>[
-  '#6366F1', '#3B82F6', '#22C55E', '#EF4444',
+  '#0EA5E9', '#3B82F6', '#22C55E', '#EF4444',
   '#F97316', '#EAB308', '#A855F7', '#06B6D4',
 ];
 
@@ -41,17 +41,17 @@ const _emojis = <String>[
 // ---------------------------------------------------------------------------
 
 Color _parseProjectColor(String? hex) {
-  if (hex == null || hex.isEmpty) return const Color(0xFF6366F1);
+  if (hex == null || hex.isEmpty) return const Color(0xFF0EA5E9);
   try {
     return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
   } catch (_) {
-    return const Color(0xFF6366F1);
+    return const Color(0xFF0EA5E9);
   }
 }
 
 String _hexColor(Color c) {
   final idx = _presetColors.indexOf(c);
-  return idx >= 0 ? _presetColorHexStrings[idx] : '#6366F1';
+  return idx >= 0 ? _presetColorHexStrings[idx] : '#0EA5E9';
 }
 
 String _relativeTime(DateTime dt) {

@@ -341,7 +341,7 @@ class _TopicNodeTile extends ConsumerWidget {
     if (cleaned.length == 6) {
       return Color(int.parse('FF$cleaned', radix: 16));
     }
-    return const Color(0xFF6366F1);
+    return const Color(0xFF0EA5E9);
   }
 
   void _showTopicOptions(BuildContext context, WidgetRef ref) {
@@ -384,7 +384,7 @@ class _TopicNodeTile extends ConsumerWidget {
 
   void _showColorPicker(BuildContext context, WidgetRef ref) {
     final colors = [
-      '#6366F1', '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
+      '#0EA5E9', '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
       '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#64748B',
     ];
     showModalBottomSheet(

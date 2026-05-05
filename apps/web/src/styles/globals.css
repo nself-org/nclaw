@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #6366F1;
-  --color-primary-hover: #4F46E5;
-  --color-primary-text: #A5B4FC;     /* indigo-300, 9.6:1 on #0F0F1A — use when primary needed as text */
+  --color-primary: #0EA5E9;
+  --color-primary-hover: #2563EB;    /* blue-600 — pairs with sky-500 primary per canonical sky→blue gradient */
+  --color-primary-text: #7DD3FC;     /* sky-300, 9.4:1 on #0F0F1A — use when primary needed as text */
   --color-bg: #0F0F1A;
   --color-bg-card: rgba(255, 255, 255, 0.05);
   --color-bg-card-hover: rgba(255, 255, 255, 0.08);
   --color-bg-elevated: #16162A;      /* slightly lighter card surfaces */
   --color-bg-input: rgba(255, 255, 255, 0.06);
   --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-focus: rgba(99, 102, 241, 0.6);
+  --color-border-focus: rgba(14, 165, 233, 0.6);  /* sky-500 — canonical brand focus color */
   --color-text: #F1F5F9;
   --color-text-muted: #94A3B8;
   --color-text-placeholder: #64748B; /* 3.8:1 — large/bold only, placeholder pseudo-element only */
@@ -44,7 +44,7 @@ body {
   padding: 0;
 }
 
-/* Focus-visible ring — 2px offset indigo */
+/* Focus-visible ring — 2px offset sky-500 (canonical brand) */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;

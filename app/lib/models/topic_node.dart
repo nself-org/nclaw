@@ -8,7 +8,7 @@ class TopicNode {
   final String? parentId;
   final String path; // ltree path e.g. "root.work.project_a"
   final int depth;
-  final String? color; // hex color e.g. "#6366F1"
+  final String? color; // hex color e.g. "#0EA5E9"
   final String? icon; // material icon name or emoji
   final int unreadCount;
   final int messageCount;

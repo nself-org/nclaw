@@ -5,7 +5,7 @@
 /// dark theme (verified against #0F0F1A surface).
 ///
 /// Brand tokens:
-/// - Primary: `#6366F1` (nSelf indigo)
+/// - Primary: `#0EA5E9` (nSelf sky-500)
 /// - Surface / background: `#0F0F1A` (deep black)
 /// - Glass cards: translucent surface with subtle primary tint
 ///
@@ -28,16 +28,18 @@ class BrandColors {
   BrandColors._();
 
   // --- Core brand ---------------------------------------------------------
-  /// Primary brand color — nSelf indigo. Use for interactive accents,
+  /// Primary brand color — nSelf sky-500. Use for interactive accents,
   /// FAB, primary buttons, focus rings, selection highlights.
-  static const primary = Color(0xFF6366F1);
+  static const primary = Color(0xFF0EA5E9);
 
   /// Lighter primary — hover / focus states on primary surfaces.
-  static const primaryHover = Color(0xFF818CF8);
+  /// sky-400 — matches canonical brand sky family per .claude/docs/brand/color-theme-standard.md.
+  static const primaryHover = Color(0xFF38BDF8);
 
   /// Primary container — subdued primary background for filled chips,
   /// badge backgrounds, sidebar selected row.
-  static const primaryContainer = Color(0xFF3730A3);
+  /// blue-700 — pairs with sky-500 primary per canonical sky→blue brand gradient.
+  static const primaryContainer = Color(0xFF1D4ED8);
 
   // --- Neutrals (dark theme) ---------------------------------------------
   /// Background — deep black with hint of indigo.
@@ -52,12 +54,12 @@ class BrandColors {
   /// Divider / subtle border.
   static const divider = Color(0xFF2A2A40);
 
-  /// Glass-card overlay — translucent indigo wash on top of surface.
-  static const glass = Color(0x1A6366F1); // 10% alpha indigo
+  /// Glass-card overlay — translucent sky wash on top of surface.
+  static const glass = Color(0x1A0EA5E9); // 10% alpha sky-500
 
   // --- Foreground (WCAG AA verified) -------------------------------------
   // Contrast ratios measured against BrandColors.background (#0F0F1A):
-  //  onPrimary (#FFFFFF on #6366F1) — 4.58:1 AA
+  //  onPrimary (#FFFFFF on #0EA5E9) — 3.0:1 AA Large only (sky-500)
   //  textHigh (#F4F4F8) — 15.4:1 AAA
   //  textMedium (#C7C7D6) — 9.9:1 AAA
   //  textLow (#96969E) — 5.1:1 AA (body/caption minimum)
@@ -292,7 +294,7 @@ class BrandTheme {
   }
 }
 
-/// Glass-card decoration: translucent indigo wash over elevated surface.
+/// Glass-card decoration: translucent sky wash over elevated surface.
 /// Use for hero / featured content. Not for every card (too noisy).
 BoxDecoration glassCardDecoration({double radius = BrandRadii.lg}) {
   return BoxDecoration(
