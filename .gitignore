@@ -171,6 +171,7 @@ captures/
 .vscode/*
 .idea/
 .codex/
+.ai/
 .cursor/
 .aider/
 .aider.chat.history.md
