@@ -2,6 +2,26 @@
 
 All notable changes to nClaw clients are documented here.
 
+## v1.2.0 — PENDING (v1.1.0 ecosystem release)
+
+Minor release. ɳClaw bundle updated to 14 plugins. New mcp and knowledge-base plugins. claw.nself.org multi-tenant managed launch.
+
+### Added
+
+- **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) now installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.
+- **`knowledge-base` plugin integration**: persistent knowledge base plugin for long-term memory extraction and retrieval.
+- **claw.nself.org SaaS launch**: multi-tenant managed ɳClaw available at `claw.nself.org` (web/nclaw) for users who don't want to self-host.
+- **`nself bundle install claw` support**: install all 14 ɳClaw bundle plugins (ai, claw, claw-web, mux, voice, browser, google, notify, cron, claw-budget, claw-news, mcp, knowledge-base + free companion tokens) in one command.
+- **Bundle pricing UI**: in-app upgrade prompt shows ɳClaw bundle at $0.99/mo / $9.99/yr.
+
+### Changed
+
+- ɳClaw bundle expanded from 12 to 14 plugins (added mcp, knowledge-base).
+- Minimum nSelf CLI version: v1.1.0.
+- libnclaw: protocol version bumped to match new plugin capabilities.
+
+---
+
 ## Unreleased
 
 ### Fixed
