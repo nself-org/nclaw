@@ -2,7 +2,7 @@
 
 All notable changes to nClaw clients are documented here.
 
-## v1.2.0 — PENDING (v1.1.0 ecosystem release)
+## v1.2.0 — 2026-05-15
 
 Minor release. ɳClaw bundle updated to 14 plugins. New mcp and knowledge-base plugins. claw.nself.org multi-tenant managed launch.
 
