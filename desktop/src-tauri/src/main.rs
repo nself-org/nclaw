@@ -4,6 +4,7 @@
 mod windows;
 
 use tauri::{Manager, WindowEvent};
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
 fn open_settings_cmd(app: tauri::AppHandle) -> Result<(), String> {
@@ -18,6 +19,7 @@ fn toggle_debug_cmd(app: tauri::AppHandle) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![open_settings_cmd, toggle_debug_cmd])
         .on_window_event(|window, event| {
             if window.label() == "main" {

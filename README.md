@@ -192,6 +192,10 @@ The [wiki](https://github.com/nself-org/claw/wiki) is the primary documentation 
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, code style, and PR guidelines. The [wiki](https://github.com/nself-org/claw/wiki) has detailed architecture and feature documentation.
 
+## Migration
+
+Migrating from v1.1.0? See [migration guide](.github/wiki/migration/v1.1.0-to-v1.1.1.md). No action required — v1.1.0 had no production users.
+
 ## License
 
 MIT, free for personal and commercial use. The ɳSelf Pro plugins required by the backend are separately licensed; see [nself.org/pricing](https://nself.org/pricing).

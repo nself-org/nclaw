@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{CoreError, LlmError};
 

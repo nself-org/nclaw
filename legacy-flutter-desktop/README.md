@@ -1,27 +1,29 @@
-# legacy-flutter-desktop/
+# Legacy Flutter Desktop — v1.1.0
 
-Frozen v1.1.0 desktop artifacts. Kept for migration reference only.
+**Status:** Frozen as of 2026-05-11. Read-only historical reference. Will be removed in v1.2.0.
 
-## Status
+This directory contains the v1.1.0 Flutter desktop client for ɳClaw. v1.1.1 replaces it with Tauri 2 for better native performance and ecosystem support.
 
-Archived as of v1.1.1 (P101 S12.T02 — monorepo restructure 2026-05-13).
-**No production users on v1.1.0 desktop.** No migration burden.
+## Why Archived
 
-## Contents
+- Flutter desktop is maintained separately in the Dart ecosystem
+- Tauri 2 + React delivers better macOS, Linux, and Windows UX
+- Smaller binary footprint and faster cold start
 
-- `swift-daemon/` — macOS menu-bar Swift daemon. Originally shipped as the local file/clipboard/screenshot bridge between server and machine. Superseded by Tauri 2 desktop (`../desktop/`) which embeds these capabilities natively via tauri plugins.
+## Build Instructions (Historical)
 
-## Removal schedule
+If you need to rebuild the v1.1.0 Flutter desktop client:
 
-Per [architecture-decisions.md](../.claude/phases/current/p101-storm/architecture-decisions.md) Decision #8:
+```bash
+cd legacy-flutter-desktop
+flutter pub get
+flutter build macos --release    # macOS
+flutter build linux --release    # Linux
+flutter build windows --release  # Windows
+```
 
-- **v1.1.1** — archived here, no longer built.
-- **v1.2.0** — directory removed entirely.
+Requires Flutter 3.x and platform-specific SDKs (Xcode, LLVM, Visual Studio).
 
-## Why archived (not deleted now)
+## Migration Path
 
-Source-level reference during the Tauri 2 port. Once feature parity is confirmed in `desktop/` (S13–S15), this entire directory deletes in v1.2.0.
-
-## Do NOT modify
-
-This directory is frozen. New desktop work belongs in `../desktop/`.
+v1.1.1 and later use Tauri 2. See [migration guide](../.github/wiki/migration/v1.1.0-to-v1.1.1.md).

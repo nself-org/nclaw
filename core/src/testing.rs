@@ -55,40 +55,12 @@ impl Database for InMemoryDb {
         Ok(data.clone())
     }
 
-    async fn transaction<F, T>(&self, f: F) -> Result<T, DbError>
-    where
-        F: for<'txn> Fn(&'txn dyn Tx) + Send,
-        T: Send,
-    {
-        let tx = InMemoryTx {
-            db: self.data.clone(),
-        };
-        f(&tx);
-        Err(DbError::TransactionFailed("stub tx".into()))
-    }
-
     async fn migrate(&self, _version: u32) -> Result<(), DbError> {
         Ok(())
     }
 
     async fn health_check(&self) -> Result<(), DbError> {
         Ok(())
-    }
-}
-
-struct InMemoryTx {
-    db: Arc<Mutex<Vec<Row>>>,
-}
-
-#[async_trait::async_trait]
-impl Tx for InMemoryTx {
-    async fn execute(&self, _sql: &str, _params: &[Value]) -> Result<u64, DbError> {
-        Ok(0)
-    }
-
-    async fn query(&self, _sql: &str, _params: &[Value]) -> Result<Vec<Row>, DbError> {
-        let data = self.db.lock().unwrap();
-        Ok(data.clone())
     }
 }
 

@@ -16,8 +16,8 @@ type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// LLM provider backend — handles generation, embeddings, and streaming.
 pub trait LlmBackend: Send + Sync {
-    fn generate(&self, prompt: &str, opts: GenOpts) -> BoxFuture<Result<TokenStream, LlmError>>;
-    fn embed(&self, text: &str) -> BoxFuture<Result<Vec<f32>, LlmError>>;
+    fn generate(&self, prompt: &str, opts: GenOpts) -> BoxFuture<'_, Result<TokenStream, LlmError>>;
+    fn embed(&self, text: &str) -> BoxFuture<'_, Result<Vec<f32>, LlmError>>;
     fn supports_streaming(&self) -> bool;
     fn provider(&self) -> &str;
 }
@@ -40,10 +40,10 @@ pub struct TokenStream {
 // ============================================================================
 
 pub trait Database: Send + Sync {
-    fn execute(&self, sql: &str, params: &[Value]) -> BoxFuture<Result<u64, DbError>>;
-    fn query(&self, sql: &str, params: &[Value]) -> BoxFuture<Result<Vec<Row>, DbError>>;
-    fn migrate(&self, version: u32) -> BoxFuture<Result<(), DbError>>;
-    fn health_check(&self) -> BoxFuture<Result<(), DbError>>;
+    fn execute(&self, sql: &str, params: &[Value]) -> BoxFuture<'_, Result<u64, DbError>>;
+    fn query(&self, sql: &str, params: &[Value]) -> BoxFuture<'_, Result<Vec<Row>, DbError>>;
+    fn migrate(&self, version: u32) -> BoxFuture<'_, Result<(), DbError>>;
+    fn health_check(&self) -> BoxFuture<'_, Result<(), DbError>>;
 }
 
 pub enum Value {
@@ -61,14 +61,14 @@ pub type Row = HashMap<String, Value>;
 // ============================================================================
 
 pub trait SyncEngine: Send + Sync {
-    fn push(&self, changes: &[Change]) -> BoxFuture<Result<Vec<Conflict>, SyncError>>;
-    fn pull(&self) -> BoxFuture<Result<Vec<Change>, SyncError>>;
-    fn sync(&self) -> BoxFuture<Result<SyncState, SyncError>>;
+    fn push(&self, changes: &[Change]) -> BoxFuture<'_, Result<Vec<Conflict>, SyncError>>;
+    fn pull(&self) -> BoxFuture<'_, Result<Vec<Change>, SyncError>>;
+    fn sync(&self) -> BoxFuture<'_, Result<SyncState, SyncError>>;
     fn resolve_conflict(
         &self,
         conflict: &Conflict,
         strategy: MergeStrategy,
-    ) -> BoxFuture<Result<(), SyncError>>;
+    ) -> BoxFuture<'_, Result<(), SyncError>>;
 }
 
 pub struct Change {
@@ -104,11 +104,11 @@ pub struct SyncState {
 // ============================================================================
 
 pub trait Vault: Send + Sync {
-    fn set(&self, key: &str, value: &[u8]) -> BoxFuture<Result<(), VaultError>>;
-    fn get(&self, key: &str) -> BoxFuture<Result<Vec<u8>, VaultError>>;
-    fn delete(&self, key: &str) -> BoxFuture<Result<(), VaultError>>;
-    fn keys(&self) -> BoxFuture<Result<Vec<String>, VaultError>>;
-    fn rotate_keys(&self) -> BoxFuture<Result<(), VaultError>>;
+    fn set(&self, key: &str, value: &[u8]) -> BoxFuture<'_, Result<(), VaultError>>;
+    fn get(&self, key: &str) -> BoxFuture<'_, Result<Vec<u8>, VaultError>>;
+    fn delete(&self, key: &str) -> BoxFuture<'_, Result<(), VaultError>>;
+    fn keys(&self) -> BoxFuture<'_, Result<Vec<String>, VaultError>>;
+    fn rotate_keys(&self) -> BoxFuture<'_, Result<(), VaultError>>;
 }
 
 // ============================================================================
@@ -116,9 +116,9 @@ pub trait Vault: Send + Sync {
 // ============================================================================
 
 pub trait Mux: Send + Sync {
-    fn classify(&self, content: &str) -> BoxFuture<Result<Classification, MuxError>>;
-    fn extract_entities(&self, content: &str) -> BoxFuture<Result<Entities, MuxError>>;
-    fn route(&self, content: &str, context: &str) -> BoxFuture<Result<Route, MuxError>>;
+    fn classify(&self, content: &str) -> BoxFuture<'_, Result<Classification, MuxError>>;
+    fn extract_entities(&self, content: &str) -> BoxFuture<'_, Result<Entities, MuxError>>;
+    fn route(&self, content: &str, context: &str) -> BoxFuture<'_, Result<Route, MuxError>>;
 }
 
 pub struct Classification {
@@ -147,10 +147,10 @@ pub struct Route {
 pub trait Plugin: Send + Sync {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
-    fn init(&mut self, config: &PluginConfig) -> BoxFuture<Result<(), PluginError>>;
-    fn execute(&self, capability: &str, input: &Value) -> BoxFuture<Result<Value, PluginError>>;
-    fn shutdown(&self) -> BoxFuture<Result<(), PluginError>>;
-    fn health_check(&self) -> BoxFuture<Result<(), PluginError>>;
+    fn init(&mut self, config: &PluginConfig) -> BoxFuture<'_, Result<(), PluginError>>;
+    fn execute(&self, capability: &str, input: &Value) -> BoxFuture<'_, Result<Value, PluginError>>;
+    fn shutdown(&self) -> BoxFuture<'_, Result<(), PluginError>>;
+    fn health_check(&self) -> BoxFuture<'_, Result<(), PluginError>>;
 }
 
 pub struct PluginConfig {

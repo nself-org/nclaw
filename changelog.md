@@ -2,6 +2,14 @@
 
 All notable changes to nClaw are documented here.
 
+## [1.1.1] — 2026-05-13
+
+### Architecture
+
+- **Desktop platform swap:** Flutter desktop → Tauri 2 + React + Vite for better native performance and smaller binary footprint
+- Mobile remains on Flutter (iOS, Android)
+- See [migration guide](.github/wiki/migration/v1.1.0-to-v1.1.1.md) for details
+
 ## [1.0.0] — 2026-03-29
 
 Initial public release of nClaw — open-source AI assistant client for iOS, Android, macOS, and web, powered by a self-hosted nSelf backend.

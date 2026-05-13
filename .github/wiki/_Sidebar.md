@@ -5,6 +5,10 @@
 - [Home](Home)
 - [Developer Setup Guide](dev-setup)
 
+## Migration
+
+- [v1.1.0 to v1.1.1](migration/v1.1.0-to-v1.1.1)
+
 ## Build
 
 - [Build from Source](build/README)
@@ -34,3 +38,7 @@
 ## Protocol
 
 - [Sync Specification](protocol/sync)
+
+## Contributing
+
+- [Adding a Model](contributing/adding-a-model)
