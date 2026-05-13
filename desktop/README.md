@@ -1,56 +1,31 @@
-# nClaw Desktop Daemon
+# nclaw/desktop/
 
-macOS menu bar app that acts as a local bridge between the nself-claw server and the user's machine. Provides file access, shell execution, clipboard, screenshot, and browser integration through a local HTTP server and WebSocket connection.
+Tauri 2 desktop app — React + Vite + Tailwind frontend, Rust glue in `src-tauri/`.
 
-## Requirements
+Per [architecture-decisions.md](../.claude/phases/current/p101-storm/architecture-decisions.md) Decision #1, desktop is Tauri 2 (Flutter desktop archived in `../legacy-flutter-desktop/`).
 
-- macOS 13.0+ (Ventura)
-- Xcode 15+ or Swift 5.9+ toolchain
+## Layout (current)
+
+```text
+desktop/
+└── src-tauri/        — Tauri 2 Rust backend (port of v1.1.0 nself-companion menu-bar app)
+```
+
+`src-ui/` (React + Vite + Tailwind) lands in S13–S14.
 
 ## Build
 
 ```bash
-cd claw/desktop
-swift build
+cd desktop/src-tauri
+cargo tauri dev      # dev
+cargo tauri build    # release
 ```
 
-## Run
+## Bridge to core/
 
-```bash
-swift run nClaw
-```
+`src-tauri/Cargo.toml` consumes `../../core/` as a workspace dependency once `core/` exposes the shared types (S13). Today it embeds its own types pending consolidation.
 
-Or open in Xcode and run the nClaw scheme.
+## What changed
 
-## Architecture
-
-- **Local HTTP Server** on `127.0.0.1:7710` using Network.framework (NWListener). No third-party dependencies.
-- **WebSocket Client** to nself-claw server using URLSessionWebSocketTask (built-in).
-- **Menu Bar UI** using SwiftUI MenuBarExtra (macOS 13+).
-- **Login Item** via SMAppService.
-
-## Security
-
-- HTTP server binds to localhost only. Not accessible from the network.
-- Optional bearer token authentication for HTTP endpoints.
-- All file operations sandboxed to user-configured directories (defaults to ~/Documents).
-- Shell commands require explicit user approval via native system dialog.
-- JWT tokens stored in macOS Keychain.
-
-## Endpoints
-
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | /health | Health check (no auth required) |
-| GET | /capabilities | Device capability report |
-| POST | /files/read | Read file content |
-| POST | /files/write | Write file content |
-| POST | /files/list | List directory contents |
-| POST | /files/delete | Delete file |
-| POST | /files/mkdir | Create directory |
-| POST | /shell/exec | Execute shell command (requires approval) |
-| GET | /clipboard/read | Read clipboard |
-| POST | /clipboard/write | Write to clipboard |
-| POST | /screenshot | Capture screen (returns base64 PNG) |
-| POST | /browser/navigate | Navigate browser (stub) |
-| POST | /browser/execute | Execute browser script (stub) |
+- v1.1.0: this slot was Swift menu-bar daemon (now at `../legacy-flutter-desktop/swift-daemon/`).
+- v1.1.1: replaced by Tauri 2 (P101 S12.T02 monorepo restructure). Tauri scaffold moved from `apps/desktop/src-tauri/` to `desktop/src-tauri/`.
