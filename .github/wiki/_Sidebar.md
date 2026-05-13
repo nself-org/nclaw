@@ -5,6 +5,15 @@
 - [Home](Home)
 - [Developer Setup Guide](dev-setup)
 
+## Build
+
+- [Build from Source](build/README)
+  - [macOS](build/macos)
+  - [Windows](build/windows)
+  - [Linux](build/linux)
+  - [iOS](build/ios)
+  - [Android](build/android)
+
 ## Architecture
 
 - [ARCHITECTURE](ARCHITECTURE)
