@@ -5,6 +5,7 @@
 
 use crate::error::{DbError, LlmError, MuxError, PluginError, SyncError, VaultError};
 use std::collections::HashMap;
+use std::result::Result;
 
 // ============================================================================
 // LLM Backend
@@ -44,6 +45,7 @@ pub trait Database: Send + Sync {
     async fn health_check(&self) -> Result<(), DbError>;
 }
 
+#[derive(Clone)]
 pub enum Value {
     Text(String),
     Integer(i64),

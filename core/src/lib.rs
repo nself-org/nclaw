@@ -4,6 +4,8 @@ pub mod backend;
 pub mod crypto;
 pub mod llm;
 pub mod device;
+pub mod tier;
+pub mod registry;
 pub mod error;
 pub mod logging;
 pub mod plugin;
