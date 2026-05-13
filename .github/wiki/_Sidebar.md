@@ -30,3 +30,7 @@
   - [0010 — Sync Direction](adr/0010-sync-direction)
   - [0011 — Plugin Integration](adr/0011-plugin-integration)
   - [0012 — Versioning](adr/0012-versioning)
+
+## Protocol
+
+- [Sync Specification](protocol/sync)
