@@ -142,5 +142,8 @@ async fn test_stream_backpressure_error() {
             Some(_) => {} // Token events while channel drains
         }
     }
-    assert!(backpressure_hit, "backpressure Error must be emitted for slow consumers");
+    assert!(
+        backpressure_hit,
+        "backpressure Error must be emitted for slow consumers"
+    );
 }

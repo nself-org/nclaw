@@ -11,7 +11,15 @@
 //!   NCLAW_TEST_GGUF_PATH=/path/to/model.gguf cargo test --features cpu \
 //!       --test llm_llamacpp_smoke
 
-#[cfg(all(test, any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan")))]
+#[cfg(all(
+    test,
+    any(
+        feature = "cpu",
+        feature = "metal",
+        feature = "cuda",
+        feature = "vulkan"
+    )
+))]
 mod llamacpp_smoke {
     use libnclaw::backend::{GenOpts, LlmBackend};
     use libnclaw::llm::backend::llamacpp::LlamaCpp;
@@ -78,7 +86,12 @@ mod llamacpp_smoke {
 
 #[cfg(all(
     test,
-    not(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan"))
+    not(any(
+        feature = "cpu",
+        feature = "metal",
+        feature = "cuda",
+        feature = "vulkan"
+    ))
 ))]
 mod llamacpp_stub_smoke {
     use libnclaw::llm::backend::llamacpp::LlamaCppBackend;

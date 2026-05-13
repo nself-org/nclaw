@@ -53,6 +53,10 @@ fn main() {
             commands::settings::set_setting,
             commands::settings::vault_repair_device,
             commands::settings::test_sync_connection,
+            commands::theme::set_window_theme,
+            commands::topics::list_topics,
+            commands::topics::move_topic,
+            commands::topics::search,
         ])
         .menu(menu::build_app_menu)
         .on_menu_event(|app, event| {

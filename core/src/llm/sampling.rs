@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SamplingParams {
-    pub temperature: f32,        // 0.0–2.0
-    pub top_p: f32,              // 0.0–1.0
-    pub top_k: u32,              // 0 = disabled
-    pub repeat_penalty: f32,     // 1.0 = none
+    pub temperature: f32,    // 0.0–2.0
+    pub top_p: f32,          // 0.0–1.0
+    pub top_k: u32,          // 0 = disabled
+    pub repeat_penalty: f32, // 1.0 = none
     pub max_tokens: u32,
     pub stop_sequences: Vec<String>,
     pub mirostat: Option<MirostatConfig>,
@@ -14,9 +14,9 @@ pub struct SamplingParams {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MirostatConfig {
-    pub mode: u8,        // 0 = off, 1 = v1, 2 = v2
-    pub tau: f32,        // target perplexity
-    pub eta: f32,        // learning rate
+    pub mode: u8, // 0 = off, 1 = v1, 2 = v2
+    pub tau: f32, // target perplexity
+    pub eta: f32, // learning rate
 }
 
 impl Default for SamplingParams {
@@ -36,7 +36,10 @@ impl Default for SamplingParams {
 impl SamplingParams {
     pub fn validate(&self) -> Result<(), String> {
         if !(0.0..=2.0).contains(&self.temperature) {
-            return Err(format!("temperature must be in [0.0, 2.0], got {}", self.temperature));
+            return Err(format!(
+                "temperature must be in [0.0, 2.0], got {}",
+                self.temperature
+            ));
         }
         if !(0.0..=1.0).contains(&self.top_p) {
             return Err(format!("top_p must be in [0.0, 1.0], got {}", self.top_p));
@@ -229,7 +232,10 @@ mod tests {
         let json = serde_json::to_string(&original).unwrap();
         let deserialized: SamplingParams = serde_json::from_str(&json).unwrap();
         assert_eq!(original.temperature, deserialized.temperature);
-        assert_eq!(original.mirostat.unwrap().mode, deserialized.mirostat.unwrap().mode);
+        assert_eq!(
+            original.mirostat.unwrap().mode,
+            deserialized.mirostat.unwrap().mode
+        );
     }
 
     #[test]

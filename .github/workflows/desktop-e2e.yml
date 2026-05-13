@@ -1,0 +1,36 @@
+name: Desktop E2E
+on:
+  pull_request:
+    paths: ['nclaw/desktop/**']
+  push:
+    branches: [main]
+    paths: ['nclaw/desktop/**']
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+      - name: Install deps
+        working-directory: nclaw/desktop
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: nclaw/desktop
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E
+        working-directory: nclaw/desktop
+        run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: nclaw/desktop/playwright-report/

@@ -28,8 +28,7 @@ fn test_lru_eviction_respects_currently_loaded() {
     let now = chrono::Utc::now();
     for (i, entry) in cache.list_installed().iter().enumerate() {
         if let Some(cached_entry) = cache.index.get_mut(&entry.id) {
-            cached_entry.last_used_at =
-                now - chrono::Duration::hours((5 - i as i64 - 1) * 1);
+            cached_entry.last_used_at = now - chrono::Duration::hours((5 - i as i64 - 1) * 1);
         }
     }
     cache.persist_index().unwrap();
@@ -44,11 +43,7 @@ fn test_lru_eviction_respects_currently_loaded() {
     assert!(!evicted.contains(&"model-3".to_string()));
 
     // Verify remaining cache size
-    let remaining_size: u64 = cache
-        .list_installed()
-        .iter()
-        .map(|e| e.size_mb)
-        .sum();
+    let remaining_size: u64 = cache.list_installed().iter().map(|e| e.size_mb).sum();
     assert!(remaining_size <= 2048);
 }
 
@@ -125,9 +120,7 @@ fn test_verify_all_size_mismatch() {
     cache.persist_index().unwrap();
 
     // Create file with 512MB (half expected size)
-    let file_path = models_dir
-        .join(".nclaw/models")
-        .join("model-1.gguf");
+    let file_path = models_dir.join(".nclaw/models").join("model-1.gguf");
     fs::write(&file_path, vec![0; 512 * 1024 * 1024]).unwrap();
 
     // Verify all

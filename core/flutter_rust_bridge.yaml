@@ -1,6 +1,30 @@
-# flutter_rust_bridge codegen config for libnclaw
-rust_crate_dir: .
-input: src/types.rs
-output: ../mobile/lib/bindings/
-package_name: nclaw
-dart_package_name: nclaw
+# flutter_rust_bridge codegen configuration
+# Generates Dart FFI bindings from Rust api.rs
+
+rust_input:
+  crate: libnclaw
+  # Only generate from the api module (not the full lib.rs)
+  path: src/api.rs
+
+dart_output:
+  path: ../mobile/lib/src/rust/
+
+dart_3: true
+
+# C header output (for iOS/macOS frameworks)
+c_output:
+  ios: ../mobile/ios/Runner/bridge_generated.h
+  macos: ../mobile/macos/Runner/bridge_generated.h
+
+# Rust root relative to Dart project
+rust_root: .
+
+# Enable all Dart features
+features:
+  - use_dart_only_types
+
+# Codegen mode: release for faster builds
+code_gen_mode: release
+
+# Skip FFI stub generation in the main C file
+skip_add_mod_to_pubspec: false

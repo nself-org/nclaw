@@ -47,10 +47,7 @@ pub struct TierOverride {
 fn is_apple_pro_max_ultra(probe: &DeviceProbe) -> bool {
     if probe.apple_silicon {
         let brand = &probe.cpu_brand;
-        if brand.contains("Pro")
-            || brand.contains("Max")
-            || brand.contains("Ultra")
-        {
+        if brand.contains("Pro") || brand.contains("Max") || brand.contains("Ultra") {
             return true;
         }
         // Fallback: UMA + high core count = likely Pro or better
@@ -136,8 +133,8 @@ pub fn classify_tier(probe: &DeviceProbe, ovr: &TierOverride) -> Tier {
 
     // --- T4 check (highest; must come before T3 so we can cap correctly) ---
     // Condition: RAM ≥ 64 GB AND (VRAM ≥ 16 GB OR Apple Silicon Max/Ultra)
-    let t4_conditions = ram >= 64 * 1024
-        && (has_vram_at_least(probe, 16 * 1024) || is_pro_max_ultra);
+    let t4_conditions =
+        ram >= 64 * 1024 && (has_vram_at_least(probe, 16 * 1024) || is_pro_max_ultra);
     if t4_conditions && !is_mobile {
         return if ovr.allow_t4 { Tier::T4 } else { Tier::T3 };
     }
@@ -156,7 +153,11 @@ pub fn classify_tier(probe: &DeviceProbe, ovr: &TierOverride) -> Tier {
             // Non-flagship mobile: 5–8 GB → T1; > 8 GB still capped at T2
             // (future high-RAM Android tablets without a flagship SoC stay at T1
             // to avoid over-promising model performance)
-            if ram <= 8 * 1024 { Tier::T1 } else { Tier::T2 }
+            if ram <= 8 * 1024 {
+                Tier::T1
+            } else {
+                Tier::T2
+            }
         };
     }
 
@@ -170,9 +171,7 @@ pub fn classify_tier(probe: &DeviceProbe, ovr: &TierOverride) -> Tier {
     }
 
     // --- T2: Apple Silicon UMA ≥ 8 GB OR RAM 9–16 GB ---
-    if (has_apple_silicon && probe.unified_memory && ram >= 8 * 1024)
-        || ram >= 9 * 1024
-    {
+    if (has_apple_silicon && probe.unified_memory && ram >= 8 * 1024) || ram >= 9 * 1024 {
         return Tier::T2;
     }
 
@@ -218,7 +217,10 @@ mod tests {
     }
 
     fn allow_t4() -> TierOverride {
-        TierOverride { allow_t4: true, ..Default::default() }
+        TierOverride {
+            allow_t4: true,
+            ..Default::default()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -335,7 +337,15 @@ mod tests {
 
     #[test]
     fn t3_16gb_rtx3050_8gb_vram() {
-        let p = probe("linux", "Intel Core i7-12700H", 14, 16, false, false, Some(8));
+        let p = probe(
+            "linux",
+            "Intel Core i7-12700H",
+            14,
+            16,
+            false,
+            false,
+            Some(8),
+        );
         assert_eq!(classify_tier(&p, &no_ovr()), Tier::T3);
     }
 
@@ -354,7 +364,15 @@ mod tests {
 
     #[test]
     fn t3_32gb_rtx3080_12gb_vram() {
-        let p = probe("windows", "Intel Core i9-12900K", 16, 32, false, false, Some(12));
+        let p = probe(
+            "windows",
+            "Intel Core i9-12900K",
+            16,
+            32,
+            false,
+            false,
+            Some(12),
+        );
         assert_eq!(classify_tier(&p, &no_ovr()), Tier::T3);
     }
 
@@ -383,7 +401,15 @@ mod tests {
     #[test]
     fn t4_workstation_256gb_2x_rtx4090() {
         // 48 GB total VRAM modelled as a single gpu_vram_mb (48 GB)
-        let p = probe("linux", "AMD Threadripper PRO 5975WX", 32, 256, false, false, Some(48));
+        let p = probe(
+            "linux",
+            "AMD Threadripper PRO 5975WX",
+            32,
+            256,
+            false,
+            false,
+            Some(48),
+        );
         assert_eq!(classify_tier(&p, &allow_t4()), Tier::T4);
     }
 
@@ -401,7 +427,10 @@ mod tests {
     fn force_tier_overrides_any_probe() {
         // Weak netbook forced to T3
         let p = probe("linux", "Intel Celeron N4020", 2, 4, false, false, None);
-        let ovr = TierOverride { force_tier: Some(Tier::T3), ..Default::default() };
+        let ovr = TierOverride {
+            force_tier: Some(Tier::T3),
+            ..Default::default()
+        };
         assert_eq!(classify_tier(&p, &ovr), Tier::T3);
     }
 
@@ -409,7 +438,11 @@ mod tests {
     fn force_tier_t0_on_flagship() {
         // M2 Ultra forced down to T0
         let p = probe("macos", "Apple M2 Ultra", 24, 192, true, true, None);
-        let ovr = TierOverride { force_tier: Some(Tier::T0), allow_t4: true, ..Default::default() };
+        let ovr = TierOverride {
+            force_tier: Some(Tier::T0),
+            allow_t4: true,
+            ..Default::default()
+        };
         assert_eq!(classify_tier(&p, &ovr), Tier::T0);
     }
 

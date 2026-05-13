@@ -64,7 +64,10 @@ impl OllamaBackend {
         let backend = Self::new("http://localhost:11434");
         match tokio::time::timeout(
             Duration::from_millis(500),
-            backend.client.get(format!("{}/api/tags", backend.base_url)).send(),
+            backend
+                .client
+                .get(format!("{}/api/tags", backend.base_url))
+                .send(),
         )
         .await
         {

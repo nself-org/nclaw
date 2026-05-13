@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: '#0ea5e9',
+        accent: 'var(--accent, #0ea5e9)',
         surface: '#030712',
         'surface-soft': '#0a0f1a'
       },

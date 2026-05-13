@@ -18,8 +18,7 @@ use tokio::time::Instant;
 // Constants (Decision #9)
 // ---------------------------------------------------------------------------
 
-pub const CANONICAL_PROMPT: &str =
-    "Briefly explain how rainbows form, in three sentences.";
+pub const CANONICAL_PROMPT: &str = "Briefly explain how rainbows form, in three sentences.";
 pub const WARMUP_TOKENS: u32 = 50;
 pub const MEASUREMENT_TOKENS: u32 = 200;
 pub const HARD_TIMEOUT: Duration = Duration::from_secs(90);
@@ -164,8 +163,7 @@ where
     .await;
 
     let total_elapsed = measurement_start.elapsed();
-    let timed_out = run_start.elapsed() >= HARD_TIMEOUT
-        || matches!(stream_result, Err(_)); // timeout variant
+    let timed_out = run_start.elapsed() >= HARD_TIMEOUT || matches!(stream_result, Err(_)); // timeout variant
 
     let token_stream = match stream_result {
         Ok(Ok(ts)) => ts,

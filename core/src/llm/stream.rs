@@ -14,9 +14,18 @@ use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TokenEvent {
-    Token { text: String, id: u32 },
-    Done { stats: GenerateStats, cancelled: bool },
-    Error { kind: String, message: String },
+    Token {
+        text: String,
+        id: u32,
+    },
+    Done {
+        stats: GenerateStats,
+        cancelled: bool,
+    },
+    Error {
+        kind: String,
+        message: String,
+    },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -123,7 +132,12 @@ impl StreamingGenerator {
             for raw_text in token_list {
                 if cancel.is_cancelled() {
                     let stats = make_stats(total_tokens, start.elapsed());
-                    let _ = tx.send(TokenEvent::Done { stats, cancelled: true }).await;
+                    let _ = tx
+                        .send(TokenEvent::Done {
+                            stats,
+                            cancelled: true,
+                        })
+                        .await;
                     return;
                 }
 
@@ -150,7 +164,12 @@ impl StreamingGenerator {
             }
 
             let stats = make_stats(total_tokens, start.elapsed());
-            let _ = tx.send(TokenEvent::Done { stats, cancelled: false }).await;
+            let _ = tx
+                .send(TokenEvent::Done {
+                    stats,
+                    cancelled: false,
+                })
+                .await;
         });
 
         rx

@@ -6,8 +6,8 @@
 //! SHA256 hashes are populated at build time by the model-download CLI tool (T07).
 //! Pending hashes are marked with "TBD-PEND-DOWNLOAD" and computed when the model is downloaded.
 
-use serde::{Deserialize, Serialize};
 use crate::tier::Tier;
+use serde::{Deserialize, Serialize};
 
 /// Metadata for a single LLM model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,11 +212,26 @@ mod tests {
 
     #[test]
     fn test_each_tier_has_default() {
-        assert!(default_for_tier(Tier::T0).is_some(), "T0 must have a default");
-        assert!(default_for_tier(Tier::T1).is_some(), "T1 must have a default");
-        assert!(default_for_tier(Tier::T2).is_some(), "T2 must have a default");
-        assert!(default_for_tier(Tier::T3).is_some(), "T3 must have a default");
-        assert!(default_for_tier(Tier::T4).is_some(), "T4 must have a default");
+        assert!(
+            default_for_tier(Tier::T0).is_some(),
+            "T0 must have a default"
+        );
+        assert!(
+            default_for_tier(Tier::T1).is_some(),
+            "T1 must have a default"
+        );
+        assert!(
+            default_for_tier(Tier::T2).is_some(),
+            "T2 must have a default"
+        );
+        assert!(
+            default_for_tier(Tier::T3).is_some(),
+            "T3 must have a default"
+        );
+        assert!(
+            default_for_tier(Tier::T4).is_some(),
+            "T4 must have a default"
+        );
     }
 
     #[test]

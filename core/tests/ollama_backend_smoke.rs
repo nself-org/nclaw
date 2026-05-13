@@ -109,7 +109,10 @@ async fn test_embed_mocked() {
     );
 
     let backend = OllamaBackend::new(server.base_url());
-    let embedding = backend.embed("nomic-embed-text", "test prompt").await.unwrap();
+    let embedding = backend
+        .embed("nomic-embed-text", "test prompt")
+        .await
+        .unwrap();
 
     assert_eq!(embedding.len(), 5);
     assert_eq!(embedding[0], 0.1);

@@ -50,6 +50,9 @@ toml = "0.8"
 flutter_rust_bridge = "2.5"
 async-trait = "0.1"
 llama-cpp-2 = { version = "0.1.146", optional = true }
+# Desktop DB fallback: embedded Postgres subprocess (optional, feature-gated).
+# NOTE: 0.18 is current as of 2026-05-13; pin tighter after S16.T01b integration.
+postgresql_embedded = { version = "0.18", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -66,6 +69,11 @@ cuda = ["dep:llama-cpp-2", "llama-cpp-2/cuda"]
 vulkan = ["dep:llama-cpp-2", "llama-cpp-2/vulkan"]
 frb-export = []
 ts-export = []
+# Desktop DB feature flags (Decision #4).
+# pglite: Postgres-on-WASM via wasmtime. Surface only — WASM bundle integration in S16.T01b.
+pglite = []
+# embedded-pg: launches a real postgres binary subprocess as fallback when pglite lacks pgvector/ltree.
+embedded-pg = ["dep:postgresql_embedded"]
 
 [[bin]]
 name = "export-bindings"

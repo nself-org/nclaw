@@ -1,0 +1,17 @@
+{
+  "app.title": "ɳClaw",
+  "chat.empty": "Start a conversation. ɳClaw will remember.",
+  "chat.placeholder": "Type a message…",
+  "chat.send": "Send",
+  "chat.cancel": "Cancel",
+  "sidebar.empty": "Your topics will appear here as you talk to ɳClaw.",
+  "sidebar.search.placeholder": "Search topics, conversations…",
+  "settings.title": "Settings",
+  "settings.section.provider": "Provider",
+  "settings.section.model": "Model",
+  "settings.section.vault": "Vault",
+  "settings.section.sync": "Sync",
+  "settings.section.advanced": "Advanced",
+  "palette.placeholder": "Search topics, conversations, settings…",
+  "shortcuts.title": "Keyboard Shortcuts"
+}

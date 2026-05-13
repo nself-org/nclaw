@@ -1,10 +1,9 @@
+use chrono::Utc;
 /// Integration tests for context window truncation policies.
 ///
 /// Tests cover all truncation policies, boundary conditions, and system message preservation.
-
 use nclaw_core::llm::context::{ContextManager, TruncationPolicy};
-use nclaw_core::types::{Message, MessageContent, MessageRole, MessageMetadata};
-use chrono::Utc;
+use nclaw_core::types::{Message, MessageContent, MessageMetadata, MessageRole};
 use uuid::Uuid;
 
 /// Helper to create a message with given role and content.
@@ -45,11 +44,7 @@ fn test_fit_all_messages_fit() {
     let mgr = ContextManager::default();
     let fitted = mgr.fit(&messages, 10000);
 
-    assert_eq!(
-        fitted.len(),
-        5,
-        "All messages should fit when under budget"
-    );
+    assert_eq!(fitted.len(), 5, "All messages should fit when under budget");
 }
 
 #[test]
@@ -83,10 +78,7 @@ fn test_fit_with_tight_budget() {
         fitted.len() < messages.len(),
         "Should drop messages to fit budget"
     );
-    assert!(
-        fitted.len() > 0,
-        "Should keep at least some messages"
-    );
+    assert!(fitted.len() > 0, "Should keep at least some messages");
 }
 
 #[test]
@@ -177,10 +169,7 @@ fn test_keep_recent_policy() {
     let fitted = mgr.fit(&messages, 300);
 
     // Should keep some recent messages, drop older ones
-    assert!(
-        fitted.len() < messages.len(),
-        "Should drop older messages"
-    );
+    assert!(fitted.len() < messages.len(), "Should drop older messages");
 
     // Most recent message should be present
     assert_eq!(
@@ -355,11 +344,7 @@ The token count should be significant.
 "#;
 
     for i in 0..10 {
-        messages.push(make_message(
-            conv_id,
-            MessageRole::User,
-            long_content,
-        ));
+        messages.push(make_message(conv_id, MessageRole::User, long_content));
     }
 
     let mgr = ContextManager {

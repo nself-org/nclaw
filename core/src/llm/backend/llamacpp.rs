@@ -12,7 +12,12 @@
 // Feature-gated implementation
 // ============================================================================
 
-#[cfg(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan"))]
+#[cfg(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+))]
 mod ffi_impl {
     use crate::backend::{GenOpts, LlmBackend, TokenStream};
     use crate::error::LlmError;
@@ -129,8 +134,7 @@ mod ffi_impl {
                 let candidates = ctx.candidates_ith(batch.n_tokens() - 1);
                 let mut candidates_p =
                     llama_cpp_2::token::data_array::LlamaTokenDataArray::from_iter(
-                        candidates,
-                        false,
+                        candidates, false,
                     );
                 let new_token = ctx.sample_token_greedy(&mut candidates_p);
 
@@ -244,7 +248,12 @@ mod ffi_impl {
 // No-FFI stub (default when no feature is enabled via --no-default-features)
 // ============================================================================
 
-#[cfg(not(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan")))]
+#[cfg(not(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+)))]
 mod no_ffi {
     use crate::backend::{GenOpts, LlmBackend, TokenStream};
     use crate::error::LlmError;
@@ -262,11 +271,7 @@ mod no_ffi {
 
     #[async_trait::async_trait]
     impl LlmBackend for LlamaCppBackend {
-        async fn generate(
-            &self,
-            _prompt: &str,
-            _opts: GenOpts,
-        ) -> Result<TokenStream, LlmError> {
+        async fn generate(&self, _prompt: &str, _opts: GenOpts) -> Result<TokenStream, LlmError> {
             Err(LlmError::InternalError(NO_FEATURE_MSG.into()))
         }
 
@@ -288,11 +293,26 @@ mod no_ffi {
 // Public surface
 // ============================================================================
 
-#[cfg(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan"))]
+#[cfg(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+))]
 pub use ffi_impl::LlamaCppBackend;
 
-#[cfg(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan"))]
+#[cfg(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+))]
 pub use ffi_impl::LlamaCpp;
 
-#[cfg(not(any(feature = "cpu", feature = "metal", feature = "cuda", feature = "vulkan")))]
+#[cfg(not(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+)))]
 pub use no_ffi::LlamaCppBackend;

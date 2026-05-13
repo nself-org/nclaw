@@ -8,6 +8,9 @@ pub mod roles;
 pub mod sampling;
 pub mod stream;
 
-pub use constraint::{GenerationConstraint, Grammars, ToolCall, parse_tool_call};
-pub use dampers::{DamperState, ThermalLevel, apply_low_power_damper, local_llm_disabled_by_battery, thermal_inter_token_delay_ms};
+pub use constraint::{parse_tool_call, GenerationConstraint, Grammars, ToolCall};
+pub use dampers::{
+    apply_low_power_damper, local_llm_disabled_by_battery, thermal_inter_token_delay_ms,
+    DamperState, ThermalLevel,
+};
 pub use roles::{ModelRoles, RolesConfig};
