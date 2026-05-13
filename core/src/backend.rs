@@ -1,23 +1,20 @@
 //! Backend trait abstractions for libnclaw core.
 //!
 //! Defines async trait interfaces for LLM, DB, Sync, Vault, Mux, and Plugin backends.
-//! Traits are object-safe (`dyn Backend` patterns) using boxed futures.
+//! Traits are object-safe (`dyn Backend` patterns) using async_trait.
 
-use crate::error::{DbError, LlmError, MuxError, PluginError, Result, SyncError, VaultError};
+use crate::error::{DbError, LlmError, MuxError, PluginError, SyncError, VaultError};
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
-
-type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 // ============================================================================
 // LLM Backend
 // ============================================================================
 
 /// LLM provider backend — handles generation, embeddings, and streaming.
+#[async_trait::async_trait]
 pub trait LlmBackend: Send + Sync {
-    fn generate(&self, prompt: &str, opts: GenOpts) -> BoxFuture<'_, Result<TokenStream, LlmError>>;
-    fn embed(&self, text: &str) -> BoxFuture<'_, Result<Vec<f32>, LlmError>>;
+    async fn generate(&self, prompt: &str, opts: GenOpts) -> Result<TokenStream, LlmError>;
+    async fn embed(&self, text: &str) -> Result<Vec<f32>, LlmError>;
     fn supports_streaming(&self) -> bool;
     fn provider(&self) -> &str;
 }
@@ -39,11 +36,12 @@ pub struct TokenStream {
 // Database Backend
 // ============================================================================
 
+#[async_trait::async_trait]
 pub trait Database: Send + Sync {
-    fn execute(&self, sql: &str, params: &[Value]) -> BoxFuture<'_, Result<u64, DbError>>;
-    fn query(&self, sql: &str, params: &[Value]) -> BoxFuture<'_, Result<Vec<Row>, DbError>>;
-    fn migrate(&self, version: u32) -> BoxFuture<'_, Result<(), DbError>>;
-    fn health_check(&self) -> BoxFuture<'_, Result<(), DbError>>;
+    async fn execute(&self, sql: &str, params: &[Value]) -> Result<u64, DbError>;
+    async fn query(&self, sql: &str, params: &[Value]) -> Result<Vec<Row>, DbError>;
+    async fn migrate(&self, version: u32) -> Result<(), DbError>;
+    async fn health_check(&self) -> Result<(), DbError>;
 }
 
 pub enum Value {
@@ -60,15 +58,16 @@ pub type Row = HashMap<String, Value>;
 // Sync Engine
 // ============================================================================
 
+#[async_trait::async_trait]
 pub trait SyncEngine: Send + Sync {
-    fn push(&self, changes: &[Change]) -> BoxFuture<'_, Result<Vec<Conflict>, SyncError>>;
-    fn pull(&self) -> BoxFuture<'_, Result<Vec<Change>, SyncError>>;
-    fn sync(&self) -> BoxFuture<'_, Result<SyncState, SyncError>>;
-    fn resolve_conflict(
+    async fn push(&self, changes: &[Change]) -> Result<Vec<Conflict>, SyncError>;
+    async fn pull(&self) -> Result<Vec<Change>, SyncError>;
+    async fn sync(&self) -> Result<SyncState, SyncError>;
+    async fn resolve_conflict(
         &self,
         conflict: &Conflict,
         strategy: MergeStrategy,
-    ) -> BoxFuture<'_, Result<(), SyncError>>;
+    ) -> Result<(), SyncError>;
 }
 
 pub struct Change {
@@ -103,22 +102,24 @@ pub struct SyncState {
 // Vault Backend
 // ============================================================================
 
+#[async_trait::async_trait]
 pub trait Vault: Send + Sync {
-    fn set(&self, key: &str, value: &[u8]) -> BoxFuture<'_, Result<(), VaultError>>;
-    fn get(&self, key: &str) -> BoxFuture<'_, Result<Vec<u8>, VaultError>>;
-    fn delete(&self, key: &str) -> BoxFuture<'_, Result<(), VaultError>>;
-    fn keys(&self) -> BoxFuture<'_, Result<Vec<String>, VaultError>>;
-    fn rotate_keys(&self) -> BoxFuture<'_, Result<(), VaultError>>;
+    async fn set(&self, key: &str, value: &[u8]) -> Result<(), VaultError>;
+    async fn get(&self, key: &str) -> Result<Vec<u8>, VaultError>;
+    async fn delete(&self, key: &str) -> Result<(), VaultError>;
+    async fn keys(&self) -> Result<Vec<String>, VaultError>;
+    async fn rotate_keys(&self) -> Result<(), VaultError>;
 }
 
 // ============================================================================
 // Mux Backend
 // ============================================================================
 
+#[async_trait::async_trait]
 pub trait Mux: Send + Sync {
-    fn classify(&self, content: &str) -> BoxFuture<'_, Result<Classification, MuxError>>;
-    fn extract_entities(&self, content: &str) -> BoxFuture<'_, Result<Entities, MuxError>>;
-    fn route(&self, content: &str, context: &str) -> BoxFuture<'_, Result<Route, MuxError>>;
+    async fn classify(&self, content: &str) -> Result<Classification, MuxError>;
+    async fn extract_entities(&self, content: &str) -> Result<Entities, MuxError>;
+    async fn route(&self, content: &str, context: &str) -> Result<Route, MuxError>;
 }
 
 pub struct Classification {
@@ -144,13 +145,14 @@ pub struct Route {
 // Plugin Backend
 // ============================================================================
 
+#[async_trait::async_trait]
 pub trait Plugin: Send + Sync {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
-    fn init(&mut self, config: &PluginConfig) -> BoxFuture<'_, Result<(), PluginError>>;
-    fn execute(&self, capability: &str, input: &Value) -> BoxFuture<'_, Result<Value, PluginError>>;
-    fn shutdown(&self) -> BoxFuture<'_, Result<(), PluginError>>;
-    fn health_check(&self) -> BoxFuture<'_, Result<(), PluginError>>;
+    async fn init(&mut self, config: &PluginConfig) -> Result<(), PluginError>;
+    async fn execute(&self, capability: &str, input: &Value) -> Result<Value, PluginError>;
+    async fn shutdown(&self) -> Result<(), PluginError>;
+    async fn health_check(&self) -> Result<(), PluginError>;
 }
 
 pub struct PluginConfig {
