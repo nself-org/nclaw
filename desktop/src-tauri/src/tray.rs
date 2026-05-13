@@ -28,8 +28,8 @@ impl TrayState {
     fn icon_filename(self) -> &'static str {
         match self {
             TrayState::Connected => "tray-connected.png",
-            TrayState::Offline   => "tray-offline.png",
-            TrayState::Syncing   => "tray-syncing.png",
+            TrayState::Offline => "tray-offline.png",
+            TrayState::Syncing => "tray-syncing.png",
         }
     }
 }
@@ -45,16 +45,30 @@ pub fn build_tray(app: &tauri::App) -> tauri::Result<()> {
 
     // ── Tray menu ─────────────────────────────────────────────────────────────
     let open_item = MenuItem::with_id(handle, "tray-open", "Open ɳClaw", true, None::<&str>)?;
-    let new_chat  = MenuItem::with_id(handle, "tray-new-chat", "New Chat", true, None::<&str>)?;
-    let status    = MenuItem::with_id(handle, "tray-status", "Status: Offline", false, None::<&str>)?;
-    let sep1      = PredefinedMenuItem::separator(handle)?;
-    let settings  = MenuItem::with_id(handle, "tray-settings", "Settings\u{2026}", true, None::<&str>)?;
-    let sep2      = PredefinedMenuItem::separator(handle)?;
-    let quit      = MenuItem::with_id(handle, "tray-quit", "Quit", true, None::<&str>)?;
+    let new_chat = MenuItem::with_id(handle, "tray-new-chat", "New Chat", true, None::<&str>)?;
+    let status = MenuItem::with_id(
+        handle,
+        "tray-status",
+        "Status: Offline",
+        false,
+        None::<&str>,
+    )?;
+    let sep1 = PredefinedMenuItem::separator(handle)?;
+    let settings = MenuItem::with_id(
+        handle,
+        "tray-settings",
+        "Settings\u{2026}",
+        true,
+        None::<&str>,
+    )?;
+    let sep2 = PredefinedMenuItem::separator(handle)?;
+    let quit = MenuItem::with_id(handle, "tray-quit", "Quit", true, None::<&str>)?;
 
     let menu = Menu::with_items(
         handle,
-        &[&open_item, &new_chat, &status, &sep1, &settings, &sep2, &quit],
+        &[
+            &open_item, &new_chat, &status, &sep1, &settings, &sep2, &quit,
+        ],
     )?;
 
     // ── Build the tray icon ───────────────────────────────────────────────────
@@ -86,7 +100,11 @@ pub fn build_tray(app: &tauri::App) -> tauri::Result<()> {
         .on_tray_icon_event(|tray, event| {
             // Windows: left-click toggles main window (macOS uses menu-on-click).
             #[cfg(target_os = "windows")]
-            if let TrayIconEvent::Click { button: MouseButton::Left, .. } = event {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                ..
+            } = event
+            {
                 let app = tray.app_handle();
                 if let Some(win) = app.get_webview_window("main") {
                     if win.is_visible().unwrap_or(false) {

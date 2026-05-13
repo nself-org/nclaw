@@ -32,6 +32,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             open_settings_cmd,
             toggle_debug_cmd,
+            commands::chat::stream_chat,
             commands::local_ai::get_tier,
             commands::local_ai::get_benchmark_history,
             commands::local_ai::list_models,
@@ -46,6 +47,7 @@ fn main() {
             commands::local_ai::upgrade_to_tier,
             commands::local_ai::set_upgrade_prompt_disabled,
             commands::local_ai::defer_upgrade_prompt_30_days,
+            commands::palette::palette_search,
             commands::settings::get_setting,
             commands::settings::get_all_settings,
             commands::settings::set_setting,
