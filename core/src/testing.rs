@@ -6,6 +6,7 @@
 use crate::backend::*;
 use crate::error::*;
 use std::collections::HashMap;
+use std::result::Result;
 use std::sync::{Arc, Mutex};
 
 // ============================================================================
@@ -236,7 +237,7 @@ impl Vault for InMemoryVault {
         secrets
             .get(key)
             .cloned()
-            .ok_or(VaultError::NotFound(key.into()))
+            .ok_or(VaultError::SecretNotFound(key.into()))
     }
 
     async fn delete(&self, key: &str) -> Result<(), VaultError> {

@@ -2,16 +2,20 @@
 
 pub mod backend;
 pub mod crypto;
-pub mod llm;
 pub mod device;
-pub mod tier;
-pub mod registry;
 pub mod error;
+pub mod llm;
 pub mod logging;
+pub mod models;
 pub mod plugin;
 pub mod protocol;
+pub mod registry;
 pub mod testing;
+pub mod tier;
 pub mod types;
+
+// Re-export cache module for convenience
+pub use models::cache;
 
 // =============================================================================
 // C FFI surface

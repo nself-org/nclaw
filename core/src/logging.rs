@@ -30,10 +30,7 @@ pub fn init() {
     }
 
     let file_appender = tracing_appender::rolling::RollingFileAppender::new(
-        tracing_appender::rolling::Rotation::SIZE_AND_TIME(
-            100 * 1024 * 1024, // 100MB per file
-            tracing_appender::rolling::daily,
-        ),
+        tracing_appender::rolling::Rotation::DAILY,
         &log_dir,
         "nclaw.log",
     );
