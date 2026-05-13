@@ -196,6 +196,14 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
 
 Migrating from v1.1.0? See [migration guide](.github/wiki/migration/v1.1.0-to-v1.1.1.md). No action required — v1.1.0 had no production users.
 
+## Protocol
+
+The nClaw sync protocol governs how events replicate across devices. Key properties: local-first (reads never block on the network), eventual consistency via Last-Write-Wins with Hybrid Logical Clocks, and server-of-record durability.
+
+See [protocol/README.md](protocol/README.md) for the full protocol index.
+
+The canonical sync spec is at [protocol/sync-protocol.md](protocol/sync-protocol.md). It covers the event envelope schema, HLC tick rules, LWW conflict resolution, protobuf wire format, device authentication binding, and worked examples for single-device writes, multi-device conflicts, and offline catchup.
+
 ## License
 
 MIT, free for personal and commercial use. The ɳSelf Pro plugins required by the backend are separately licensed; see [nself.org/pricing](https://nself.org/pricing).
