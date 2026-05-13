@@ -1,6 +1,8 @@
 //! Integration tests: message round-trip through mock Db / Sync / Vault / Llm / Mux / Plugin.
 
-use libnclaw::backend::{Change, GenOpts, MergeStrategy, PluginConfig, Value};
+use libnclaw::backend::{
+    Change, Database, GenOpts, LlmBackend, Mux, Plugin, PluginConfig, SyncEngine, Value, Vault,
+};
 use libnclaw::testing::{
     InMemoryDb, InMemoryLlm, InMemorySync, InMemoryVault, NoopMux, NoopPlugin,
 };
