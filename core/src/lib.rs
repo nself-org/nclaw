@@ -7,6 +7,7 @@ pub mod device;
 pub mod error;
 pub mod llm;
 pub mod logging;
+pub mod mobile_ffi;
 pub mod models;
 pub mod plugin;
 pub mod protocol;

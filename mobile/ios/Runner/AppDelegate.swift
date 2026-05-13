@@ -9,6 +9,14 @@ import FirebaseMessaging
 // Messaging (FCM) can deliver push notifications on iOS. FCM requires
 // a valid APNs token; without registerForRemoteNotifications() the
 // FCM token never resolves on real devices.
+//
+// S15-T18: Mobile FFI damper wiring.
+//
+// Notifies the Rust libnclaw core of iOS Low Power Mode changes via the
+// nclaw_set_low_power() C-ABI export. The core adjusts the tier classifier
+// and inference streaming behaviour accordingly.
+// The libnclaw.xcframework is linked via mobile/ios/libnclaw.xcframework;
+// bridging header declares nclaw_set_low_power(Bool).
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -26,7 +34,41 @@ import FirebaseMessaging
     // this call is what makes iOS hand the device an APNs device token.
     application.registerForRemoteNotifications()
 
+    // S15-T18: Send initial Low Power Mode state to Rust core on launch so
+    // the tier classifier has an accurate reading before the first inference.
+    syncLowPowerMode()
+
+    // S15-T18: Observe future Low Power Mode toggle events for the lifetime of
+    // the app. The notification fires on the main thread (iOS contract).
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(powerStateDidChange),
+      name: NSNotification.Name.NSProcessInfoPowerStateDidChange,
+      object: nil
+    )
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    // Re-sync on foreground: the user may have toggled Low Power Mode while the
+    // app was in the background where NSProcessInfoPowerStateDidChange does not
+    // reliably fire.
+    syncLowPowerMode()
+    super.applicationDidBecomeActive(application)
+  }
+
+  // MARK: — Low Power Mode helpers (S15-T18)
+
+  /// Read current Low Power Mode state from ProcessInfo and forward to libnclaw.
+  private func syncLowPowerMode() {
+    let isLow = ProcessInfo.processInfo.isLowPowerModeEnabled
+    nclaw_set_low_power(isLow)
+  }
+
+  /// Called by NotificationCenter when iOS Low Power Mode is toggled.
+  @objc private func powerStateDidChange(_ notification: Notification) {
+    syncLowPowerMode()
   }
 
   override func application(

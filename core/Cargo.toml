@@ -29,11 +29,17 @@ chacha20poly1305 = "0.10"
 rand_core = { version = "0.6", features = ["getrandom"] }
 base64 = "0.22"
 thiserror = "1"
+reqwest = { version = "0.12", features = ["stream"] }
+sha2 = "0.10"
+futures = "0.3"
+fs2 = "0.4"
+async-stream = "0.3"
+tokio-stream = "0.1"
 libc = "0.2"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
-tokio-util = { version = "0.7", features = ["slab"] }
+tokio-util = { version = "0.7", features = ["slab", "rt"] }
 log = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "json", "env-filter"] }
@@ -49,6 +55,8 @@ llama-cpp-2 = { version = "0.1.146", optional = true }
 criterion = { version = "0.5", features = ["html_reports"] }
 ts-rs = "10"
 tauri-specta = "2.0.0-rc.25"
+httpmock = "0.7"
+tempfile = "3"
 
 [features]
 default = ["cpu"]

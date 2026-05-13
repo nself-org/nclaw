@@ -1,3 +1,5 @@
+use crate::llm::RolesConfig;
+use crate::tier::Tier;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;
@@ -55,6 +57,14 @@ pub struct TelemetryConfig {
     pub opt_in: bool, // User telemetry opt-in
 }
 
+/// Upgrade prompt configuration
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UpgradeConfig {
+    #[serde(default)]
+    pub upgrade_prompt_disabled: bool, // Suppress upgrade prompts if true
+    pub last_upgrade_prompt_at: Option<chrono::DateTime<chrono::Utc>>, // Last prompt time (defer 30 days)
+}
+
 /// Root configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -63,6 +73,10 @@ pub struct Config {
     pub vault: VaultConfig,
     pub sync: SyncConfig,
     pub telemetry: TelemetryConfig,
+    #[serde(default)]
+    pub upgrade: UpgradeConfig,
+    #[serde(default = "default_roles_config")]
+    pub roles: RolesConfig,
 }
 
 // Defaults
@@ -77,6 +91,9 @@ fn default_vault_service() -> String {
 }
 fn default_polling_interval() -> u64 {
     30
+}
+fn default_roles_config() -> RolesConfig {
+    RolesConfig::default_for_tier(Tier::T2)
 }
 
 impl Default for Config {
@@ -100,6 +117,8 @@ impl Default for Config {
                 polling_interval_secs: 30,
             },
             telemetry: TelemetryConfig { opt_in: false },
+            upgrade: UpgradeConfig::default(),
+            roles: RolesConfig::default_for_tier(Tier::T2),
         }
     }
 }
@@ -169,6 +188,11 @@ impl Config {
         let toml = toml::to_string_pretty(self).map_err(|e| ConfigError::Toml(e.to_string()))?;
         std::fs::write(&config_path, toml)?;
         Ok(())
+    }
+
+    /// Get the RolesConfig for a specific tier, or use the instance config if no tier specified.
+    pub fn roles_for(tier: Tier) -> RolesConfig {
+        RolesConfig::default_for_tier(tier)
     }
 
     /// Validate configuration

@@ -1,0 +1,11 @@
+# Tool-call grammar template in llama.cpp GBNF format
+# Tool name allowlist injected at runtime; whitespace flexible
+
+root        ::= "{" ws "\"tool\":" ws tool-name "," ws "\"args\":" ws object ws "}"
+tool-name   ::= "\"" [a-z0-9_-]+ "\""
+object      ::= "{" ws ( string ":" ws value ("," ws string ":" ws value)* )? "}" ws
+value       ::= object | array | string | number | ("true" | "false" | "null") ws
+array       ::= "[" ws ( value ("," ws value)* )? "]" ws
+string      ::= "\"" ( [^"\\\x7F\x00-\x1F] | "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4}) )* "\"" ws
+number      ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)? ws
+ws          ::= [ \t\n]*

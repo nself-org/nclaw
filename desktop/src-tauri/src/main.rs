@@ -1,9 +1,12 @@
 // ɳClaw Desktop — Tauri 2 entry point
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod commands;
+mod menu;
+mod tray;
 mod windows;
 
-use tauri::{Manager, WindowEvent};
+use tauri::{Emitter, Manager, WindowEvent};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
@@ -20,7 +23,52 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![open_settings_cmd, toggle_debug_cmd])
+        // Register autostart plugin. Auto-start is OFF by default — the frontend
+        // settings UI can call `invoke('plugin:autostart|enable')` to opt in.
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None, // no extra launch args
+        ))
+        .invoke_handler(tauri::generate_handler![
+            open_settings_cmd,
+            toggle_debug_cmd,
+            commands::local_ai::get_tier,
+            commands::local_ai::get_benchmark_history,
+            commands::local_ai::list_models,
+            commands::local_ai::run_benchmark,
+            commands::local_ai::import_custom_gguf,
+            commands::local_ai::set_tier_override,
+            commands::local_ai::set_allow_t4,
+            commands::local_ai::set_re_bench_monthly,
+            commands::local_ai::delete_model,
+            commands::local_ai::set_model_role,
+            commands::local_ai::get_upgrade_config,
+            commands::local_ai::upgrade_to_tier,
+            commands::local_ai::set_upgrade_prompt_disabled,
+            commands::local_ai::defer_upgrade_prompt_30_days,
+            commands::settings::get_setting,
+            commands::settings::get_all_settings,
+            commands::settings::set_setting,
+            commands::settings::vault_repair_device,
+            commands::settings::test_sync_connection,
+        ])
+        .menu(menu::build_app_menu)
+        .on_menu_event(|app, event| {
+            let id = event.id().0.as_str();
+            match id {
+                "settings" => {
+                    let _ = windows::open_settings(app);
+                }
+                "quit" => {
+                    app.exit(0);
+                }
+                other => {
+                    // Forward all other menu events to the main window as
+                    // "menu:<id>" so the frontend can subscribe via onMenu().
+                    let _ = app.emit_to("main", &format!("menu:{}", other), ());
+                }
+            }
+        })
         .on_window_event(|window, event| {
             if window.label() == "main" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
@@ -48,6 +96,17 @@ fn main() {
             app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
                 let _ = windows::toggle_debug(&app_handle);
             })?;
+
+            // Build system tray. Linux may not support tray icons — log and continue.
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            tray::build_tray(app)?;
+
+            #[cfg(target_os = "linux")]
+            {
+                // Tray may be unavailable without libappindicator; attempt and ignore failure.
+                eprintln!("[nclaw-desktop] warning: system tray may not be available on this Linux session");
+                let _ = tray::build_tray(app);
+            }
 
             Ok(())
         })
