@@ -4,7 +4,7 @@
 //! LLM context windows while preserving system messages and maintaining
 //! conversation coherence under the configured truncation policy.
 
-use crate::types::{Message, MessageContent, MessageRole};
+use crate::types::{Message, MessageRole};
 use std::collections::VecDeque;
 
 /// Defines how to reduce message history when it exceeds the context window limit.

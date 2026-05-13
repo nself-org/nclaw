@@ -11,8 +11,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use flutter_rust_bridge::frb;
 #[cfg(feature = "frb-export")]
+use flutter_rust_bridge::frb;
 #[cfg(feature = "ts-export")]
 use ts_rs::TS;
 
