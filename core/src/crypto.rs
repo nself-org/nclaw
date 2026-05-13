@@ -65,7 +65,9 @@ impl DeviceKeypair {
     /// Decode a base64-encoded remote public key.
     pub fn decode_public_key(b64: &str) -> Result<PublicKey, CryptoError> {
         let bytes = B64.decode(b64)?;
-        let arr: [u8; 32] = bytes.try_into().map_err(|_| CryptoError::InvalidPublicKey)?;
+        let arr: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| CryptoError::InvalidPublicKey)?;
         Ok(PublicKey::from(arr))
     }
 
@@ -97,10 +99,7 @@ impl EphemeralKeypair {
     }
 
     /// Consume the ephemeral secret in a DH exchange.
-    pub fn diffie_hellman(
-        self,
-        remote_public_b64: &str,
-    ) -> Result<SessionCipher, CryptoError> {
+    pub fn diffie_hellman(self, remote_public_b64: &str) -> Result<SessionCipher, CryptoError> {
         let remote = DeviceKeypair::decode_public_key(remote_public_b64)?;
         let shared: SharedSecret = self.secret.diffie_hellman(&remote);
         Ok(SessionCipher::from_shared_secret(shared))
@@ -147,9 +146,7 @@ impl SessionCipher {
 
     /// Decrypt a dot-separated wire string and return the plaintext.
     pub fn decrypt(&self, wire: &str) -> Result<Vec<u8>, CryptoError> {
-        let (nonce_b64, ct_b64) = wire
-            .split_once('.')
-            .ok_or(CryptoError::InvalidWireFormat)?;
+        let (nonce_b64, ct_b64) = wire.split_once('.').ok_or(CryptoError::InvalidWireFormat)?;
 
         let nonce_bytes = B64.decode(nonce_b64)?;
         let ct_bytes = B64.decode(ct_b64)?;

@@ -1,7 +1,7 @@
+use chrono::Utc;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use libnclaw::types::*;
 use uuid::Uuid;
-use chrono::Utc;
 
 /// Mock in-memory database for memory search benchmarks.
 struct InMemoryDb {
@@ -10,7 +10,9 @@ struct InMemoryDb {
 
 impl InMemoryDb {
     fn new() -> Self {
-        Self { memories: Vec::new() }
+        Self {
+            memories: Vec::new(),
+        }
     }
 
     fn insert(&mut self, memory: Memory) {
@@ -25,11 +27,17 @@ impl InMemoryDb {
     }
 
     fn search_by_type(&self, memory_type: MemoryType) -> Vec<&Memory> {
-        self.memories.iter().filter(|m| m.memory_type == memory_type).collect()
+        self.memories
+            .iter()
+            .filter(|m| m.memory_type == memory_type)
+            .collect()
     }
 
     fn search_by_confidence(&self, min: f32) -> Vec<&Memory> {
-        self.memories.iter().filter(|m| m.confidence >= min).collect()
+        self.memories
+            .iter()
+            .filter(|m| m.confidence >= min)
+            .collect()
     }
 }
 
@@ -39,7 +47,11 @@ fn benchmark_memory_search_by_content(c: &mut Criterion) {
         db.insert(Memory {
             id: Uuid::new_v4(),
             user_id: Uuid::new_v4(),
-            topic_id: if i % 3 == 0 { Some(Uuid::new_v4()) } else { None },
+            topic_id: if i % 3 == 0 {
+                Some(Uuid::new_v4())
+            } else {
+                None
+            },
             content: format!("Memory fact number {} about the user", i),
             memory_type: match i % 6 {
                 0 => MemoryType::Fact,
@@ -113,7 +125,8 @@ fn benchmark_memory_search_by_confidence(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches,
+criterion_group!(
+    benches,
     benchmark_memory_search_by_content,
     benchmark_memory_search_by_type,
     benchmark_memory_search_by_confidence

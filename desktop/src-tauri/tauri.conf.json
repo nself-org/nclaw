@@ -1,32 +1,26 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicklasxyz/tauri/main/crates/tauri-config-schema/schema.json",
-  "productName": "nSelf Companion",
-  "version": "0.1.0",
-  "identifier": "org.nself.companion",
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ɳClaw",
+  "version": "1.1.1",
+  "identifier": "org.nself.nclaw",
   "build": {
-    "beforeBuildCommand": "",
-    "beforeDevCommand": "",
-    "devUrl": "http://localhost:1420",
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
   },
   "app": {
     "windows": [
       {
-        "title": "nSelf Companion",
-        "visible": false,
-        "width": 400,
-        "height": 600,
-        "resizable": false,
-        "decorations": true
+        "title": "ɳClaw",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "tooltip": "nSelf Companion"
-    },
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' wss: https:;"
+      "csp": "default-src 'self'; connect-src 'self' tauri: ipc: http://localhost:*; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {
@@ -41,29 +35,6 @@
     ],
     "macOS": {
       "minimumSystemVersion": "10.15"
-    }
-  },
-  "plugins": {
-    "notification": {
-      "enabled": true
-    },
-    "dialog": {
-      "enabled": true
-    },
-    "fs": {
-      "enabled": true,
-      "scope": {
-        "allow": [
-          "$HOME/.claude/inbox/**",
-          "$HOME/Sites/*/.claude/inbox/**",
-          "$HOME/.nself-companion/**",
-          "$HOME/.config/gog/tokens/**"
-        ],
-        "deny": [
-          "$HOME/.ssh/**",
-          "$HOME/.gnupg/**"
-        ]
-      }
     }
   }
 }

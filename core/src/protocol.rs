@@ -85,10 +85,7 @@ pub enum StreamEvent {
         message_id: Uuid,
     },
     /// A stream-level error.
-    Error {
-        code: String,
-        message: String,
-    },
+    Error { code: String, message: String },
 }
 
 // =============================================================================

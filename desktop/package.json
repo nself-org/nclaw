@@ -1,0 +1,23 @@
+{
+  "name": "nclaw-desktop",
+  "version": "1.1.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@tauri-apps/api": "^2.3.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.3.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.2"
+  }
+}

@@ -1,7 +1,7 @@
+use chrono::Utc;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use libnclaw::types::*;
 use uuid::Uuid;
-use chrono::Utc;
 
 fn benchmark_message_roundtrip(c: &mut Criterion) {
     c.bench_function("message_serialize_deserialize", |b| {
@@ -66,7 +66,8 @@ fn benchmark_topic_roundtrip(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches,
+criterion_group!(
+    benches,
     benchmark_message_roundtrip,
     benchmark_memory_roundtrip,
     benchmark_topic_roundtrip

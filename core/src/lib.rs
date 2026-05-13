@@ -1,8 +1,12 @@
 //! libnclaw - shared types, protocol, E2E encryption, and plugin registry for nClaw clients
 
+pub mod backend;
 pub mod crypto;
+pub mod error;
+pub mod logging;
 pub mod plugin;
 pub mod protocol;
+pub mod testing;
 pub mod types;
 
 // =============================================================================

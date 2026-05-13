@@ -1,7 +1,7 @@
+use chrono::Utc;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use libnclaw::types::*;
 use uuid::Uuid;
-use chrono::Utc;
 
 fn benchmark_message_clone(c: &mut Criterion) {
     let msg = black_box(Message {
@@ -81,7 +81,8 @@ fn benchmark_conversation_clone(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches,
+criterion_group!(
+    benches,
     benchmark_message_clone,
     benchmark_memory_clone,
     benchmark_entity_clone,

@@ -41,12 +41,24 @@ figment = { version = "0.10", features = ["toml"] }
 dirs = "5"
 toml = "0.8"
 flutter_rust_bridge = "2.5"
+async-trait = "0.1"
+llama-cpp-2 = { version = "0.1.146", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-ts-rs = { version = "10", features = ["export"] }
+ts-rs = "10"
 tauri-specta = "2.0.0-rc.25"
-async-trait = "0.1"
 
 [features]
+default = ["cpu"]
+cpu = ["dep:llama-cpp-2"]
+metal = ["dep:llama-cpp-2", "llama-cpp-2/metal"]
+cuda = ["dep:llama-cpp-2", "llama-cpp-2/cuda"]
+vulkan = ["dep:llama-cpp-2", "llama-cpp-2/vulkan"]
 frb-export = []
+ts-export = []
+
+[[bin]]
+name = "export-bindings"
+path = "src/bin/export-bindings.rs"
+required-features = ["ts-export"]

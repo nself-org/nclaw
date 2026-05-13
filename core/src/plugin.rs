@@ -141,16 +141,8 @@ pub struct RegisteredAction {
 
 impl RegisteredAction {
     /// Build a `RegisteredAction` from a capability + base URL.
-    pub fn from_capability(
-        cap: &PluginCapability,
-        action: &PluginAction,
-        base_url: &str,
-    ) -> Self {
-        let tool_name = format!(
-            "{}__{}",
-            cap.plugin.replace('-', "_"),
-            action.name
-        );
+    pub fn from_capability(cap: &PluginCapability, action: &PluginAction, base_url: &str) -> Self {
+        let tool_name = format!("{}__{}", cap.plugin.replace('-', "_"), action.name);
         let url = format!("{}{}", base_url.trim_end_matches('/'), action.endpoint);
         Self {
             tool_name,
@@ -179,7 +171,8 @@ impl ToolRegistry {
     /// Register all actions from a capability.
     pub fn register(&mut self, cap: &PluginCapability, base_url: &str) {
         for action in &cap.actions {
-            self.actions.push(RegisteredAction::from_capability(cap, action, base_url));
+            self.actions
+                .push(RegisteredAction::from_capability(cap, action, base_url));
         }
     }
 

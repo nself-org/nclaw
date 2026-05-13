@@ -1,0 +1,6 @@
+# flutter_rust_bridge codegen config for libnclaw
+rust_crate_dir: .
+input: src/types.rs
+output: ../mobile/lib/bindings/
+package_name: nclaw
+dart_package_name: nclaw
