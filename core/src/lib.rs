@@ -2,6 +2,8 @@
 
 pub mod backend;
 pub mod crypto;
+pub mod llm;
+pub mod device;
 pub mod error;
 pub mod logging;
 pub mod plugin;

@@ -40,7 +40,9 @@ libnclaw is the single source of truth for types and protocol. All clients consu
 
 Pro plugins require the ɳClaw Bundle ($0.99/mo / $9.99/yr) or ɳSelf+ ($3.99/mo / $39.99/yr). See [nself.org/pricing](https://nself.org/pricing) for details.
 
-## Quick Start
+## Quick Start — Developer Setup
+
+**First time setting up nClaw for development?** See the [Developer Setup Guide](/.github/wiki/dev-setup.md) for complete instructions on all 5 platforms.
 
 ### 1. Set up the backend
 

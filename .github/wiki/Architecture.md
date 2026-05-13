@@ -1,145 +1,75 @@
-# nClaw v1.1.1 Architecture Decision Record (ADR)
+# ɳClaw v1.1.1 Architecture Overview
 
-**Status:** LOCKED 2026-05-11 (P101 STORM)
-**Scope:** nClaw monorepo (`nclaw/`) — desktop + mobile + core + protocol
-**Target release:** v1.1.1
-**Supersedes:** v1.1.0 Flutter-desktop architecture (archived to `nclaw/legacy-flutter-desktop/`)
+This document summarizes the 12 key architectural decisions that define ɳClaw v1.1.1. Each decision area has its own ADR (Architecture Decision Record) in the `adr/` folder for full context.
 
-This ADR captures the twelve architecture decisions that govern the nClaw v1.1.1 implementation. Each decision is canonical: any divergence in code, docs, or planning is wrong and must be reconciled against this record. The pre-v1.1.1 component overview (Flutter + libnclaw single-tree) is preserved in git history; the architecture below replaces it.
+## Framework Split
 
----
+ɳClaw ships as two separate native applications: Tauri 2 for macOS/Linux/Windows desktop, and Flutter for iOS/Android mobile. Each codebase is optimized for its platform while sharing a unified Rust core. The v1.1.0 Flutter desktop implementation is archived for reference but not maintained.
 
-## ADR-001 — Framework Split: Tauri 2 desktop + Flutter mobile
+Full ADR: [adr/0001-framework-split.md](adr/0001-framework-split.md)
 
-**Decision.** Desktop ships on Tauri 2; mobile ships on Flutter. Both share a Rust core compiled to native bindings for each platform. The v1.1.0 Flutter desktop codebase is archived to `nclaw/legacy-flutter-desktop/` and removed entirely in v1.2.0.
+## Monorepo Layout
 
-**Rationale.** Tauri 2 gives the desktop tier native OS integration, smaller binaries, and direct access to system keychain, file system, and local LLM runtimes. Flutter retains the mobile tier where it leads on cross-platform fidelity (iOS + Android from one tree). A shared Rust core keeps business logic, sync, and LLM-runtime glue identical across platforms.
+The nclaw repository is now a monorepo containing four main directories: `desktop/` (Tauri 2 + React + Vite), `mobile/` (Flutter), `core/` (Rust crate), and `protocol/` (sync schema and IDL). A `legacy-flutter-desktop/` directory preserves the v1.1.0 Flutter desktop implementation as read-only reference.
 
-**Consequences.** Two UI codebases (React/TS on desktop, Dart on mobile). The Rust core absorbs the cost — both sides call into it via type-safe FFI.
+Full ADR: [adr/0002-repo-structure.md](adr/0002-repo-structure.md)
 
----
+## Runtime Architecture
 
-## ADR-002 — Repo Structure: nclaw/ becomes a monorepo
+The core runtime uses Rust with tokio for async execution and structured tracing throughout. This provides memory safety, high concurrency, and observable production behavior. Desktop and mobile frontends compile the core to platform-native modules via FFI.
 
-**Decision.** `nclaw/` is restructured into a monorepo:
+Full ADR: [adr/0003-runtime.md](adr/0003-runtime.md)
 
-- `nclaw/desktop/` — Tauri 2 + React + Vite + Tailwind. `src-tauri/` holds Rust glue.
-- `nclaw/mobile/` — Flutter (v1.1.0 refactored to call the Rust core via `flutter_rust_bridge`).
-- `nclaw/core/` — Rust crate `nclaw-core`. Workspace member. FFI-compiled to iOS `.framework`, Android `.so`, and a Tauri native module.
-- `nclaw/protocol/` — Sync schema + IDL (proto / OpenAPI / json-schema).
-- `nclaw/legacy-flutter-desktop/` — frozen v1.1.0 Flutter desktop. README explains the Tauri 2 migration path.
+## Local Database Strategy
 
-**Consequences.** The current `nclaw/` (Flutter mobile app) is `git mv`'d into `nclaw/mobile/` during S12.T02. Existing wiki pages live at the repo root until that restructure completes.
+Desktop uses pglite (Postgres compiled to WASM), offering schema parity with the server. Mobile uses SQLite with the sqlite-vec extension for vector embeddings. The sync layer handles schema translation where they diverge.
 
----
+Full ADR: [adr/0004-local-database.md](adr/0004-local-database.md)
 
-## ADR-003 — Local LLM Runtime: llama.cpp (FFI) primary, Ollama optional
+## Sync Engine Design
 
-**Decision.** `llama.cpp` via FFI is the primary local-LLM runtime. Ollama is supported as an optional alternative backend. Default model family is **Llama 3.2** (Meta) for tiers T0–T3; **Qwen 2.5** ships as bundled alternative with a clear UI swap.
+Offline-first synchronization uses a custom event log with last-write-wins (LWW) conflict resolution and Hasura subscriptions. This is single-user multi-device (not collaborative), with a clear upgrade path to CRDT if multi-device conflicts become real.
 
-**License note.** Llama Community License is acceptable for nSelf today (no MAU > 700M concern). Revisit if scale changes.
+Full ADR: [adr/0005-sync-engine.md](adr/0005-sync-engine.md)
 
----
+## Cross-Language Bindings
 
-## ADR-004 — Local Database: pglite on desktop, SQLite + sqlite-vec on mobile
+Desktop uses tauri-specta and ts-rs for type-safe Rust ↔ TypeScript bindings. Mobile uses flutter_rust_bridge. Both approaches eliminate manual FFI boilerplate and ensure frontend/backend types stay synchronized.
 
-**Decision.**
+Full ADR: [adr/0006-cross-language-bindings.md](adr/0006-cross-language-bindings.md)
 
-- **Desktop:** pglite (Postgres compiled to WASM via wasmtime). Same schema as server. Fallback: embedded-postgres if pglite issues surface during S16.
-- **Mobile:** SQLite + sqlite-vec (only viable option — real Postgres won't run on iOS/Android).
+## Credential Vault Design
 
-The sync layer translates between the two schemas where they diverge.
+The server holds encrypted credential blobs as the record of truth. Each device stores a per-device keypair in the OS keychain (via keyring-rs on desktop, flutter_secure_storage on mobile). The server encrypts blobs with a user master key and per-device public key envelope, so device loss does not expose credentials.
 
----
+Full ADR: [adr/0007-credential-vault.md](adr/0007-credential-vault.md)
 
-## ADR-005 — Sync Engine: Event-log + LWW + Hasura subscriptions
+## Legacy Desktop Handling
 
-**Decision.** Custom event-log with last-write-wins per entity, Hasura subscriptions for fan-out, and an offline queue for local-first writes. **Not** full CRDT — this is single-user multi-device, not collaborative. Upgrade path to CRDT is reserved for v1.3.x if real conflicts emerge.
+The v1.1.0 Flutter desktop implementation is archived as a frozen branch with a README explaining the migration to Tauri 2. No production users require migration support. v1.1.1 ships the archive alongside Tauri 2; v1.2.0 removes it entirely.
 
----
+Full ADR: [adr/0008-legacy-archive.md](adr/0008-legacy-archive.md)
 
-## ADR-006 — Cross-language Bindings
+## Device-Aware Local LLM
 
-**Decision.**
+At first run, the app benchmarks device hardware and selects an optimal model tier (T0–T4). The tier matrix covers Android 4GB phones through M2 Max workstations. Models are Llama 3.2 and Qwen 2.5 at various quantization levels, cached locally and swapped by user preference. Monthly re-benchmarking ensures tier selection stays accurate.
 
-- **Tauri ↔ React TS:** `tauri-specta` + `ts-rs` for type-safe Rust↔TypeScript bindings.
-- **Flutter ↔ Rust:** `flutter_rust_bridge`.
+Full ADR: [adr/0009-device-aware-llm.md](adr/0009-device-aware-llm.md)
 
-Both binding stacks are generated from the same `nclaw-core` crate.
+## Sync Direction Policy
 
----
+Local writes land instantly, queue to the server, and fan out to other devices via subscriptions. The server is the record of truth; conflicts are resolved per-entity using LWW with a manual-resolve UI hook for cases where it matters.
 
-## ADR-007 — Credential Vault: server of record, OS keychain mirror, per-device keypair
+Full ADR: [adr/0010-sync-direction.md](adr/0010-sync-direction.md)
 
-**Decision.**
+## Plugin Integration
 
-- **Server of record:** encrypted blob storage in the `plugins-pro/vault` extension.
-- **Local mirror:** OS keychain — `keyring-rs` on desktop, `flutter_secure_storage` on mobile.
-- **Per-device keypair:** generated on first install. Private key stays in the local keychain. Public key is registered with the server.
-- **Encryption envelope:** server holds the blob encrypted with a per-user master key, then wrapped per-device via the public key.
+The app calls server plugins (calendar, email, browser, news, budget, voice, etc.) over HTTPS using an MCP-style protocol. No local plugin runtime ships in v1.1.1; that's deferred to v1.2.x. Local LLM, sync, and vault are the v1.1.1 foundation.
 
----
+Full ADR: [adr/0011-plugin-integration.md](adr/0011-plugin-integration.md)
 
-## ADR-008 — Existing v1.1.0 Flutter Desktop: archive, do not migrate
+## Versioning Policy
 
-**Decision.** The v1.1.0 Flutter desktop has no production users, so there is no migration burden. v1.1.1 ships the Tauri 2 desktop alongside the legacy archive. v1.2.0 removes the legacy archive entirely.
+The nclaw monorepo uses a single version number for desktop, mobile, core, and protocol. All components ship together at the same semantic version. This simplifies releases and keeps compatibility clear.
 
----
-
-## ADR-009 — Device-Aware Local LLM Defaults
-
-**Decision.** First-run device fingerprinting + benchmark selects a tier automatically.
-
-### Tier matrix
-
-| Tier | Profile | Default model | Quant | Size | Target tok/s |
-|------|---------|---------------|-------|------|--------------|
-| T0 — Ultra-light | Android 4GB · iPhone 11/12 low-power · old netbooks | Qwen 2.5 0.5B | Q4_K_M | ~350 MB | 15–30 |
-| T1 — Light | iPhone 13/14 · mid Android (6-8GB) · 8GB Intel laptops | Llama 3.2 1B | Q4_K_M | ~700 MB | 20–40 |
-| T2 — Standard (sweet spot) | M1/M2 base · iPhone 15/16 · iPad Air · 16GB laptops · Snapdragon 8 Gen 2+ | Llama 3.2 3B | Q4_K_M | ~2 GB | 25–50 (60–100 on Apple Silicon) |
-| T3 — Capable | M1/M2 Pro · 16-32GB workstations · gaming PCs (8GB+ VRAM) | Llama 3.1 8B | Q4_K_M | ~4.5 GB | 30–80 |
-| T4 — Heavy (opt-in only) | M2/M3/M4 Max/Ultra · 64GB+ workstations · multi-GPU rigs | Qwen 2.5 14B or Llama 3.1 70B | Q4_K_M | 8–40 GB | 15–40 |
-
-### Decision algorithm
-
-1. Probe device: OS, arch, CPU class, RAM, GPU vendor + VRAM, NPU, free disk.
-2. Score device → tier T0..T4.
-3. Background-download the tier default.
-4. First-run benchmark (60s): warmup + 200-token completion.
-5. Measure tok/s, p99 latency, RAM peak, thermal throttle.
-6. If benchmark falls below target → auto-downgrade one tier.
-7. If benchmark far exceeds target → offer a one-time upgrade prompt.
-8. Cache result in config; re-benchmark monthly or on hardware change.
-9. Mobile dampers: low-power mode drops one tier; battery below 30% with charger disconnected disables local LLM (user-configurable).
-
-### Role-specific models
-
-Users may configure separate models per role: Chat, Summarizer, Embedder, Code (developer mode). T0/T1 share one model across roles. T2+ may run a dedicated embedder (e.g., BGE-small).
-
----
-
-## ADR-010 — Sync Direction: Local-first with eventual consistency
-
-**Decision.** Writes land locally first for instant UX. The offline queue replicates to the server. The server fans out to other devices via Hasura subscriptions. Conflict resolution is LWW per entity with a manual-resolve UI hook for the rare cases where it matters.
-
----
-
-## ADR-011 — Plugin Integration: server-side over HTTPS, MCP-style protocol
-
-**Decision.** The local app calls server plugins (calendar, email, browser, news, budget, voice) over HTTPS against the user's nSelf instance. MCP-style protocol. There is **no local plugin runtime in v1.1.1** — that is deferred to v1.2.x. The v1.1.1 groundwork is the local LLM, sync engine, and vault.
-
----
-
-## ADR-012 — Versioning: monorepo lockstep at v1.1.1
-
-**Decision.** The nclaw monorepo ships a single version `v1.1.1` across desktop, mobile, core, and protocol. Independent versioning may be introduced later if a real need emerges.
-
----
-
-## References
-
-- Source decisions: `.claude/phases/current/p101-storm/architecture-decisions.md`
-- Three-Surface Model: nSelf PPI § Three-Surface Model
-- Plugin-First Doctrine: nSelf PPI § Plugin-First Development
-- nSelf-First Doctrine: `.claude/docs/doctrines/nself-first.md`
-- Prior architecture (v1.1.0 Flutter component overview): preserved in git history; pre-restructure state.
+Full ADR: [adr/0012-versioning.md](adr/0012-versioning.md)

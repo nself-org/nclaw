@@ -65,15 +65,19 @@ pub fn probe_macos() -> Result<DeviceProbe, CoreError> {
     let memsize_str = run_sysctl("hw.memsize")?;
     let arm64_str = run_sysctl("hw.optional.arm64")?;
 
-    let physical_cores = physical_cores_str
-        .trim()
-        .parse::<u32>()
-        .map_err(|e| CoreError::Llm(LlmError::InternalError(format!("parse physical cores: {}", e))))?;
+    let physical_cores = physical_cores_str.trim().parse::<u32>().map_err(|e| {
+        CoreError::Llm(LlmError::InternalError(format!(
+            "parse physical cores: {}",
+            e
+        )))
+    })?;
 
-    let logical_cores = logical_cores_str
-        .trim()
-        .parse::<u32>()
-        .map_err(|e| CoreError::Llm(LlmError::InternalError(format!("parse logical cores: {}", e))))?;
+    let logical_cores = logical_cores_str.trim().parse::<u32>().map_err(|e| {
+        CoreError::Llm(LlmError::InternalError(format!(
+            "parse logical cores: {}",
+            e
+        )))
+    })?;
 
     let memsize_bytes = memsize_str
         .trim()
@@ -106,7 +110,10 @@ fn run_sysctl(key: &str) -> Result<String, CoreError> {
         .args(&["-n", key])
         .output()
         .map_err(|e| {
-            CoreError::Llm(LlmError::InternalError(format!("sysctl {} failed: {}", key, e)))
+            CoreError::Llm(LlmError::InternalError(format!(
+                "sysctl {} failed: {}",
+                key, e
+            )))
         })?;
 
     if !output.status.success() {
@@ -116,8 +123,12 @@ fn run_sysctl(key: &str) -> Result<String, CoreError> {
         ))));
     }
 
-    String::from_utf8(output.stdout)
-        .map_err(|e| CoreError::Llm(LlmError::InternalError(format!("sysctl {} utf8 error: {}", key, e))))
+    String::from_utf8(output.stdout).map_err(|e| {
+        CoreError::Llm(LlmError::InternalError(format!(
+            "sysctl {} utf8 error: {}",
+            key, e
+        )))
+    })
 }
 
 #[cfg(all(test, target_os = "macos"))]

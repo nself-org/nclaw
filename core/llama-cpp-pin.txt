@@ -1,0 +1,4 @@
+llama-cpp-2 = "0.1.146"
+upstream-commit = "TBD - latest stable as of 0.1.146"
+date = "2026-05-13"
+reason = "pinned to ensure reproducible builds across 5-platform CI (cpu/metal/cuda/vulkan/linux-cpu)"
