@@ -137,8 +137,8 @@ fn run_sysctl(key: &str) -> Result<String, CoreError> {
 /// No sudo, no root required. Returns partial DeviceProbe with safe defaults on parse failures.
 #[cfg(target_os = "linux")]
 pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
-    use std::fs;
     use std::collections::HashSet;
+    use std::fs;
 
     let mut cpu_brand = "unknown".to_string();
     let mut logical_cores = 0u32;
@@ -178,7 +178,7 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
     let physical_cores = if !physical_cores_set.is_empty() {
         physical_cores_set.len() as u32
     } else if logical_cores > 0 {
-        (logical_cores + 1) / 2  // conservative estimate: logical / 2
+        (logical_cores + 1) / 2 // conservative estimate: logical / 2
     } else {
         1
     };
@@ -198,10 +198,7 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
     }
 
     // Attempt lspci for GPU detection (non-fatal if missing or parse fails)
-    if let Ok(output) = Command::new("lspci")
-        .args(&["-mm"])
-        .output()
-    {
+    if let Ok(output) = Command::new("lspci").args(&["-mm"]).output() {
         if output.status.success() {
             if let Ok(lspci_out) = String::from_utf8(output.stdout) {
                 for line in lspci_out.lines() {
@@ -226,7 +223,11 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
         os: "linux".into(),
         arch: std::env::consts::ARCH.into(),
         cpu_brand,
-        physical_cores: if physical_cores > 0 { physical_cores } else { 1 },
+        physical_cores: if physical_cores > 0 {
+            physical_cores
+        } else {
+            1
+        },
         logical_cores: if logical_cores > 0 { logical_cores } else { 1 },
         ram_total_mb: if ram_total_mb > 0 { ram_total_mb } else { 1024 }, // safe fallback
         gpu_vendor,
@@ -290,10 +291,7 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
 
     #[cfg(not(target_os = "windows"))]
     fn run_command_silent(cmd: &str, args: &[&str]) -> Option<String> {
-        let output = Command::new(cmd)
-            .args(args)
-            .output()
-            .ok()?;
+        let output = Command::new(cmd).args(args).output().ok()?;
 
         if !output.status.success() {
             return None;
@@ -313,7 +311,11 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
     if let Some(output) = run_command_silent("wmic", &["cpu", "get", "Name", "/value"]) {
         for line in output.lines() {
             if line.starts_with("Name=") {
-                cpu_brand = line.strip_prefix("Name=").unwrap_or("unknown").trim().to_string();
+                cpu_brand = line
+                    .strip_prefix("Name=")
+                    .unwrap_or("unknown")
+                    .trim()
+                    .to_string();
                 if cpu_brand.is_empty() {
                     cpu_brand = "unknown".to_string();
                 }
@@ -326,7 +328,8 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
     if let Some(output) = run_command_silent("wmic", &["cpu", "get", "NumberOfCores", "/value"]) {
         for line in output.lines() {
             if line.starts_with("NumberOfCores=") {
-                if let Ok(n) = line.strip_prefix("NumberOfCores=")
+                if let Ok(n) = line
+                    .strip_prefix("NumberOfCores=")
                     .unwrap_or("0")
                     .trim()
                     .parse::<u32>()
@@ -341,10 +344,14 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
     }
 
     // Logical cores from wmic
-    if let Some(output) = run_command_silent("wmic", &["cpu", "get", "NumberOfLogicalProcessors", "/value"]) {
+    if let Some(output) = run_command_silent(
+        "wmic",
+        &["cpu", "get", "NumberOfLogicalProcessors", "/value"],
+    ) {
         for line in output.lines() {
             if line.starts_with("NumberOfLogicalProcessors=") {
-                if let Ok(n) = line.strip_prefix("NumberOfLogicalProcessors=")
+                if let Ok(n) = line
+                    .strip_prefix("NumberOfLogicalProcessors=")
                     .unwrap_or("0")
                     .trim()
                     .parse::<u32>()
@@ -359,10 +366,14 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
     }
 
     // RAM from wmic (in bytes)
-    if let Some(output) = run_command_silent("wmic", &["computersystem", "get", "TotalPhysicalMemory", "/value"]) {
+    if let Some(output) = run_command_silent(
+        "wmic",
+        &["computersystem", "get", "TotalPhysicalMemory", "/value"],
+    ) {
         for line in output.lines() {
             if line.starts_with("TotalPhysicalMemory=") {
-                if let Ok(bytes) = line.strip_prefix("TotalPhysicalMemory=")
+                if let Ok(bytes) = line
+                    .strip_prefix("TotalPhysicalMemory=")
                     .unwrap_or("0")
                     .trim()
                     .parse::<u64>()
@@ -377,7 +388,16 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
     }
 
     // GPU from wmic
-    if let Some(output) = run_command_silent("wmic", &["path", "win32_VideoController", "get", "Name,AdapterRAM", "/value"]) {
+    if let Some(output) = run_command_silent(
+        "wmic",
+        &[
+            "path",
+            "win32_VideoController",
+            "get",
+            "Name,AdapterRAM",
+            "/value",
+        ],
+    ) {
         let mut lines = output.lines();
         while let Some(line) = lines.next() {
             if line.starts_with("Name=") {
@@ -387,7 +407,8 @@ pub fn probe_windows() -> Result<DeviceProbe, CoreError> {
                     // Next line may have AdapterRAM
                     if let Some(ram_line) = lines.next() {
                         if ram_line.starts_with("AdapterRAM=") {
-                            if let Ok(vram_bytes) = ram_line.strip_prefix("AdapterRAM=")
+                            if let Ok(vram_bytes) = ram_line
+                                .strip_prefix("AdapterRAM=")
                                 .unwrap_or("0")
                                 .trim()
                                 .parse::<u64>()
