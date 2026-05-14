@@ -48,7 +48,11 @@
   },
   "plugins": {
     "window-state": {},
-    "autostart": {}
+    "autostart": {},
+    "updater": {
+      "endpoints": ["https://packages.nself.org/desktop/latest-{{target}}.json"],
+      "pubkey": "$TAURI_UPDATER_PUBLIC_KEY"
+    }
   },
   "bundle": {
     "active": true,

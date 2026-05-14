@@ -1,0 +1,96 @@
+name: Publish to R2 (packages.nself.org)
+
+on:
+  workflow_run:
+    workflows: ['Sign Linux Artifacts', 'Desktop macOS Build', 'Desktop Windows Build']
+    types: [completed]
+    branches: ['main']
+  workflow_dispatch:
+
+concurrency:
+  group: publish-r2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts/
+
+      - name: Organize artifacts
+        run: |
+          mkdir -p publish/desktop/{macos,windows,linux}
+          # macOS
+          find release-artifacts -name "*.dmg" -exec cp {} publish/desktop/macos/ \;
+          # Windows
+          find release-artifacts -name "*.msi" -o -name "*.exe" | xargs -I {} cp {} publish/desktop/windows/
+          # Linux
+          find release-artifacts -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.asc" | xargs -I {} cp {} publish/desktop/linux/
+          # List what we're publishing
+          find publish -type f | sort
+
+      - name: Publish to R2 bucket
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: https://36b8dcc20c6a6fb77fa22f1fb2c5e96d.r2.cloudflarestorage.com
+          CLOUDFLARE_R2_BUCKET: packages-nself-org
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+
+          # Install rclone
+          curl https://rclone.org/install.sh | sudo bash
+
+          # Configure rclone
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = $CLOUDFLARE_R2_ACCESS_KEY_ID
+          secret_access_key = $CLOUDFLARE_R2_SECRET_ACCESS_KEY
+          endpoint = $CLOUDFLARE_R2_ENDPOINT
+          acl = public-read
+          EOF
+
+          # Upload versioned directory
+          rclone sync publish/desktop/ r2:${CLOUDFLARE_R2_BUCKET}/desktop/v${VERSION}/ -v
+
+          # Update latest symlinks (as separate directory markers)
+          rclone copy publish/desktop/macos/ r2:${CLOUDFLARE_R2_BUCKET}/desktop/latest-macos/ -v
+          rclone copy publish/desktop/windows/ r2:${CLOUDFLARE_R2_BUCKET}/desktop/latest-windows/ -v
+          rclone copy publish/desktop/linux/ r2:${CLOUDFLARE_R2_BUCKET}/desktop/latest-linux/ -v
+
+          echo "Published v${VERSION} to packages.nself.org/desktop/"
+
+      - name: Invalidate Cloudflare cache
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{
+              "files": [
+                "https://packages.nself.org/desktop/latest-macos/*",
+                "https://packages.nself.org/desktop/latest-windows/*",
+                "https://packages.nself.org/desktop/latest-linux/*"
+              ]
+            }'
+
+      - name: Upload workflow completion
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-publish-metadata
+          path: |
+            publish/
+          retention-days: 7

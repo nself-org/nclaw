@@ -1,0 +1,157 @@
+name: Release Cascade
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (v1.1.1)'
+        required: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # Build phase: all platforms in parallel
+  desktop-macos:
+    uses: ./.github/workflows/desktop-macos.yml
+    secrets: inherit
+
+  desktop-windows:
+    uses: ./.github/workflows/desktop-windows.yml
+    secrets: inherit
+
+  desktop-linux:
+    uses: ./.github/workflows/desktop-linux.yml
+    secrets: inherit
+
+  mobile-ios:
+    uses: ./.github/workflows/mobile-ios.yml
+    secrets: inherit
+
+  mobile-android:
+    uses: ./.github/workflows/mobile-android.yml
+    secrets: inherit
+
+  # Sign phase (depends on builds)
+  linux-sign:
+    needs: [desktop-linux]
+    uses: ./.github/workflows/linux-sign.yml
+    secrets: inherit
+
+  # Publish phase (depends on signs)
+  publish-r2:
+    needs: [desktop-macos, desktop-windows, linux-sign]
+    uses: ./.github/workflows/publish-r2.yml
+    secrets: inherit
+
+  publish-updater:
+    needs: [publish-r2]
+    uses: ./.github/workflows/publish-updater.yml
+    secrets: inherit
+
+  publish-mobile:
+    needs: [mobile-ios, mobile-android]
+    uses: ./.github/workflows/publish-mobile.yml
+    secrets: inherit
+
+  # Final phase: GitHub Release
+  github-release:
+    needs: [publish-r2, publish-updater, publish-mobile]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files/
+
+      - name: Organize release assets
+        run: |
+          mkdir -p release-assets
+          # macOS
+          find release-files -name "*.dmg" -exec cp {} release-assets/ \;
+          # Windows
+          find release-files -name "*.msi" -o -name "*.exe" | xargs -I {} cp {} release-assets/
+          # Linux
+          find release-files -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.asc" | xargs -I {} cp {} release-assets/
+          # Manifests
+          find release-files -name "*.json" -path "*/r2-publish-metadata/*" -exec cp {} release-assets/ \;
+          ls -lah release-assets/
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+
+          cat > /tmp/release-notes.md <<'EOF'
+          ## ɳClaw v${VERSION}
+
+          ### Download
+
+          **Desktop:**
+          - [macOS (Intel)](https://packages.nself.org/desktop/latest-macos/)
+          - [macOS (Apple Silicon)](https://packages.nself.org/desktop/latest-macos/)
+          - [Windows](https://packages.nself.org/desktop/latest-windows/)
+          - [Linux (AppImage)](https://packages.nself.org/desktop/latest-linux/)
+
+          **Mobile:**
+          - [iOS (TestFlight)](https://testflight.apple.com/join/nclaw)
+          - [Android (Play Store Internal)](https://play.google.com/store/apps/details?id=org.nself.nclaw)
+
+          ### Auto-Update
+
+          Desktop users with v1.0.x or later will receive this update automatically.
+
+          Update manifests:
+          - [macOS](https://packages.nself.org/desktop/latest-macos.json)
+          - [Windows](https://packages.nself.org/desktop/latest-windows.json)
+          - [Linux](https://packages.nself.org/desktop/latest-linux.json)
+
+          For full changelog, see [CHANGELOG.md](https://github.com/nself-org/nclaw/blob/main/CHANGELOG.md).
+          EOF
+
+          echo "release-notes=$(cat /tmp/release-notes.md)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## ɳClaw ${{ github.ref_name }}
+
+            ### Download
+
+            **Desktop:**
+            - macOS, Windows, Linux available at https://packages.nself.org/desktop/latest-*/ (auto-update enabled)
+            - See [Assets](#assets) below for direct links
+
+            **Mobile:**
+            - iOS: [TestFlight](https://testflight.apple.com/join/nclaw)
+            - Android: Internal track (see Play Console)
+
+            ### Auto-Update
+
+            Desktop users with v1.0.x or later will receive this update automatically via Tauri auto-updater.
+
+            Manifests published to:
+            - https://packages.nself.org/desktop/latest-macos.json
+            - https://packages.nself.org/desktop/latest-windows.json
+            - https://packages.nself.org/desktop/latest-linux.json
+
+            For full changelog, see [CHANGELOG.md](https://github.com/nself-org/nclaw/blob/main/CHANGELOG.md).
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

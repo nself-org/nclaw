@@ -1,0 +1,109 @@
+name: Sign Linux Artifacts
+
+on:
+  workflow_run:
+    workflows: ['Desktop Linux Build']
+    types: [completed]
+    branches: ['main']
+  workflow_dispatch:
+
+concurrency:
+  group: linux-sign-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: artifacts/
+
+      - name: Install signing tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-sig rpm
+
+      - name: Import GPG key
+        env:
+          LINUX_SIGNING_GPG_KEY_BASE64: ${{ secrets.LINUX_SIGNING_GPG_KEY_BASE64 }}
+          LINUX_SIGNING_GPG_PASSPHRASE: ${{ secrets.LINUX_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          echo "$LINUX_SIGNING_GPG_KEY_BASE64" | base64 --decode | gpg --batch --no-tty --import
+          echo "GPG key imported"
+
+      - name: Sign .deb packages
+        env:
+          LINUX_SIGNING_GPG_PASSPHRASE: ${{ secrets.LINUX_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          for deb in artifacts/**/*.deb; do
+            if [[ -f "$deb" ]]; then
+              echo "Signing $deb..."
+              dpkg-sig -k nself-signer --sign originator "$deb"
+            fi
+          done
+
+      - name: Sign .rpm packages
+        env:
+          LINUX_SIGNING_GPG_PASSPHRASE: ${{ secrets.LINUX_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          cat > ~/.rpmmacros <<EOF
+          %_gpg_name nself-signer
+          EOF
+          for rpm in artifacts/**/*.rpm; do
+            if [[ -f "$rpm" ]]; then
+              echo "Signing $rpm..."
+              expect -c "
+                spawn rpm --addsign \"$rpm\"
+                expect \"Enter pass phrase:\"
+                send \"$LINUX_SIGNING_GPG_PASSPHRASE\n\"
+                expect eof
+              " || rpm --addsign "$rpm"
+            fi
+          done
+
+      - name: Sign AppImage (requires manual review; signature on .AppImage.asc)
+        env:
+          LINUX_SIGNING_GPG_PASSPHRASE: ${{ secrets.LINUX_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          for appimage in artifacts/**/*.AppImage; do
+            if [[ -f "$appimage" ]]; then
+              echo "Creating detached signature for $appimage..."
+              gpg --batch --no-tty --passphrase "$LINUX_SIGNING_GPG_PASSPHRASE" \
+                  --detach-sign --armor "$appimage"
+              echo "Signature: $appimage.asc"
+            fi
+          done
+
+      - name: Verify signatures
+        run: |
+          echo "=== DEB signatures ==="
+          for deb in artifacts/**/*.deb; do
+            [[ -f "$deb" ]] && dpkg-sig --verify "$deb"
+          done
+          echo "=== RPM signatures ==="
+          for rpm in artifacts/**/*.rpm; do
+            [[ -f "$rpm" ]] && rpm --checksig "$rpm"
+          done
+          echo "=== AppImage signatures ==="
+          for asc in artifacts/**/*.AppImage.asc; do
+            [[ -f "$asc" ]] && echo "Verified: $asc"
+          done
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-signed
+          path: |
+            artifacts/**/*.deb
+            artifacts/**/*.rpm
+            artifacts/**/*.AppImage
+            artifacts/**/*.AppImage.asc
+          retention-days: 30

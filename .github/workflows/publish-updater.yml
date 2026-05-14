@@ -1,0 +1,139 @@
+name: Publish Tauri Updater Manifest
+
+on:
+  workflow_run:
+    workflows: ['Publish to R2 (packages.nself.org)']
+    types: [completed]
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  publish-manifest:
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: r2-publish-metadata
+          path: release-data/
+
+      - name: Generate Tauri updater manifests
+        env:
+          TAURI_UPDATER_PRIVATE_KEY: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY }}
+          TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+          mkdir -p manifests
+
+          # Helper function to compute signatures
+          compute_sig() {
+            local file="$1"
+            if [[ ! -f "$file" ]]; then
+              echo ""
+              return
+            fi
+            echo "$TAURI_UPDATER_PRIVATE_KEY" | base64 --decode > /tmp/private_key
+            openssl dgst -sha256 -sign /tmp/private_key "$file" | base64 | tr -d '\n'
+            rm /tmp/private_key
+          }
+
+          # macOS manifest
+          cat > manifests/latest-macos.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "$(compute_sig 'release-data/desktop/macos/nclaw_aarch64.app.tar.gz')",
+                "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_aarch64.app.tar.gz"
+              },
+              "darwin-x86_64": {
+                "signature": "$(compute_sig 'release-data/desktop/macos/nclaw_x64.app.tar.gz')",
+                "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.app.tar.gz"
+              }
+            }
+          }
+          EOF
+
+          # Windows manifest
+          cat > manifests/latest-windows.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "$(compute_sig 'release-data/desktop/windows/nclaw_x64.msi')",
+                "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.msi"
+              }
+            }
+          }
+          EOF
+
+          # Linux manifest (AppImage)
+          cat > manifests/latest-linux.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "linux-x86_64": {
+                "signature": "$(compute_sig 'release-data/desktop/linux/nclaw_x64.AppImage')",
+                "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.AppImage"
+              },
+              "linux-aarch64": {
+                "signature": "$(compute_sig 'release-data/desktop/linux/nclaw_arm64.AppImage')",
+                "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_arm64.AppImage"
+              }
+            }
+          }
+          EOF
+
+          echo "Generated manifests for v${VERSION}"
+          cat manifests/*.json
+
+      - name: Upload manifests to R2
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: https://36b8dcc20c6a6fb77fa22f1fb2c5e96d.r2.cloudflarestorage.com
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = $CLOUDFLARE_R2_ACCESS_KEY_ID
+          secret_access_key = $CLOUDFLARE_R2_SECRET_ACCESS_KEY
+          endpoint = $CLOUDFLARE_R2_ENDPOINT
+          acl = public-read
+          EOF
+
+          rclone copy manifests/ r2:packages-nself-org/desktop/ -v
+          echo "Manifests published to packages.nself.org/desktop/"
+
+      - name: Invalidate Cloudflare cache (updater endpoints)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{
+              "files": [
+                "https://packages.nself.org/desktop/latest-macos.json",
+                "https://packages.nself.org/desktop/latest-windows.json",
+                "https://packages.nself.org/desktop/latest-linux.json"
+              ]
+            }'

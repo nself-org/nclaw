@@ -1,0 +1,155 @@
+name: Release Cascade v1.1.1
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 1.1.1)'
+        required: true
+        default: '1.1.1'
+      skip_to_step:
+        description: 'Skip to step (gate, bump, staging, smoke, prod, announce, publish, all)'
+        required: false
+        default: 'all'
+
+jobs:
+  gate:
+    name: Release Gate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Release Gate
+        run: bash nclaw/scripts/release-gate.sh
+
+  version-bump:
+    name: Version Bump
+    needs: gate
+    if: ${{ inputs.skip_to_step == 'all' || inputs.skip_to_step == 'bump' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Git Config
+        run: |
+          git config user.name "nself-bot"
+          git config user.email "bot@nself.org"
+
+      - name: Version Bump Cascade
+        run: bash nclaw/scripts/version-bump-cascade.sh ${{ inputs.version }}
+
+      - name: Commit Version Changes
+        run: |
+          git add -A
+          git commit -m "chore(release): bump to v${{ inputs.version }}" || true
+
+  staging:
+    name: Staging Tag & Smoke
+    needs: version-bump
+    if: ${{ inputs.skip_to_step == 'all' || inputs.skip_to_step == 'staging' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Git Config
+        run: |
+          git config user.name "nself-bot"
+          git config user.email "bot@nself.org"
+
+      - name: Staging Tag
+        run: bash nclaw/scripts/prod-tag.sh ${{ inputs.version }} --staging-only
+
+      - name: Staging Smoke Tests
+        run: bash nclaw/scripts/staging-smoke.sh ${{ inputs.version }}
+
+  production:
+    name: Production Tag & Release
+    needs: staging
+    if: ${{ inputs.skip_to_step == 'all' || inputs.skip_to_step == 'prod' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Git Config
+        run: |
+          git config user.name "nself-bot"
+          git config user.email "bot@nself.org"
+
+      - name: Production Tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash nclaw/scripts/prod-tag.sh ${{ inputs.version }} --prod
+
+  announce:
+    name: Announcement
+    needs: production
+    if: ${{ inputs.skip_to_step == 'all' || inputs.skip_to_step == 'announce' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Announce Release
+        run: bash nclaw/scripts/announce.sh ${{ inputs.version }}
+
+  publish:
+    name: Publish (npm, crates, mobile, homebrew)
+    needs: announce
+    if: ${{ inputs.skip_to_step == 'all' || inputs.skip_to_step == 'publish' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: npm Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bash nclaw/scripts/npm-publish.sh ${{ inputs.version }}
+
+      - name: SDK Publish
+        run: bash nclaw/scripts/sdk-publish.sh ${{ inputs.version }}
+
+      - name: Crates.io Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: bash nclaw/scripts/crates-io-publish.sh ${{ inputs.version }}
+
+      - name: Homebrew Sync
+        run: bash nclaw/scripts/homebrew-sync.sh ${{ inputs.version }}
+
+      - name: Docker Build & Push
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: bash nclaw/scripts/docker-build-push.sh ${{ inputs.version }}
+
+  verify:
+    name: Post-Release Verification
+    needs: publish
+    if: always()
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bundle Smoke Tests
+        run: bash nclaw/scripts/bundle-smoke.sh ${{ inputs.version }}
+
+      - name: Schedule 48h Soak
+        run: bash nclaw/scripts/soak-48h.sh ${{ inputs.version }}
+
+      - name: Sign Audit Log
+        run: bash nclaw/scripts/audit-log-sign.sh ${{ inputs.version }}
