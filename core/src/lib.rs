@@ -15,6 +15,7 @@ pub mod models;
 pub mod plugin;
 pub mod protocol;
 pub mod registry;
+pub mod sync;
 pub mod testing;
 pub mod tier;
 pub mod types;
