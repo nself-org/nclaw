@@ -1,0 +1,85 @@
+name: Desktop macOS Build
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
+
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: ${{ matrix.target }} }
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            nclaw/desktop/src-tauri/target
+          key: cargo-${{ matrix.target }}-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version '^2' --locked
+
+      - name: Install pnpm deps
+        working-directory: nclaw/desktop
+        run: pnpm install --frozen-lockfile
+
+      - name: Import Apple cert
+        env:
+          CERT_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PROFILE }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "$CERT_BASE64" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -k "$KEYCHAIN_PATH" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Build Tauri
+        working-directory: nclaw/desktop
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: cargo tauri build --target ${{ matrix.target }}
+
+      - name: Verify codesign
+        run: |
+          for app in nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-${{ matrix.target }}
+          path: |
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+          retention-days: 30

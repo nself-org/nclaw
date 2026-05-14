@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod backend;
+pub mod bridge;
 pub mod benchmark;
 pub mod db;
 pub mod crypto;

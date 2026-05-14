@@ -33,6 +33,7 @@ reqwest = { version = "0.12", features = ["stream", "json"] }
 sha2 = "0.10"
 futures = "0.3"
 fs2 = "0.4"
+rusqlite = { version = "0.31", optional = true, features = ["bundled"] }
 async-stream = "0.3"
 tokio-stream = "0.1"
 libc = "0.2"
@@ -74,6 +75,8 @@ ts-export = []
 pglite = []
 # embedded-pg: launches a real postgres binary subprocess as fallback when pglite lacks pgvector/ltree.
 embedded-pg = ["dep:postgresql_embedded"]
+# mobile-sqlite: SQLite + sqlite-vec extension for iOS/Android targets.
+mobile-sqlite = ["dep:rusqlite"]
 
 [[bin]]
 name = "export-bindings"
