@@ -52,9 +52,21 @@ pub async fn get_tier() -> Result<Tier, String> {
 pub async fn get_benchmark_history(limit: usize) -> Result<Vec<BenchmarkResult>, String> {
     // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
     let results = vec![
-        BenchmarkResult { date: "2026-05-10".to_string(), toks_per_sec: 42.1, model_id: "phi-3-mini".to_string() },
-        BenchmarkResult { date: "2026-04-10".to_string(), toks_per_sec: 39.8, model_id: "phi-3-mini".to_string() },
-        BenchmarkResult { date: "2026-03-10".to_string(), toks_per_sec: 41.3, model_id: "phi-3-mini".to_string() },
+        BenchmarkResult {
+            date: "2026-05-10".to_string(),
+            toks_per_sec: 42.1,
+            model_id: "phi-3-mini".to_string(),
+        },
+        BenchmarkResult {
+            date: "2026-04-10".to_string(),
+            toks_per_sec: 39.8,
+            model_id: "phi-3-mini".to_string(),
+        },
+        BenchmarkResult {
+            date: "2026-03-10".to_string(),
+            toks_per_sec: 41.3,
+            model_id: "phi-3-mini".to_string(),
+        },
     ];
     Ok(results.into_iter().take(limit).collect())
 }
@@ -167,7 +179,10 @@ pub async fn upgrade_to_tier(tier: u8) -> Result<(), String> {
 #[tauri::command]
 pub async fn set_upgrade_prompt_disabled(disabled: bool) -> Result<(), String> {
     // stub: logs the request; backend wiring lands in S15.T17 acceptance gate
-    eprintln!("set_upgrade_prompt_disabled stub called with disabled={}", disabled);
+    eprintln!(
+        "set_upgrade_prompt_disabled stub called with disabled={}",
+        disabled
+    );
     Ok(())
 }
 
@@ -176,6 +191,9 @@ pub async fn set_upgrade_prompt_disabled(disabled: bool) -> Result<(), String> {
 pub async fn defer_upgrade_prompt_30_days() -> Result<(), String> {
     // stub: logs the request; backend wiring lands in S15.T17 acceptance gate
     let now = Utc::now().to_rfc3339();
-    eprintln!("defer_upgrade_prompt_30_days stub called; next prompt after 30 days from {}", now);
+    eprintln!(
+        "defer_upgrade_prompt_30_days stub called; next prompt after 30 days from {}",
+        now
+    );
     Ok(())
 }

@@ -123,7 +123,10 @@ pub enum RouteDecision {
     /// Run inference locally via llama.cpp with this model.
     Local { model_id: String },
     /// Forward to a ServerMux endpoint; server selects the concrete model.
-    ServerMux { endpoint: String, model_hint: String },
+    ServerMux {
+        endpoint: String,
+        model_hint: String,
+    },
     /// Call a frontier API directly.
     DirectFrontier { provider: String, model_id: String },
     /// No eligible route right now; enqueue for retry when connectivity returns.
@@ -278,12 +281,10 @@ impl Router {
                     }
                 }
             }
-            RouteOverride::ForceFrontier { provider, model_id } => {
-                RouteDecision::DirectFrontier {
-                    provider: provider.clone(),
-                    model_id: model_id.clone(),
-                }
-            }
+            RouteOverride::ForceFrontier { provider, model_id } => RouteDecision::DirectFrontier {
+                provider: provider.clone(),
+                model_id: model_id.clone(),
+            },
         }
     }
 

@@ -43,9 +43,7 @@ impl FilterRule {
             Self::PrivacyLocalOnlyBlocksCloud => {
                 "LocalOnly privacy: cloud routes (ServerMux, DirectFrontier) are ineligible"
             }
-            Self::OfflineBlocksCloud => {
-                "Offline connection: only local inference is eligible"
-            }
+            Self::OfflineBlocksCloud => "Offline connection: only local inference is eligible",
             Self::DegradedBlocksFrontier => {
                 "Degraded connection: DirectFrontier is ineligible; ServerMux allowed"
             }
@@ -55,9 +53,7 @@ impl FilterRule {
             Self::NoEndpointBlocksServerMux => {
                 "No ServerMux endpoint configured: ServerMux is ineligible"
             }
-            Self::CostBudgetExceeded => {
-                "Estimated prompt cost exceeds max_cost_per_prompt_usd"
-            }
+            Self::CostBudgetExceeded => "Estimated prompt cost exceeds max_cost_per_prompt_usd",
         }
     }
 
@@ -201,7 +197,11 @@ mod tests {
             FilterRule::CostBudgetExceeded,
         ];
         for r in &rules {
-            assert!(!r.description().is_empty(), "{:?} description must not be empty", r);
+            assert!(
+                !r.description().is_empty(),
+                "{:?} description must not be empty",
+                r
+            );
         }
     }
 
@@ -223,12 +223,8 @@ mod tests {
 
     #[test]
     fn active_filter_rules_offline_and_local_only() {
-        let active = FilterRule::active_for(
-            Privacy::LocalOnly,
-            ConnectionState::Offline,
-            false,
-            false,
-        );
+        let active =
+            FilterRule::active_for(Privacy::LocalOnly, ConnectionState::Offline, false, false);
         // PrivacyLocalOnlyBlocksCloud + OfflineBlocksCloud + NoEndpoint + NoProviders
         assert!(active.contains(&FilterRule::PrivacyLocalOnlyBlocksCloud));
         assert!(active.contains(&FilterRule::OfflineBlocksCloud));
@@ -240,12 +236,8 @@ mod tests {
 
     #[test]
     fn active_filter_rules_degraded() {
-        let active = FilterRule::active_for(
-            Privacy::Default,
-            ConnectionState::Degraded,
-            true,
-            true,
-        );
+        let active =
+            FilterRule::active_for(Privacy::Default, ConnectionState::Degraded, true, true);
         assert!(active.contains(&FilterRule::DegradedBlocksFrontier));
         assert!(!active.contains(&FilterRule::OfflineBlocksCloud));
         assert!(!active.contains(&FilterRule::PrivacyLocalOnlyBlocksCloud));
@@ -253,19 +245,24 @@ mod tests {
 
     #[test]
     fn active_filter_rules_online_all_available() {
-        let active = FilterRule::active_for(
-            Privacy::AllowFrontier,
-            ConnectionState::Online,
-            true,
-            true,
+        let active =
+            FilterRule::active_for(Privacy::AllowFrontier, ConnectionState::Online, true, true);
+        assert!(
+            active.is_empty(),
+            "no filter rules should fire when fully available"
         );
-        assert!(active.is_empty(), "no filter rules should fire when fully available");
     }
 
     #[test]
     fn score_rule_applies_to_class() {
-        assert_eq!(ScoreRule::LocalEmbedBoost.applies_to_class(), Some(PromptClass::Embed));
-        assert_eq!(ScoreRule::FrontierCodeBoost.applies_to_class(), Some(PromptClass::Code));
+        assert_eq!(
+            ScoreRule::LocalEmbedBoost.applies_to_class(),
+            Some(PromptClass::Embed)
+        );
+        assert_eq!(
+            ScoreRule::FrontierCodeBoost.applies_to_class(),
+            Some(PromptClass::Code)
+        );
         assert_eq!(ScoreRule::LocalPreferred.applies_to_class(), None);
     }
 }

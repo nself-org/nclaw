@@ -24,13 +24,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v3
-        with: { version: '9' }
+        with:
+          version: '9'
 
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml'
 
       - uses: dtolnay/rust-toolchain@stable
-        with: { targets: ${{ matrix.target }} }
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -82,4 +87,41 @@ jobs:
           path: |
             nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+          retention-days: 30
+
+  notarize:
+    needs: build
+    runs-on: macos-14
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-macos-${{ matrix.target }}
+          path: artifacts/
+
+      - name: Notarize DMG
+        env:
+          APPLE_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID }}
+          APPLE_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
+          APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        run: |
+          chmod +x nclaw/desktop/scripts/notarize.sh
+          for dmg in artifacts/*.dmg; do
+            if [[ -f "$dmg" ]]; then
+              nclaw/desktop/scripts/notarize.sh "$dmg"
+            fi
+          done
+
+      - name: Upload notarized artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-${{ matrix.target }}-notarized
+          path: artifacts/*.dmg
           retention-days: 30

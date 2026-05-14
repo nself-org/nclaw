@@ -1,0 +1,68 @@
+name: Mobile iOS Build
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: 'aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.24.x'
+          cache: true
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            nclaw/libs/libnclaw/target
+          key: cargo-ios-${{ hashFiles('nclaw/libs/libnclaw/Cargo.lock') }}
+
+      - name: Build nclaw-core for iOS targets
+        working-directory: nclaw/libs/libnclaw
+        run: bash ../../scripts/build-ios.sh
+
+      - name: Flutter pub get
+        working-directory: nclaw/app
+        run: flutter pub get
+
+      - name: Import Apple cert + provisioning profile
+        env:
+          APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 }}
+          APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD }}
+          APPLE_KEYCHAIN_PROFILE: ${{ secrets.APPLE_KEYCHAIN_PROFILE }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          security create-keychain -p "$APPLE_KEYCHAIN_PROFILE" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PROFILE" "$KEYCHAIN_PATH"
+          echo "$APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -k "$KEYCHAIN_PATH" -P "$APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
+
+      - name: Flutter build IPA
+        working-directory: nclaw/app
+        run: flutter build ios --release
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ios-ipa
+          path: nclaw/app/build/ios/ipa/*.ipa
+          retention-days: 30

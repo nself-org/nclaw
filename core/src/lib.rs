@@ -2,10 +2,10 @@
 
 pub mod api;
 pub mod backend;
-pub mod bridge;
 pub mod benchmark;
-pub mod db;
+pub mod bridge;
 pub mod crypto;
+pub mod db;
 pub mod device;
 pub mod error;
 pub mod llm;
@@ -18,6 +18,7 @@ pub mod registry;
 pub mod testing;
 pub mod tier;
 pub mod types;
+pub mod vault;
 
 // Re-export cache module for convenience
 pub use models::cache;

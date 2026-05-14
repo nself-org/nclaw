@@ -16,12 +16,8 @@ pub fn build_app_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let close_window = PredefinedMenuItem::close_window(handle, None)?;
 
     #[cfg(target_os = "macos")]
-    let file_submenu = Submenu::with_items(
-        handle,
-        "File",
-        true,
-        &[&new_chat, &export, &close_window],
-    )?;
+    let file_submenu =
+        Submenu::with_items(handle, "File", true, &[&new_chat, &export, &close_window])?;
 
     #[cfg(not(target_os = "macos"))]
     let quit = PredefinedMenuItem::quit(handle, None)?;
@@ -75,8 +71,7 @@ pub fn build_app_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let zoom = PredefinedMenuItem::zoom(handle, None)?;
 
     #[cfg(target_os = "macos")]
-    let window_submenu =
-        Submenu::with_items(handle, "Window", true, &[&minimize, &zoom])?;
+    let window_submenu = Submenu::with_items(handle, "Window", true, &[&minimize, &zoom])?;
 
     #[cfg(not(target_os = "macos"))]
     let window_submenu = Submenu::with_items(handle, "Window", true, &[&minimize])?;
@@ -88,16 +83,10 @@ pub fn build_app_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
 
     // "About" in Help only on non-macOS; macOS puts it in the App submenu.
     #[cfg(target_os = "macos")]
-    let help_submenu = Submenu::with_items(
-        handle,
-        "Help",
-        true,
-        &[&docs, &report_issue],
-    )?;
+    let help_submenu = Submenu::with_items(handle, "Help", true, &[&docs, &report_issue])?;
 
     #[cfg(not(target_os = "macos"))]
-    let about_help =
-        MenuItem::with_id(handle, "about", "About ɳClaw", true, None::<&str>)?;
+    let about_help = MenuItem::with_id(handle, "about", "About ɳClaw", true, None::<&str>)?;
 
     #[cfg(not(target_os = "macos"))]
     let help_submenu = Submenu::with_items(
