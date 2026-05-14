@@ -1,0 +1,3 @@
+#!/bin/bash
+# nClaw .deb postinst — currently no-op. Future: register desktop file, update icon cache, etc.
+exit 0

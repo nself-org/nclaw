@@ -1,0 +1,63 @@
+name: Desktop Windows Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/apps/desktop/pnpm-lock.yaml' }
+
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'x86_64-pc-windows-msvc' }
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            nclaw/apps/desktop/src-tauri/target
+          key: cargo-windows-${{ hashFiles('nclaw/apps/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version '^2' --locked
+
+      - name: Install pnpm deps
+        working-directory: nclaw/apps/desktop
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri (unsigned at v1.1.1; signing wired in T06 once EV cert lands)
+        working-directory: nclaw/apps/desktop
+        run: cargo tauri build --target x86_64-pc-windows-msvc
+
+      - name: Conditional signtool (no-op until WINDOWS_EV_CERT_THUMBPRINT secret set)
+        if: ${{ secrets.WINDOWS_EV_CERT_THUMBPRINT != '' }}
+        run: |
+          $files = Get-ChildItem -Path "nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
+          foreach ($f in $files) {
+            signtool sign /sha1 "$env:WINDOWS_EV_CERT_THUMBPRINT" /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$f.FullName"
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows-x64
+          path: |
+            nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          retention-days: 30

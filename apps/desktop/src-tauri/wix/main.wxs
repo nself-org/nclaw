@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Custom WiX overrides for nClaw — empty for v1.1.1 (Tauri default suffices).
+     Customize for EULA / registry keys / start-menu shortcuts in v1.2.0. -->
