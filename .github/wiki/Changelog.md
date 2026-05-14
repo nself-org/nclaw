@@ -22,9 +22,15 @@ Minor release. ɳClaw bundle updated to 14 plugins. New mcp and knowledge-base p
 
 ---
 
-## Unreleased
+## v1.1.1 — 2026-05-13
 
-### Fixed
+### Architecture
+
+- **Desktop platform swap:** Flutter desktop replaced by Tauri 2 + React + Vite for better native performance and smaller binary footprint
+- Mobile remains on Flutter (iOS, Android)
+- See [migration guide](migration/v1.1.0-to-v1.1.1.md) for details
+
+### Unreleased fixes (merged at v1.1.1)
 
 - ci: relax `build_runner` constraint to `^2.4.0` to match pubspec.lock and resolve version conflict with current Flutter stable (S26 T03)
 - ci: add `workflow_dispatch` trigger to CI and Flutter CI workflows for manual re-runs
