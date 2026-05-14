@@ -5,5 +5,6 @@ pub mod envelope;
 pub mod keychain;
 pub mod keypair;
 
+#[cfg(feature = "vault")]
 pub use envelope::Envelope;
 pub use keypair::DeviceKeypair;

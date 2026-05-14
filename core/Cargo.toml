@@ -25,13 +25,14 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # E2E encryption: X25519 key exchange + ChaCha20-Poly1305 AEAD
 x25519-dalek = { version = "2", features = ["static_secrets"] }
-chacha20poly1305 = { version = "0.10", optional = true, features = ["stream"] }
+chacha20poly1305 = { version = "0.10", features = ["stream"] }
 rand_core = { version = "0.6", features = ["getrandom"] }
 base64 = "0.22"
 # Client vault: Ed25519 keypair + XChaCha20 envelope encryption + OS keychain
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 rand = "0.8"
 keyring = "3"
+argon2 = "0.5"
 thiserror = "1"
 reqwest = { version = "0.12", features = ["stream", "json"] }
 sha2 = "0.10"
@@ -74,8 +75,8 @@ cuda = ["dep:llama-cpp-2", "llama-cpp-2/cuda"]
 vulkan = ["dep:llama-cpp-2", "llama-cpp-2/vulkan"]
 frb-export = []
 ts-export = []
-# Client vault: XChaCha20-Poly1305 envelope encryption
-vault = ["dep:chacha20poly1305"]
+# Client vault: XChaCha20-Poly1305 envelope encryption (chacha20poly1305 is always-on; vault gates the Envelope API)
+vault = []
 # Desktop DB feature flags (Decision #4).
 # pglite: Postgres-on-WASM via wasmtime. Surface only — WASM bundle integration in S16.T01b.
 pglite = []

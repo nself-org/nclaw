@@ -40,6 +40,18 @@ pub enum CoreError {
 
     #[error("{0}")]
     Other(String),
+
+    #[error("not implemented: {0}")]
+    NotImplemented(String),
+
+    #[error("serialization error: {0}")]
+    Serialization(String),
+}
+
+impl From<serde_json::Error> for CoreError {
+    fn from(e: serde_json::Error) -> Self {
+        CoreError::Serialization(e.to_string())
+    }
 }
 
 /// LLM backend errors: provider connectivity, model issues, token limits.

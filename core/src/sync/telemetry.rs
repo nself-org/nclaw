@@ -8,7 +8,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 /// Sync telemetry counters — all atomic for thread-safe concurrent updates.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Use `snapshot()` to obtain a serializable point-in-time view.
+#[derive(Debug, Clone)]
 pub struct SyncTelemetry {
     /// Number of events successfully pushed to server.
     pub events_pushed: Arc<AtomicU64>,

@@ -88,7 +88,7 @@ pub fn merge_field_updates(a: &EventEnvelope, b: &EventEnvelope) -> serde_json::
         .clone()
         .unwrap_or_else(|| serde_json::json!({}));
 
-    if let (Some(serde_json::Value::Object(ref mut m)), Some(serde_json::Value::Object(n))) = (
+    if let (Some(m), Some(n)) = (
         merged.as_object_mut(),
         newer.payload.as_ref().and_then(|p| p.as_object()),
     ) {
