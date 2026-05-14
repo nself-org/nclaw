@@ -6,42 +6,43 @@
 //! Full integration with SQLCipher lands in S16.T09b after sqlcipher crate audit.
 
 use crate::error::CoreError;
+use argon2::{Algorithm, Argon2, Params, Version};
 
 /// Derive a 32-byte key from a user passphrase using Argon2id.
-/// Salt should be device-stable (e.g., per-device pubkey hash).
+///
+/// Parameters (OWASP minimum for interactive logins, tuned to run in <1 s
+/// on a modern mobile CPU while still being brute-force resistant):
+/// - m = 64 MiB memory cost
+/// - t = 3 iterations
+/// - p = 1 parallelism
+/// - output = 32 bytes
+///
+/// Salt should be device-stable (e.g., SHA-256 of the device's Ed25519 public key).
 ///
 /// # Arguments
 /// * `passphrase` - User-provided passphrase bytes
-/// * `salt` - Device-stable salt (recommend SHA256 of device public key)
+/// * `salt` - Device-stable salt (recommend SHA256 of device public key); must be ≥8 bytes
 ///
 /// # Returns
 /// A fixed 32-byte array suitable for SQLCipher PRAGMA key.
 ///
-/// # Note
-/// This is a placeholder using hash-based derivation. Real Argon2id integration
-/// lands in S16.T09b when sqlcipher bindings are finalized and audited.
+/// # Errors
+/// Returns `CoreError::Other` if Argon2 parameters are invalid or hashing fails.
 pub fn derive_key(passphrase: &[u8], salt: &[u8]) -> Result<[u8; 32], CoreError> {
-    // Placeholder: combine passphrase + salt via hasher.
-    // Production: use argon2 crate with proper parameters.
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
+    let params = Params::new(
+        64 * 1024, // m_cost: 64 MiB
+        3,         // t_cost: 3 iterations
+        1,         // p_cost: 1 lane
+        Some(32),  // output length: 32 bytes
+    )
+    .map_err(|e| CoreError::Other(format!("argon2 params: {e}")))?;
 
-    let mut hasher = DefaultHasher::new();
-    passphrase.hash(&mut hasher);
-    salt.hash(&mut hasher);
-    let hash1 = hasher.finish();
-
-    let mut hasher = DefaultHasher::new();
-    hash1.hash(&mut hasher);
-    let hash2 = hasher.finish();
+    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 
     let mut key = [0u8; 32];
-    for (i, byte) in hash1.to_le_bytes().iter().enumerate() {
-        key[i] ^= byte;
-    }
-    for (i, byte) in hash2.to_be_bytes().iter().enumerate() {
-        key[(i + 8) % 32] ^= byte;
-    }
+    argon2
+        .hash_password_into(passphrase, salt, &mut key)
+        .map_err(|e| CoreError::Other(format!("argon2 hash: {e}")))?;
 
     Ok(key)
 }
@@ -58,7 +59,7 @@ pub fn derive_key(passphrase: &[u8], salt: &[u8]) -> Result<[u8; 32], CoreError>
 ///
 /// # Example
 /// ```ignore
-/// let key = derive_key(b"password", b"salt")?;
+/// let key = derive_key(b"password", b"salt_salt")?;
 /// let pragma = sqlcipher_pragma(&key);
 /// // pragma = "PRAGMA key = \"x'abcd...'\"";
 /// ```
@@ -71,24 +72,51 @@ pub fn sqlcipher_pragma(key_32: &[u8; 32]) -> String {
 mod tests {
     use super::*;
 
+    // Salt must be ≥8 bytes for Argon2.
+    const SALT: &[u8] = b"test_salt_stable";
+
     #[test]
     fn test_derive_key_produces_32_bytes() {
-        let key = derive_key(b"password", b"salt").expect("derive_key failed");
+        let key = derive_key(b"password", SALT).expect("derive_key failed");
         assert_eq!(key.len(), 32);
     }
 
     #[test]
     fn test_derive_key_is_deterministic() {
-        let key1 = derive_key(b"password", b"salt").expect("first derive_key failed");
-        let key2 = derive_key(b"password", b"salt").expect("second derive_key failed");
-        assert_eq!(key1, key2);
+        // Same passphrase + same salt → identical key (H2: Argon2id is deterministic).
+        let key1 = derive_key(b"password", SALT).expect("first derive_key failed");
+        let key2 = derive_key(b"password", SALT).expect("second derive_key failed");
+        assert_eq!(
+            key1, key2,
+            "Argon2id must be deterministic for the same inputs"
+        );
+    }
+
+    #[test]
+    fn test_derive_key_differs_on_different_salt() {
+        // Different salt → different key (H2: salt isolation).
+        let salt2: &[u8] = b"other_salt_diff_";
+        let key1 = derive_key(b"password", SALT).expect("derive_key 1 failed");
+        let key2 = derive_key(b"password", salt2).expect("derive_key 2 failed");
+        assert_ne!(key1, key2, "Different salts must produce different keys");
     }
 
     #[test]
     fn test_derive_key_differs_on_passphrase() {
-        let key1 = derive_key(b"password1", b"salt").expect("derive_key 1 failed");
-        let key2 = derive_key(b"password2", b"salt").expect("derive_key 2 failed");
-        assert_ne!(key1, key2);
+        // Different passphrase → different key.
+        let key1 = derive_key(b"password1", SALT).expect("derive_key 1 failed");
+        let key2 = derive_key(b"password2", SALT).expect("derive_key 2 failed");
+        assert_ne!(
+            key1, key2,
+            "Different passphrases must produce different keys"
+        );
+    }
+
+    #[test]
+    fn test_derive_key_empty_passphrase() {
+        // Empty passphrase is unusual but must not panic — still produces a 32-byte key.
+        let key = derive_key(b"", SALT).expect("derive_key with empty passphrase failed");
+        assert_eq!(key.len(), 32);
     }
 
     #[test]

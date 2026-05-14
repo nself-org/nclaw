@@ -52,12 +52,7 @@ impl OverridesStore {
 
     /// List all conversations with active overrides.
     pub fn list_conversations(&self) -> Vec<String> {
-        self.inner
-            .read()
-            .unwrap()
-            .keys()
-            .cloned()
-            .collect()
+        self.inner.read().unwrap().keys().cloned().collect()
     }
 }
 

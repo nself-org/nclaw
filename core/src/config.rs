@@ -22,8 +22,16 @@ pub enum ConfigError {
 pub struct ServerConfig {
     pub url: String,       // Backend URL (e.g., http://localhost:8080)
     pub timeout_secs: u64, // Request timeout in seconds
-    #[serde(default = "default_true")]
-    pub insecure_skip_verify: bool, // Skip TLS verification (dev only)
+    /// Skip TLS certificate verification.
+    ///
+    /// Defaults to `false` (secure). Set to `true` only when connecting to a
+    /// self-hosted instance that uses self-signed certificates (e.g., local dev
+    /// with mkcert not yet trusted). Never enable in production.
+    ///
+    /// To opt in: set `NCLAW_SERVER_INSECURE_SKIP_VERIFY=true` or add
+    /// `insecure_skip_verify = true` to your `config.toml`.
+    #[serde(default)]
+    pub insecure_skip_verify: bool,
 }
 
 /// LLM configuration
@@ -80,9 +88,6 @@ pub struct Config {
 }
 
 // Defaults
-fn default_true() -> bool {
-    true
-}
 fn default_llm_tier() -> String {
     "free".to_string()
 }
@@ -102,7 +107,7 @@ impl Default for Config {
             server: ServerConfig {
                 url: "http://localhost:8080".to_string(),
                 timeout_secs: 30,
-                insecure_skip_verify: true,
+                insecure_skip_verify: false,
             },
             llm: LlmConfig {
                 tier: "free".to_string(),
@@ -231,6 +236,17 @@ mod tests {
         assert_eq!(cfg.server.url, "http://localhost:8080");
         assert_eq!(cfg.llm.tier, "free");
         assert!(!cfg.telemetry.opt_in);
+    }
+
+    #[test]
+    fn test_insecure_skip_verify_defaults_false() {
+        // H1 fix: insecure_skip_verify must default to false (secure by default).
+        // Operators opt-in via config.toml or NCLAW_SERVER_INSECURE_SKIP_VERIFY=true.
+        let cfg = Config::default();
+        assert!(
+            !cfg.server.insecure_skip_verify,
+            "insecure_skip_verify must default to false — TLS verification is required by default"
+        );
     }
 
     #[test]

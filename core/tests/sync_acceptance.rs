@@ -5,8 +5,8 @@
 //! schema versioning, and telemetry collection.
 
 use nclaw_core::sync::{
-    Cursor, HeartbeatPing, HeartbeatTimer, IdempotencyCache, SnapshotRequest, SnapshotResponse,
-    check_compat, CompatStatus, SyncTelemetry, BatchPolicy, Hlc, HlcGenerator, EventEnvelope,
+    check_compat, BatchPolicy, CompatStatus, Cursor, EventEnvelope, HeartbeatPing, HeartbeatTimer,
+    Hlc, HlcGenerator, IdempotencyCache, SnapshotRequest, SnapshotResponse, SyncTelemetry,
 };
 use uuid::Uuid;
 
@@ -24,11 +24,14 @@ fn acceptance_snapshot_bootstrap() {
     let resp = SnapshotResponse::new(vec![], None);
     assert!(resp.is_empty());
 
-    let resp_with_data = SnapshotResponse::new(vec![], Some(Hlc {
-        wall_ms: 1000,
-        lamport: 1,
-        device_id,
-    }));
+    let resp_with_data = SnapshotResponse::new(
+        vec![],
+        Some(Hlc {
+            wall_ms: 1000,
+            lamport: 1,
+            device_id,
+        }),
+    );
     assert!(resp_with_data.cursor.is_some());
 }
 
@@ -174,8 +177,8 @@ fn acceptance_telemetry_metrics() {
 
     // Verify snapshot serialization
     let json = serde_json::to_string(&snap).expect("serialize snapshot");
-    let restored: nclaw_core::sync::SyncTelemetrySnapshot = serde_json::from_str(&json)
-        .expect("deserialize snapshot");
+    let restored: nclaw_core::sync::SyncTelemetrySnapshot =
+        serde_json::from_str(&json).expect("deserialize snapshot");
     assert_eq!(restored.events_pushed, snap.events_pushed);
 }
 

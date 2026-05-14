@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # SDK
+  nclaw_sdk: ^1.1.1
+
   # Localisation
   flutter_localizations:
     sdk: flutter

@@ -63,7 +63,10 @@ fn offline_queue_fifo_order() {
     let batch = queue.pop_batch(2);
     assert_eq!(batch.len(), 2);
     assert_eq!(batch[0].payload["i"], 1, "first event should be first out");
-    assert_eq!(batch[1].payload["i"], 2, "second event should be second out");
+    assert_eq!(
+        batch[1].payload["i"], 2,
+        "second event should be second out"
+    );
 
     assert_eq!(queue.len(), 1);
 
@@ -108,7 +111,11 @@ fn sync_client_push_stub_empty_queue() {
 fn hlc_total_order_property() {
     let dev_a = Uuid::new_v4();
     let dev_b = Uuid::new_v4();
-    let (dev_early, dev_late) = if dev_a < dev_b { (dev_a, dev_b) } else { (dev_b, dev_a) };
+    let (dev_early, dev_late) = if dev_a < dev_b {
+        (dev_a, dev_b)
+    } else {
+        (dev_b, dev_a)
+    };
 
     let h_early_wall = libnclaw::sync::Hlc {
         wall_ms: 1000,

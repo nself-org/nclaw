@@ -51,26 +51,17 @@ mod tests {
 
     #[test]
     fn compatible_same_version() {
-        assert_eq!(
-            check_compat(1, 1),
-            CompatStatus::Compatible
-        );
+        assert_eq!(check_compat(1, 1), CompatStatus::Compatible);
     }
 
     #[test]
     fn client_needs_upgrade() {
-        assert_eq!(
-            check_compat(2, 1),
-            CompatStatus::ClientNeedsUpgrade
-        );
+        assert_eq!(check_compat(2, 1), CompatStatus::ClientNeedsUpgrade);
     }
 
     #[test]
     fn server_needs_upgrade() {
-        assert_eq!(
-            check_compat(1, 2),
-            CompatStatus::ServerNeedsUpgrade
-        );
+        assert_eq!(check_compat(1, 2), CompatStatus::ServerNeedsUpgrade);
     }
 
     #[test]

@@ -32,10 +32,8 @@ impl BudgetEnforcer {
 
     /// Check if this enforcer is within both latency and cost budgets.
     pub fn within_budget(&self) -> bool {
-        let spent_latency_ms =
-            self.spent_ms.load(Ordering::Relaxed) as u32;
-        let spent_cost_usd =
-            self.spent_usd_micros.load(Ordering::Relaxed) as f64 / 1_000_000.0;
+        let spent_latency_ms = self.spent_ms.load(Ordering::Relaxed) as u32;
+        let spent_cost_usd = self.spent_usd_micros.load(Ordering::Relaxed) as f64 / 1_000_000.0;
 
         spent_latency_ms < self.latency_budget_ms && spent_cost_usd < self.cost_budget_usd
     }
@@ -55,9 +53,9 @@ impl BudgetEnforcer {
     /// Record latency and cost spend. Atomically accumulates.
     pub fn record_spend(&self, latency_ms: u32, cost_usd: f64) {
         let cost_micros = (cost_usd * 1_000_000.0) as u64;
-        self.spent_ms
-            .fetch_add(latency_ms as u64, Ordering::SeqCst);
-        self.spent_usd_micros.fetch_add(cost_micros, Ordering::SeqCst);
+        self.spent_ms.fetch_add(latency_ms as u64, Ordering::SeqCst);
+        self.spent_usd_micros
+            .fetch_add(cost_micros, Ordering::SeqCst);
     }
 
     /// Get current spend without consuming the enforcer.

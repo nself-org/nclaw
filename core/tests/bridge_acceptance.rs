@@ -6,9 +6,9 @@
 
 use libnclaw::bridge::budget::BudgetEnforcer;
 use libnclaw::bridge::connection::ConnectionMonitor;
+use libnclaw::bridge::failure_policy::backoff;
 use libnclaw::bridge::overrides::OverridesStore;
 use libnclaw::bridge::privacy::strip_pii;
-use libnclaw::bridge::failure_policy::backoff;
 use libnclaw::bridge::router::{ConnectionState, RouteOverride};
 use libnclaw::bridge::telemetry::BridgeTelemetry;
 use std::time::Duration;

@@ -15,30 +15,30 @@
 //! - `upgrade`: Schema version compatibility checking
 //! - `telemetry`: Sync metrics collection
 
+pub mod batching;
 pub mod client;
+pub mod cursor;
+pub mod heartbeat;
 pub mod hlc;
-pub mod queue;
+pub mod idempotency;
 pub mod lww;
 pub mod network;
+pub mod queue;
 pub mod sign;
 pub mod snapshot;
-pub mod heartbeat;
-pub mod idempotency;
-pub mod batching;
-pub mod cursor;
-pub mod upgrade;
 pub mod telemetry;
+pub mod upgrade;
 
-pub use client::{SyncClient, SyncState};
-pub use hlc::{Hlc, HlcGenerator};
-pub use queue::{OfflineQueue, QueuedEvent};
-pub use lww::{EventEnvelope, Op};
-pub use network::{SyncNetwork, PushRequest, PullRequest};
-pub use sign::{signing_material};
-pub use snapshot::{SnapshotRequest, SnapshotResponse};
-pub use heartbeat::{HeartbeatTimer, HeartbeatPing};
-pub use idempotency::IdempotencyCache;
 pub use batching::BatchPolicy;
+pub use client::{SyncClient, SyncState};
 pub use cursor::Cursor;
-pub use upgrade::{CompatStatus, check_compat};
+pub use heartbeat::{HeartbeatPing, HeartbeatTimer};
+pub use hlc::{Hlc, HlcGenerator};
+pub use idempotency::IdempotencyCache;
+pub use lww::{EventEnvelope, Op};
+pub use network::{PullRequest, PushRequest, SyncNetwork};
+pub use queue::{OfflineQueue, QueuedEvent};
+pub use sign::signing_material;
+pub use snapshot::{SnapshotRequest, SnapshotResponse};
 pub use telemetry::{SyncTelemetry, SyncTelemetrySnapshot};
+pub use upgrade::{check_compat, CompatStatus};

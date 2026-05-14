@@ -1,7 +1,7 @@
 //! Comprehensive tests for sync LWW resolution, network, and signing.
 
-use libnclaw::sync::lww::{EventEnvelope, Op, resolve, merge_field_updates};
 use libnclaw::sync::hlc::Hlc;
+use libnclaw::sync::lww::{merge_field_updates, resolve, EventEnvelope, Op};
 use libnclaw::sync::sign::signing_material;
 use uuid::Uuid;
 
@@ -114,16 +114,7 @@ fn lww_resolve_delete_tombstones_earlier() {
         dev,
         Some(serde_json::json!({})),
     );
-    let ev_delete = make_event(
-        Uuid::new_v4(),
-        "User",
-        id,
-        Op::Delete,
-        2000,
-        0,
-        dev,
-        None,
-    );
+    let ev_delete = make_event(Uuid::new_v4(), "User", id, Op::Delete, 2000, 0, dev, None);
     let result = resolve(&[ev_insert, ev_update, ev_delete.clone()]);
     assert!(result.is_some());
     assert_eq!(result.unwrap().op, Op::Delete);
@@ -133,16 +124,7 @@ fn lww_resolve_delete_tombstones_earlier() {
 fn lww_resolve_insert_after_delete_wins() {
     let dev = Uuid::new_v4();
     let id = Uuid::new_v4();
-    let ev_delete = make_event(
-        Uuid::new_v4(),
-        "User",
-        id,
-        Op::Delete,
-        2000,
-        0,
-        dev,
-        None,
-    );
+    let ev_delete = make_event(Uuid::new_v4(), "User", id, Op::Delete, 2000, 0, dev, None);
     let ev_insert = make_event(
         Uuid::new_v4(),
         "User",
@@ -163,7 +145,11 @@ fn lww_resolve_hlc_total_order() {
     // Test that events are ordered by HLC total order:
     // wall_ms → lamport → device_id (lexicographic)
     let dev_a = Uuid::new_v4();
-    let dev_b = if Uuid::new_v4() < dev_a { Uuid::new_v4() } else { dev_a };
+    let dev_b = if Uuid::new_v4() < dev_a {
+        Uuid::new_v4()
+    } else {
+        dev_a
+    };
     let id = Uuid::new_v4();
 
     // Same wall, different lamports
@@ -171,7 +157,11 @@ fn lww_resolve_hlc_total_order() {
     let ev2 = make_event(Uuid::new_v4(), "E", id, Op::Update, 1000, 1, dev_a, None);
 
     let result = resolve(&[ev2.clone(), ev1]);
-    assert_eq!(result.unwrap().timestamp.lamport, 1, "higher lamport should win");
+    assert_eq!(
+        result.unwrap().timestamp.lamport,
+        1,
+        "higher lamport should win"
+    );
 }
 
 #[test]
@@ -204,33 +194,18 @@ fn lww_merge_field_updates_newer_wins() {
     let merged = merge_field_updates(&ev_older, &ev_newer);
     assert_eq!(merged["name"], "Bob", "newer event's name should win");
     assert_eq!(merged["age"], 30, "older event's age should be retained");
-    assert_eq!(merged["city"], "NYC", "newer event's city should be present");
+    assert_eq!(
+        merged["city"], "NYC",
+        "newer event's city should be present"
+    );
 }
 
 #[test]
 fn lww_merge_field_updates_both_empty() {
     let dev = Uuid::new_v4();
     let id = Uuid::new_v4();
-    let ev1 = make_event(
-        Uuid::new_v4(),
-        "User",
-        id,
-        Op::Update,
-        1000,
-        0,
-        dev,
-        None,
-    );
-    let ev2 = make_event(
-        Uuid::new_v4(),
-        "User",
-        id,
-        Op::Update,
-        2000,
-        0,
-        dev,
-        None,
-    );
+    let ev1 = make_event(Uuid::new_v4(), "User", id, Op::Update, 1000, 0, dev, None);
+    let ev2 = make_event(Uuid::new_v4(), "User", id, Op::Update, 2000, 0, dev, None);
     let merged = merge_field_updates(&ev1, &ev2);
     assert!(merged.is_object());
 }
@@ -266,7 +241,10 @@ fn signing_material_is_deterministic() {
 
     let material1 = signing_material(&ev1);
     let material2 = signing_material(&ev2);
-    assert_eq!(material1, material2, "identical events produce identical signing material");
+    assert_eq!(
+        material1, material2,
+        "identical events produce identical signing material"
+    );
 }
 
 #[test]

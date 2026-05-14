@@ -1,6 +1,6 @@
 //! Smoke tests for backup/restore and scope helpers.
 
-use libnclaw::db::backup::{BackupRecord, from_jsonl, to_jsonl};
+use libnclaw::db::backup::{from_jsonl, to_jsonl, BackupRecord};
 use libnclaw::db::scope::AccountScope;
 
 #[test]

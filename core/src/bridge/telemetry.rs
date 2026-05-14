@@ -30,20 +30,17 @@ impl BridgeTelemetry {
 
     /// Increment the local route counter.
     pub fn record_local_route(&self) {
-        self.local_route_count
-            .fetch_add(1, Ordering::SeqCst);
+        self.local_route_count.fetch_add(1, Ordering::SeqCst);
     }
 
     /// Increment the ServerMux route counter.
     pub fn record_server_mux_route(&self) {
-        self.server_mux_route_count
-            .fetch_add(1, Ordering::SeqCst);
+        self.server_mux_route_count.fetch_add(1, Ordering::SeqCst);
     }
 
     /// Increment the frontier route counter.
     pub fn record_frontier_route(&self) {
-        self.frontier_route_count
-            .fetch_add(1, Ordering::SeqCst);
+        self.frontier_route_count.fetch_add(1, Ordering::SeqCst);
     }
 
     /// Increment the fallback counter.

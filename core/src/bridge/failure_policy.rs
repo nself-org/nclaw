@@ -83,7 +83,10 @@ mod tests {
         }
 
         // At least some variance (very unlikely all are identical given rand)
-        let unique_count = durations.iter().collect::<std::collections::HashSet<_>>().len();
+        let unique_count = durations
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len();
         assert!(unique_count > 1, "Jitter should produce variance");
     }
 

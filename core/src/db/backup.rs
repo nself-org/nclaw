@@ -4,7 +4,7 @@
 //! Format: `{"table":"np_topics","row":{...}}\n{"table":"np_messages","row":{...}}\n`
 
 use crate::error::CoreError;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// A single backed-up database record.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,8 +38,8 @@ pub fn to_jsonl(records: &[BackupRecord]) -> String {
 
 /// Parse JSONL format bytes into backup records (skips empty lines).
 pub fn from_jsonl(bytes: &[u8]) -> Result<Vec<BackupRecord>, CoreError> {
-    let s = std::str::from_utf8(bytes)
-        .map_err(|e| CoreError::Other(format!("UTF-8 decode: {}", e)))?;
+    let s =
+        std::str::from_utf8(bytes).map_err(|e| CoreError::Other(format!("UTF-8 decode: {}", e)))?;
 
     s.lines()
         .filter(|l| !l.trim().is_empty())
