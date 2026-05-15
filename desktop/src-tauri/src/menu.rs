@@ -7,8 +7,7 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 /// macOS gets an "App" (ɳClaw) submenu with About / Preferences / Quit plus
 /// standard Services / Hide items. Windows and Linux skip the App submenu and
 /// instead append Close + Quit to the File submenu.
-pub fn build_app_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
-    let handle = app.handle();
+pub fn build_app_menu(handle: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 
     // ── File ──────────────────────────────────────────────────────────────────
     let new_chat = MenuItem::with_id(handle, "new-chat", "New Chat", true, Some("CmdOrCtrl+N"))?;
@@ -67,8 +66,10 @@ pub fn build_app_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     // ── Window ────────────────────────────────────────────────────────────────
     let minimize = PredefinedMenuItem::minimize(handle, None)?;
 
+    // Tauri 2 removed `PredefinedMenuItem::zoom`; `maximize` is the closest
+    // semantic replacement (toggles window zoom/restore state on macOS).
     #[cfg(target_os = "macos")]
-    let zoom = PredefinedMenuItem::zoom(handle, None)?;
+    let zoom = PredefinedMenuItem::maximize(handle, None)?;
 
     #[cfg(target_os = "macos")]
     let window_submenu = Submenu::with_items(handle, "Window", true, &[&minimize, &zoom])?;

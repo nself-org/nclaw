@@ -1,7 +1,8 @@
-// ɳClaw Desktop — Command Palette Tauri command (stub)
+// ɳClaw Desktop — Command Palette Tauri command.
 //
-// Real wiring (topics, conversations from Postgres sync) lands in S17.
-// This stub returns canned topics matching the query.
+// Returns `NotImplemented` until ticket S17 wires the real Postgres + MeiliSearch
+// query path. The error envelope is verified by the not_implemented_guard tests
+// so the frontend can rely on a stable error shape pre-S17.
 
 use serde::{Deserialize, Serialize};
 
@@ -31,32 +32,14 @@ pub enum PaletteResult {
 }
 
 /// Search for topics and conversations by query.
-/// Stub implementation returns canned topics matching the query string.
-/// Real implementation (S17 acceptance gate) will query Postgres for synced topics + conversations.
+///
+/// Returns a `NotImplemented` JSON envelope (`{"error":"NotImplemented","awaiting":"S17-search"}`)
+/// until ticket S17 wires the real Postgres + MeiliSearch query path.
 #[tauri::command]
-pub async fn palette_search(query: String) -> Result<Vec<PaletteResult>, String> {
-    let q_lower = query.to_lowercase();
-
-    // Canned topics (stub — real topics from DB in S17)
-    let topics = vec![
-        ("work", "Work"),
-        ("personal", "Personal"),
-        ("learning", "Learning"),
-        ("ai-models", "AI Models"),
-        ("architecture", "Architecture"),
-    ];
-
-    // Filter by query
-    let results: Vec<PaletteResult> = topics
-        .into_iter()
-        .filter(|(id, label)| {
-            id.to_lowercase().contains(&q_lower) || label.to_lowercase().contains(&q_lower)
-        })
-        .map(|(id, label)| PaletteResult::Topic {
-            id: id.to_string(),
-            label: label.to_string(),
-        })
-        .collect();
-
-    Ok(results)
+pub async fn palette_search(_query: String) -> Result<Vec<PaletteResult>, String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S17-search"
+    })
+    .to_string())
 }

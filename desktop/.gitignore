@@ -1,0 +1,16 @@
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/
+
+# Tauri updater signing keys — NEVER commit
+# (Canonical location is ~/.config/nself/tauri-updater.key, but defense-in-depth)
+*.minisign-key
+tauri-updater.key
+tauri-updater.key.*
+**/tauri-updater.key
+.tauri-updater.key
+
+# Node / build
+node_modules/
+dist/
+.vite/

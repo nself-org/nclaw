@@ -1,5 +1,6 @@
 // Tauri commands for Local AI Settings panel.
-// stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
+// Not yet available: backend wiring lands in S15.T17 acceptance gate.
+// Every command returns a typed NotImplemented error until S15-T17 ships.
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -38,162 +39,162 @@ pub struct UpgradeConfig {
 // --- Commands ---
 
 /// Returns the active hardware tier and any user override.
+/// Not yet available: S15-T17 wires real nclaw-core tier detection.
 #[tauri::command]
 pub async fn get_tier() -> Result<Tier, String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    Ok(Tier {
-        active: 2,
-        r#override: "auto".to_string(),
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
     })
+    .to_string())
 }
 
 /// Returns the last `limit` benchmark results (most recent first).
+/// Not yet available: S15-T17 wires real benchmark history from nclaw-core.
 #[tauri::command]
-pub async fn get_benchmark_history(limit: usize) -> Result<Vec<BenchmarkResult>, String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let results = vec![
-        BenchmarkResult {
-            date: "2026-05-10".to_string(),
-            toks_per_sec: 42.1,
-            model_id: "phi-3-mini".to_string(),
-        },
-        BenchmarkResult {
-            date: "2026-04-10".to_string(),
-            toks_per_sec: 39.8,
-            model_id: "phi-3-mini".to_string(),
-        },
-        BenchmarkResult {
-            date: "2026-03-10".to_string(),
-            toks_per_sec: 41.3,
-            model_id: "phi-3-mini".to_string(),
-        },
-    ];
-    Ok(results.into_iter().take(limit).collect())
+pub async fn get_benchmark_history(_limit: usize) -> Result<Vec<BenchmarkResult>, String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Lists all installed local models.
+/// Not yet available: S15-T17 wires real model registry from nclaw-core.
 #[tauri::command]
 pub async fn list_models() -> Result<Vec<ModelEntry>, String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    Ok(vec![
-        ModelEntry {
-            model_id: "phi-3-mini-4k-instruct.Q4_K_M".to_string(),
-            size_mb: 2_340,
-            last_used_at: Some("2026-05-13".to_string()),
-            roles: vec!["chat".to_string(), "summarize".to_string()],
-        },
-        ModelEntry {
-            model_id: "nomic-embed-text-v1.5.Q8_0".to_string(),
-            size_mb: 274,
-            last_used_at: Some("2026-05-12".to_string()),
-            roles: vec!["embed".to_string()],
-        },
-    ])
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Runs the hardware benchmark and returns the result.
+/// Not yet available: S15-T17 wires real llama.cpp benchmark via nclaw-core.
 #[tauri::command]
 pub async fn run_benchmark() -> Result<BenchmarkResult, String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    Ok(BenchmarkResult {
-        date: "2026-05-13".to_string(),
-        toks_per_sec: 43.5,
-        model_id: "phi-3-mini-4k-instruct.Q4_K_M".to_string(),
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
     })
+    .to_string())
 }
 
 /// Opens a file-picker dialog and imports the chosen .gguf file.
 /// Returns the registered model_id.
+/// Not yet available: S15-T17 wires real GGUF import via nclaw-core registry.
 #[tauri::command]
-pub async fn import_custom_gguf(app: tauri::AppHandle, path: String) -> Result<String, String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = app;
-    let _ = path;
-    Ok("custom-model.Q4_K_M".to_string())
+pub async fn import_custom_gguf(_app: tauri::AppHandle, _path: String) -> Result<String, String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Sets (or clears) the tier override. Pass `None` for Auto.
+/// Not yet available: S15-T17 wires real tier override persistence.
 #[tauri::command]
-pub async fn set_tier_override(tier: Option<u8>) -> Result<(), String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = tier;
-    Ok(())
+pub async fn set_tier_override(_tier: Option<u8>) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Enables or disables T4 (heavy) model execution.
+/// Not yet available: S15-T17 wires real allow-T4 flag persistence.
 #[tauri::command]
-pub async fn set_allow_t4(allow: bool) -> Result<(), String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = allow;
-    Ok(())
+pub async fn set_allow_t4(_allow: bool) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Enables or disables the monthly auto-benchmark cron.
+/// Not yet available: S15-T17 wires real cron flag persistence.
 #[tauri::command]
-pub async fn set_re_bench_monthly(enabled: bool) -> Result<(), String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = enabled;
-    Ok(())
+pub async fn set_re_bench_monthly(_enabled: bool) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Deletes a local model from disk.
+/// Not yet available: S15-T17 wires real model deletion via nclaw-core.
 #[tauri::command]
-pub async fn delete_model(model_id: String) -> Result<(), String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = model_id;
-    Ok(())
+pub async fn delete_model(_model_id: String) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Sets a model's primary inference role (chat / summarize / embed / code).
+/// Not yet available: S15-T17 wires real role assignment via nclaw-core registry.
 #[tauri::command]
-pub async fn set_model_role(model_id: String, role: String) -> Result<(), String> {
-    // stub: returns canned data; backend wiring lands in S15.T17 acceptance gate
-    let _ = model_id;
-    let _ = role;
-    Ok(())
+pub async fn set_model_role(_model_id: String, _role: String) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Returns upgrade config (prompt disabled flag + deferral timestamp).
+/// Not yet available: S15-T17 wires real config from nclaw-core.
 #[tauri::command]
 pub async fn get_upgrade_config() -> Result<UpgradeConfig, String> {
-    // stub: returns default config; backend wiring lands in S15.T17 acceptance gate
-    Ok(UpgradeConfig {
-        upgrade_prompt_disabled: false,
-        last_upgrade_prompt_at: None,
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
     })
+    .to_string())
 }
 
 /// Initiates upgrade to the specified tier (0–4).
 /// For T4, the caller must show a confirmation dialog.
+/// Not yet available: S15-T17 wires real upgrade flow via nclaw-core.
 #[tauri::command]
 pub async fn upgrade_to_tier(tier: u8) -> Result<(), String> {
-    // stub: logs the request; backend wiring lands in S15.T17 acceptance gate
     if tier > 4 {
         return Err("Invalid tier: must be 0–4".to_string());
     }
-    eprintln!("upgrade_to_tier stub called with tier={}", tier);
-    Ok(())
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Disables upgrade prompts until re-enabled by the user.
+/// Not yet available: S15-T17 wires real flag persistence via nclaw-core.
 #[tauri::command]
-pub async fn set_upgrade_prompt_disabled(disabled: bool) -> Result<(), String> {
-    // stub: logs the request; backend wiring lands in S15.T17 acceptance gate
-    eprintln!(
-        "set_upgrade_prompt_disabled stub called with disabled={}",
-        disabled
-    );
-    Ok(())
+pub async fn set_upgrade_prompt_disabled(_disabled: bool) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }
 
 /// Defers upgrade prompts for 30 days by updating last_upgrade_prompt_at.
+/// Not yet available: S15-T17 wires real deferral timestamp via nclaw-core.
 #[tauri::command]
 pub async fn defer_upgrade_prompt_30_days() -> Result<(), String> {
-    // stub: logs the request; backend wiring lands in S15.T17 acceptance gate
-    let now = Utc::now().to_rfc3339();
-    eprintln!(
-        "defer_upgrade_prompt_30_days stub called; next prompt after 30 days from {}",
-        now
-    );
-    Ok(())
+    // Keep the Utc import used — suppress dead_code for the awaiting sprint.
+    let _now = Utc::now().to_rfc3339();
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S15-T17"
+    })
+    .to_string())
 }

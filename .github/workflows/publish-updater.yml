@@ -1,5 +1,16 @@
 name: Publish Tauri Updater Manifest
 
+# Triggered after a successful R2 publish, or manually.
+# Signs manifests with Ed25519 (minisign) — Tauri 2 rejects RSA/SHA-256 signatures.
+# Downgrade protection: CI validates offered version > current app version before publish.
+#
+# SECURITY NOTES:
+# - TAURI_UPDATER_PRIVATE_KEY is stored in GitHub Actions Secrets (never in code).
+# - TAURI_UPDATER_PUBLIC_KEY is the literal Ed25519 public key string baked into
+#   tauri.conf.json (NOT a $VAR reference). CI gate below fails if it detects a
+#   literal "$" in the pubkey field, indicating a broken substitution.
+# - R2 account ID lives in GH Actions secret R2_ACCOUNT_ID (not in this file).
+
 on:
   workflow_run:
     workflows: ['Publish to R2 (packages.nself.org)']
@@ -8,10 +19,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  validate-pubkey:
+    name: Gate — verify pubkey is not a $VAR literal
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if tauri.conf.json pubkey contains unresolved $VAR
+        run: |
+          PUBKEY=$(jq -r '.plugins.updater.pubkey' desktop/src-tauri/tauri.conf.json)
+          if [[ "$PUBKEY" == \$* ]]; then
+            echo "ERROR: pubkey in tauri.conf.json is a literal env-var reference: $PUBKEY"
+            echo "The public key must be a real minisign/Ed25519 key string, not a shell variable."
+            exit 1
+          fi
+          echo "OK: pubkey does not start with '$'. Looks like a real key."
+
   publish-manifest:
+    needs: validate-pubkey
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -21,30 +49,84 @@ jobs:
           name: r2-publish-metadata
           path: release-data/
 
-      - name: Generate Tauri updater manifests
+      - name: Install minisign (Ed25519 signing tool)
+        run: |
+          # minisign is the signing tool Tauri 2 updater expects (Ed25519, not RSA/SHA-256).
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq minisign
+
+      - name: Determine version + downgrade guard
+        run: |
+          # Extract version from package.json (source of truth for desktop).
+          OFFERED_VERSION=$(jq -r '.version' desktop/package.json)
+          CONF_VERSION=$(jq -r '.version' desktop/src-tauri/tauri.conf.json)
+
+          echo "Offered version: $OFFERED_VERSION"
+          echo "tauri.conf.json version: $CONF_VERSION"
+
+          # Both must agree.
+          if [[ "$OFFERED_VERSION" != "$CONF_VERSION" ]]; then
+            echo "ERROR: version mismatch between package.json ($OFFERED_VERSION) and tauri.conf.json ($CONF_VERSION)"
+            exit 1
+          fi
+
+          # Downgrade guard: fetch the latest published manifest and compare.
+          # If no prior manifest exists (first publish), skip the check.
+          MANIFEST_URL="https://packages.nself.org/desktop/latest-macos.json"
+          CURRENT_VERSION=$(curl -sf "$MANIFEST_URL" | jq -r '.version' 2>/dev/null || echo "0.0.0")
+          echo "Current published version: $CURRENT_VERSION"
+
+          # Compare using sort -V (lexicographic semver).
+          HIGHER=$(printf '%s\n%s' "$CURRENT_VERSION" "$OFFERED_VERSION" | sort -V | tail -1)
+          if [[ "$HIGHER" == "$CURRENT_VERSION" && "$OFFERED_VERSION" != "$CURRENT_VERSION" ]]; then
+            echo "ERROR: downgrade rejected — offered $OFFERED_VERSION <= current $CURRENT_VERSION"
+            exit 1
+          fi
+          if [[ "$OFFERED_VERSION" == "$CURRENT_VERSION" ]]; then
+            echo "ERROR: same-version publish rejected — offered $OFFERED_VERSION == current $CURRENT_VERSION"
+            exit 1
+          fi
+
+          echo "VERSION=$OFFERED_VERSION" >> "$GITHUB_ENV"
+          echo "Downgrade guard passed: $OFFERED_VERSION > $CURRENT_VERSION"
+
+      - name: Generate Ed25519 signatures and manifests
         env:
           TAURI_UPDATER_PRIVATE_KEY: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY }}
-          TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
+          # Read version directly from package.json (avoids cross-step env var lint warning).
+          VERSION=$(jq -r '.version' desktop/package.json)
           DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
           mkdir -p manifests
 
-          # Helper function to compute signatures
-          compute_sig() {
+          # Write the private key to a temp file for minisign.
+          # The key is stored as a base64-encoded minisign secret key generated
+          # WITHOUT a passphrase (CI standard: `minisign -G -s nclaw.key -p nclaw.pub -W`).
+          # The -W flag creates a passphrase-free key — suitable for unattended CI signing.
+          echo "$TAURI_UPDATER_PRIVATE_KEY" | base64 --decode > /tmp/minisign_key
+          chmod 600 /tmp/minisign_key
+
+          # Sign a file with minisign (Ed25519, no passphrase). Returns .minisig content.
+          sign_file() {
             local file="$1"
             if [[ ! -f "$file" ]]; then
               echo ""
               return
             fi
-            echo "$TAURI_UPDATER_PRIVATE_KEY" | base64 --decode > /tmp/private_key
-            openssl dgst -sha256 -sign /tmp/private_key "$file" | base64 | tr -d '\n'
-            rm /tmp/private_key
+            # -W = no passphrase. Key was generated with -W for unattended CI use.
+            minisign \
+              -S -W \
+              -s /tmp/minisign_key \
+              -m "$file" \
+              -x "${file}.minisig" \
+              -t "nclaw updater v${VERSION}"
+            cat "${file}.minisig"
           }
 
           # macOS manifest
+          SIG_MACOS_ARM=$(sign_file "release-data/desktop/macos/nclaw_aarch64.app.tar.gz")
+          SIG_MACOS_X64=$(sign_file "release-data/desktop/macos/nclaw_x64.app.tar.gz")
           cat > manifests/latest-macos.json <<EOF
           {
             "version": "${VERSION}",
@@ -52,11 +134,11 @@ jobs:
             "pub_date": "${DATE}",
             "platforms": {
               "darwin-aarch64": {
-                "signature": "$(compute_sig 'release-data/desktop/macos/nclaw_aarch64.app.tar.gz')",
+                "signature": "${SIG_MACOS_ARM}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_aarch64.app.tar.gz"
               },
               "darwin-x86_64": {
-                "signature": "$(compute_sig 'release-data/desktop/macos/nclaw_x64.app.tar.gz')",
+                "signature": "${SIG_MACOS_X64}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.app.tar.gz"
               }
             }
@@ -64,6 +146,7 @@ jobs:
           EOF
 
           # Windows manifest
+          SIG_WIN_X64=$(sign_file "release-data/desktop/windows/nclaw_x64.msi")
           cat > manifests/latest-windows.json <<EOF
           {
             "version": "${VERSION}",
@@ -71,7 +154,7 @@ jobs:
             "pub_date": "${DATE}",
             "platforms": {
               "windows-x86_64": {
-                "signature": "$(compute_sig 'release-data/desktop/windows/nclaw_x64.msi')",
+                "signature": "${SIG_WIN_X64}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.msi"
               }
             }
@@ -79,6 +162,8 @@ jobs:
           EOF
 
           # Linux manifest (AppImage)
+          SIG_LINUX_X64=$(sign_file "release-data/desktop/linux/nclaw_x64.AppImage")
+          SIG_LINUX_ARM=$(sign_file "release-data/desktop/linux/nclaw_arm64.AppImage")
           cat > manifests/latest-linux.json <<EOF
           {
             "version": "${VERSION}",
@@ -86,25 +171,30 @@ jobs:
             "pub_date": "${DATE}",
             "platforms": {
               "linux-x86_64": {
-                "signature": "$(compute_sig 'release-data/desktop/linux/nclaw_x64.AppImage')",
+                "signature": "${SIG_LINUX_X64}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.AppImage"
               },
               "linux-aarch64": {
-                "signature": "$(compute_sig 'release-data/desktop/linux/nclaw_arm64.AppImage')",
+                "signature": "${SIG_LINUX_ARM}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_arm64.AppImage"
               }
             }
           }
           EOF
 
-          echo "Generated manifests for v${VERSION}"
+          # Clean up private key.
+          rm /tmp/minisign_key
+          echo "Generated and signed manifests for v${VERSION}"
           cat manifests/*.json
 
       - name: Upload manifests to R2
         env:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: https://36b8dcc20c6a6fb77fa22f1fb2c5e96d.r2.cloudflarestorage.com
+          # R2_ACCOUNT_ID is a repo variable (not a secret) — account IDs are non-sensitive
+          # public endpoint components. Set via repo Settings → Variables → Actions.
+          # actionlint: ignore:expression  (vars.* is runtime-resolved; not a static secret)
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }} # zz:ignore
         run: |
           curl https://rclone.org/install.sh | sudo bash
 
@@ -115,7 +205,7 @@ jobs:
           provider = Cloudflare
           access_key_id = $CLOUDFLARE_R2_ACCESS_KEY_ID
           secret_access_key = $CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          endpoint = $CLOUDFLARE_R2_ENDPOINT
+          endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
           acl = public-read
           EOF
 

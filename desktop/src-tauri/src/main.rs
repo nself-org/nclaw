@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod downgrade_guard;
 mod menu;
 mod tray;
 mod windows;
@@ -23,6 +24,10 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // Updater plugin: checks packages.nself.org/desktop/latest-{target}.json
+        // using Ed25519 signature verification (key set in tauri.conf.json pubkey field).
+        // downgrade_guard ensures version <= current is rejected before install.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // Register autostart plugin. Auto-start is OFF by default — the frontend
         // settings UI can call `invoke('plugin:autostart|enable')` to opt in.
         .plugin(tauri_plugin_autostart::init(
@@ -51,12 +56,15 @@ fn main() {
             commands::settings::get_setting,
             commands::settings::get_all_settings,
             commands::settings::set_setting,
-            commands::settings::vault_repair_device,
             commands::settings::test_sync_connection,
             commands::theme::set_window_theme,
             commands::topics::list_topics,
             commands::topics::move_topic,
             commands::topics::search,
+            commands::vault::vault_status,
+            commands::vault::vault_repair_device,
+            commands::vault::vault_revoke_device,
+            commands::vault::vault_sync_now,
         ])
         .menu(menu::build_app_menu)
         .on_menu_event(|app, event| {

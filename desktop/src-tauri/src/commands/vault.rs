@@ -1,32 +1,46 @@
-//! Tauri command stubs for vault operations — device pairing, registration, revocation
+//! Tauri commands for vault operations — device pairing, registration, revocation.
+//! Not yet available: S18 invoke bridge wires real nclaw-core vault module.
 
+/// Return device pairing status from the local keychain.
+/// Not yet available: S18 vault acceptance gate wires real keychain read + server ping.
 #[tauri::command]
 pub async fn vault_status() -> Result<serde_json::Value, String> {
-    // Stub: real impl reads device_id from keychain, checks server status
-    Ok(serde_json::json!({
-        "paired": false,
-        "backend": "macOS Keychain",
-        "device_id": null,
-        "last_sync": null,
-    }))
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S18-vault"
+    })
+    .to_string())
 }
 
+/// Re-pair this device: regenerate X25519 keypair, register with server, persist device_id.
+/// Not yet available: S18 vault acceptance gate wires real registration::register.
 #[tauri::command]
 pub async fn vault_repair_device() -> Result<(), String> {
-    // Stub: real impl regenerates keypair, calls registration::register,
-    // persists device_id to keychain
-    Ok(())
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S18-vault"
+    })
+    .to_string())
 }
 
+/// Revoke a previously registered device from the sync server.
+/// Not yet available: S18 vault acceptance gate wires real revocation::revoke.
 #[tauri::command]
-pub async fn vault_revoke_device(device_id: String) -> Result<(), String> {
-    // Stub: calls revocation::revoke via the server
-    let _ = device_id;
-    Ok(())
+pub async fn vault_revoke_device(_device_id: String) -> Result<(), String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S18-vault"
+    })
+    .to_string())
 }
 
+/// Trigger an immediate sync: fetch envelopes from server and decrypt each.
+/// Not yet available: S18 vault acceptance gate wires real sync::fetch_envelopes.
 #[tauri::command]
 pub async fn vault_sync_now() -> Result<(), String> {
-    // Stub: calls sync::fetch_envelopes and decrypts each envelope
-    Ok(())
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S18-vault"
+    })
+    .to_string())
 }

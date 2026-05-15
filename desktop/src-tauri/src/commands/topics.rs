@@ -15,56 +15,34 @@ pub struct SearchResult {
 }
 
 /// Return all non-archived topics ordered by path.
-/// Stub — real DB wiring lands in S17 sync acceptance gate.
+/// Not yet available: S17 sync acceptance gate wires real Postgres ltree query.
 #[tauri::command]
 pub async fn list_topics() -> Result<Vec<Topic>, String> {
-    Ok(vec![
-        Topic {
-            id: "t-work".into(),
-            path: "work".into(),
-            name: "Work".into(),
-            archived: false,
-        },
-        Topic {
-            id: "t-work-projects".into(),
-            path: "work.projects".into(),
-            name: "Projects".into(),
-            archived: false,
-        },
-        Topic {
-            id: "t-work-projects-nself".into(),
-            path: "work.projects.nself".into(),
-            name: "nSelf".into(),
-            archived: false,
-        },
-        Topic {
-            id: "t-personal".into(),
-            path: "personal".into(),
-            name: "Personal".into(),
-            archived: false,
-        },
-    ])
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S17-DB-topics"
+    })
+    .to_string())
 }
 
 /// Move a topic to a new parent path (drag-to-reorder).
-/// Stub — persists in S17 when ltree ops are wired.
+/// Not yet available: S17 sync acceptance gate wires real ltree ops.
 #[tauri::command]
 pub async fn move_topic(_from_id: String, _to_parent_path: String) -> Result<(), String> {
-    Ok(())
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S17-DB-topics"
+    })
+    .to_string())
 }
 
 /// Search topics by name and return topics that contain matching messages.
-/// Stub — full-text search wires to MeiliSearch in S17.
+/// Not yet available: S17 wires MeiliSearch full-text search.
 #[tauri::command]
-pub async fn search(query: String) -> Result<SearchResult, String> {
-    let all = list_topics().await?;
-    let q = query.to_lowercase();
-    let topics = all
-        .into_iter()
-        .filter(|t| t.name.to_lowercase().contains(&q))
-        .collect();
-    Ok(SearchResult {
-        topics,
-        matched_message_topics: vec![],
+pub async fn search(_query: String) -> Result<SearchResult, String> {
+    Err(serde_json::json!({
+        "error": "NotImplemented",
+        "awaiting": "S17-search"
     })
+    .to_string())
 }
