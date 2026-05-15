@@ -72,14 +72,21 @@ pub fn delete_secret(account: &str) -> Result<(), CoreError> {
 mod tests {
     use super::*;
 
-    // Skip keychain tests on CI (env var NCLAW_SKIP_KEYCHAIN=1)
+    // Skip keychain tests on CI / non-interactive environments.
+    // The OS keychain (macOS Keychain.app / Win DPAPI / Linux Secret Service) is
+    // not available in CI sandboxes and headless environments, where the calls
+    // either fail outright or require interactive unlock.
     fn should_skip_keychain_tests() -> bool {
         std::env::var("NCLAW_SKIP_KEYCHAIN").is_ok()
+            || std::env::var("CI").is_ok()
+            || std::env::var("GITHUB_ACTIONS").is_ok()
+            || std::env::var("NCLAW_SKIP_KEYCHAIN_TESTS").is_ok()
     }
 
     #[test]
     fn test_store_and_fetch_roundtrip() {
         if should_skip_keychain_tests() {
+            eprintln!("SKIP: test_store_and_fetch_roundtrip — keychain unavailable in CI/headless env");
             return;
         }
 
@@ -98,6 +105,7 @@ mod tests {
     #[test]
     fn test_store_binary_data() {
         if should_skip_keychain_tests() {
+            eprintln!("SKIP: test_store_binary_data — keychain unavailable in CI/headless env");
             return;
         }
 
@@ -115,6 +123,7 @@ mod tests {
     #[test]
     fn test_delete_secret() {
         if should_skip_keychain_tests() {
+            eprintln!("SKIP: test_delete_secret — keychain unavailable in CI/headless env");
             return;
         }
 
@@ -132,6 +141,7 @@ mod tests {
     #[test]
     fn test_fetch_nonexistent_secret() {
         if should_skip_keychain_tests() {
+            eprintln!("SKIP: test_fetch_nonexistent_secret — keychain unavailable in CI/headless env");
             return;
         }
 

@@ -281,7 +281,9 @@ mod tests {
             recent_keep: 8,
         };
 
-        let fitted = mgr.fit(&messages, 300);
+        // fix: stale test — 10 msgs ≈ 140 tokens total; budget 300 fit everything.
+        // Tighten budget to 50 so KeepRecent drops oldest messages.
+        let fitted = mgr.fit(&messages, 50);
 
         // Should keep some recent messages, drop older ones
         assert!(fitted.len() < messages.len());
@@ -331,7 +333,9 @@ mod tests {
             recent_keep: 8,
         };
 
-        let fitted = mgr.fit(&messages, 400);
+        // fix: stale test — 1 sys + 20 body ≈ 291 tokens; budget 400 fit everything.
+        // Tighten budget to 150 so SummarizeMiddle truncates and inserts placeholder.
+        let fitted = mgr.fit(&messages, 150);
 
         // Should have system + placeholder + recent messages
         assert!(fitted.len() > 1);
@@ -388,7 +392,13 @@ mod tests {
             });
         }
 
-        let mgr = ContextManager::default();
+        // fix: stale test — default policy is SummarizeMiddle which inserts a System
+        // placeholder summary, yielding 4 system msgs. Use KeepRecent so the count
+        // reflects exactly the 3 original system messages preserved.
+        let mgr = ContextManager {
+            policy: TruncationPolicy::KeepRecent,
+            recent_keep: 8,
+        };
         let fitted = mgr.fit(&messages, 200);
 
         // All 3 system messages should be present

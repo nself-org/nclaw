@@ -14,6 +14,7 @@ pub mod mobile_ffi;
 pub mod models;
 pub mod plugin;
 pub mod protocol;
+pub mod recovery;
 pub mod registry;
 pub mod sync;
 pub mod testing;

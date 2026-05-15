@@ -51,22 +51,19 @@ impl SnapshotResponse {
     }
 }
 
-/// Helper to request a snapshot from the sync network.
+/// Request a snapshot from the sync network during device bootstrap.
 ///
-/// This is a stub that would be called by the client during bootstrap.
-/// Actual network call delegates to `SyncNetwork::get` with path `/sync/snapshot`.
-///
-/// Note: Real implementation will be async; this is a stub placeholder.
+/// Returns `CoreError::NotImplemented` until ticket S17.T07 wires this to
+/// `SyncNetwork::get("/sync/snapshot")`. The request envelope is validated
+/// via serde so callers can rely on the schema today.
 pub fn request_snapshot(
     device_id: Uuid,
     since_hlc: Option<Hlc>,
 ) -> Result<SnapshotResponse, CoreError> {
-    // Stub implementation. Real implementation calls network layer.
     let req = SnapshotRequest::new(device_id, since_hlc);
     let _json = serde_json::to_string(&req)?;
-    // In real usage: network.get("/sync/snapshot").json::<SnapshotResponse>().await
     Err(CoreError::NotImplemented(
-        "request_snapshot requires network layer integration".to_string(),
+        "request_snapshot pending S17.T07 network-layer integration".to_string(),
     ))
 }
 

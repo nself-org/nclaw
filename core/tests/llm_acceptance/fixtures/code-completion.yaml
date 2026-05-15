@@ -1,0 +1,16 @@
+# LLM acceptance fixture — CF-01 T02 (code-completion).
+#
+# Exercises the harness against a code-completion-shaped prompt. The expected
+# substring is the canonical body of `fn add(a, b) -> a + b`, which any
+# reasonable code model should emit. StubBackend returns a deterministic
+# canned completion keyed on the case name (see tests/llm_acceptance/mod.rs).
+#
+# Schema: see tests/llm_acceptance/mod.rs (module-level docs).
+name: code-completion
+prompt: "Complete this Rust function: fn add(a: i32, b: i32) -> i32 {"
+model: stub-v0
+max_tokens: 32
+temperature: 0.0
+min_output_chars: 5
+expected_substrings:
+  - a + b

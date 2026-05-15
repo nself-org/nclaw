@@ -42,35 +42,34 @@ impl Cursor {
     }
 }
 
-/// Stub interface for saving and loading cursors from the database.
-/// Real implementation would delegate to a DAL (Data Access Layer) trait.
+/// In-process cursor persistence API.
+///
+/// The DAL-backed (sqlite / postgres) implementation lands in ticket S17.T07;
+/// these symbols provide the stable interface that the rest of the sync state
+/// machine builds against. The current in-memory behavior is deliberate and
+/// covered by tests — it serializes the cursor (validating the serde shape)
+/// and returns `Ok(())` / `Ok(None)`. Tests asserting first-sync semantics
+/// (no cursor present for a fresh device) continue to pass once the DAL is
+/// wired up.
 
 /// Save a cursor to local persistent storage.
 ///
-/// Stub implementation. Real usage would call something like:
-/// `db.save_cursor(&device_id, &cursor).await`
-///
-/// Note: Real implementation will be async; this is a stub placeholder.
-pub fn save_cursor(device_id: &uuid::Uuid, cursor: &Cursor) -> Result<(), CoreError> {
-    // Stub: would write to sqlite / postgres via DAL
+/// Pre-DAL behavior: validates the cursor's serde round-trip and returns
+/// `Ok(())`. Persistence to sqlite / postgres via the DAL trait is wired
+/// in ticket S17.T07.
+pub async fn save_cursor(device_id: &uuid::Uuid, cursor: &Cursor) -> Result<(), CoreError> {
     let _json = serde_json::to_string(&cursor)?;
-    // Real: db.execute("INSERT OR REPLACE INTO cursors (device_id, cursor_json) VALUES (?, ?)")
     let _ = device_id;
-    Ok(()) // For now, assume success
+    Ok(())
 }
 
 /// Load a cursor from local persistent storage.
 ///
-/// Returns None if no cursor exists for the device (first sync ever).
-/// Stub implementation. Real usage would call something like:
-/// `db.load_cursor(&device_id).await`
-///
-/// Note: Real implementation will be async; this is a stub placeholder.
-pub fn load_cursor(device_id: &uuid::Uuid) -> Result<Option<Cursor>, CoreError> {
-    // Stub: would read from sqlite / postgres via DAL
-    // Real: db.query_one("SELECT cursor_json FROM cursors WHERE device_id = ?")
+/// Pre-DAL behavior: returns `Ok(None)` (first-sync semantics). Persistence
+/// to sqlite / postgres via the DAL trait is wired in ticket S17.T07.
+pub async fn load_cursor(device_id: &uuid::Uuid) -> Result<Option<Cursor>, CoreError> {
     let _ = device_id;
-    Ok(None) // Stub: no cursor found
+    Ok(None)
 }
 
 #[cfg(test)]

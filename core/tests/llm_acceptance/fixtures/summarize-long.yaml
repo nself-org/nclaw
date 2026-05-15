@@ -1,0 +1,17 @@
+# LLM acceptance fixture — CF-01 T04 (summarization, longer input).
+#
+# Six-sentence paragraph collapsed to a short summary. Asserts presence of
+# the central noun ("garden") so the harness flags drift if the summary
+# loses the topic. min_output_chars keeps the floor low so a one-sentence
+# summary still passes; the upper bound is enforced indirectly via
+# max_tokens at backend level.
+#
+# Schema: see tests/llm_acceptance/mod.rs (module-level docs).
+name: summarize-long
+prompt: "Summarize in at most two sentences: Maria planted a small garden behind her house in early spring. She chose tomatoes, basil, and peppers because they grew well in her climate. Every morning before work she watered the rows and pulled weeds. By July the tomatoes were ripening on the vine. She gave baskets of produce to her neighbors. The garden became the most peaceful part of her week."
+model: stub-v0
+max_tokens: 48
+temperature: 0.0
+min_output_chars: 20
+expected_substrings:
+  - garden

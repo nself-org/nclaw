@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn ping_payload_serializes() {
-        let ping = HeartbeatPing::ping_payload();
+        let ping = HeartbeatTimer::ping_payload();
         let json = serde_json::to_string(&ping).expect("serialize");
         assert!(json.contains("\"type\":\"ping\""));
         assert!(json.contains("\"ts\":"));

@@ -33,12 +33,16 @@ ed25519-dalek = { version = "2", features = ["rand_core"] }
 rand = "0.8"
 keyring = "3"
 argon2 = "0.5"
+# BIP39 mnemonic encoding for 32-byte DB key recovery codes (24-word English wordlist, 256-bit entropy).
+bip39 = "2"
+# Cryptographically secure random bytes for first-run DB key generation.
+getrandom = "0.2"
 thiserror = "1"
 reqwest = { version = "0.12", features = ["stream", "json"] }
 sha2 = "0.10"
 futures = "0.3"
 fs2 = "0.4"
-rusqlite = { version = "0.31", optional = true, features = ["bundled"] }
+rusqlite = { version = "0.31", optional = true, features = ["bundled-sqlcipher"] }
 async-stream = "0.3"
 tokio-stream = "0.1"
 libc = "0.2"
@@ -59,6 +63,10 @@ llama-cpp-2 = { version = "0.1.146", optional = true }
 # Desktop DB fallback: embedded Postgres subprocess (optional, feature-gated).
 # NOTE: 0.18 is current as of 2026-05-13; pin tighter after S16.T01b integration.
 postgresql_embedded = { version = "0.18", optional = true }
+
+[build-dependencies]
+# Used by build.rs to compile vendored sqlite-vec C source under mobile-sqlite feature.
+cc = "1"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -84,8 +92,16 @@ pglite = []
 embedded-pg = ["dep:postgresql_embedded"]
 # mobile-sqlite: SQLite + sqlite-vec extension for iOS/Android targets.
 mobile-sqlite = ["dep:rusqlite"]
+# llm-acceptance: enables the LLM acceptance test runner (CF-01 baseline, P102 S05.T01).
+# Off by default so `cargo test` stays fast; CI workflow `llm-acceptance.yml`
+# turns it on for the dedicated acceptance jobs.
+llm-acceptance = []
 
 [[bin]]
 name = "export-bindings"
 path = "src/bin/export-bindings.rs"
 required-features = ["ts-export"]
+
+[[bin]]
+name = "argon2_calibrate"
+path = "src/bin/argon2_calibrate.rs"

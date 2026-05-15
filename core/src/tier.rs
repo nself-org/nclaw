@@ -8,15 +8,40 @@ use serde::{Deserialize, Serialize};
 use crate::device::DeviceProbe;
 
 /// Hardware capability tier. T0 = minimum, T4 = workstation/flagship (opt-in only).
+///
+/// # Mapping from legacy `Tier::Basic` / `Tier::Free`
+///
+/// Prior to the numeric T0–T4 reorganization, this enum used named variants
+/// (`Basic`, `Free`, etc.). The canonical mapping for legacy call sites:
+///
+/// | Legacy variant | New variant | Rationale |
+/// |---|---|---|
+/// | `Tier::Free`  | `Tier::T0` | Minimum hardware tier. Licensing/free-tier concerns are now handled separately via license checks, not via the tier enum. |
+/// | `Tier::Basic` | `Tier::T1` | "Below-flagship" hardware: 5–8 GB RAM, no discrete GPU, no Apple Silicon. The router treats T0/T1 identically for Code workloads (both insufficient — score penalty applies). |
+///
+/// # Routing-score implications (see `bridge::router::Router::score`)
+///
+/// The router uses `Tier` to gate local inference quality:
+/// - `T0` / `T1`: insufficient for `PromptClass::Code` → score -30 on Local route.
+/// - `T2`+: capable of any workload locally.
+///
+/// Routing tests should pick the tier deliberately:
+/// - Use `T1` (or `T0`) when validating "weak local hardware prefers cloud routes".
+/// - Use `T2`+ when validating "capable local hardware prefers local routes".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tier {
     /// RAM ≤ 4 GB or severely constrained mobile.
     T0,
     /// RAM 5–8 GB, no GPU/Apple Silicon, or basic Android.
     T1,
-    /// RAM 9–16 GB, Apple Silicon UMA ≥ 8 GB, or flagship mobile SoC.
+    /// RAM 9–15 GB, or RAM 16+ GB without a capable discrete GPU / Apple Silicon Pro+,
+    /// Apple Silicon UMA ≥ 8 GB, or flagship mobile SoC.
     T2,
-    /// RAM 17–32 GB with capable GPU/Apple Silicon Pro/Max.
+    /// RAM ≥ 16 GB with capable discrete GPU (≥ 8 GB VRAM) OR Apple Silicon Pro/Max.
+    /// Threshold is 16 GB (not 17) because a discrete ≥8 GB-VRAM GPU paired with 16 GB
+    /// system RAM (e.g. RTX 3050 + 16 GB DDR4 gaming laptop) is genuinely T3-class for
+    /// local-model inference: VRAM is dedicated, system RAM is not contended by GPU.
+    /// Apple Silicon Pro/Max also enters T3 via UMA (RAM doubles as GPU memory).
     T3,
     /// RAM ≥ 64 GB with high-VRAM GPU or Apple Silicon Max/Ultra (opt-in only).
     T4,
@@ -112,8 +137,11 @@ fn has_vram_at_least(probe: &DeviceProbe, min_vram_mb: u64) -> bool {
 /// | Mobile && not flagship SoC | T0 if RAM ≤ 4 GB, else T1 (capped at T2 max even for flagship) |
 /// | RAM 5–8 GB && no GPU && not Apple Silicon | T1 |
 /// | Apple Silicon UMA && RAM ≥ 8 GB | T2 |
-/// | RAM 9–16 GB | T2 |
-/// | RAM 17–32 GB && (VRAM ≥ 8 GB \|\| Apple Silicon Pro/Max) | T3 |
+/// | RAM 9–15 GB | T2 |
+/// | RAM 16–63 GB && VRAM ≥ 8 GB (discrete GPU path) | T3 |
+/// | RAM 17–63 GB && Apple Silicon Pro/Max (UMA path; higher floor since RAM is shared with GPU) | T3 |
+/// | RAM 16–63 GB && no qualifying GPU AND not Apple Silicon Pro/Max | T2 |
+/// | RAM 16 GB && Apple Silicon (base M1/M2, not Pro/Max) | T2 |
 /// | RAM ≥ 64 GB && (VRAM ≥ 16 GB \|\| Apple Silicon Max/Ultra) | T4 (only if `allow_t4`) |
 /// | Conditions met for T4 but `allow_t4 == false` | T3 |
 ///
@@ -161,16 +189,24 @@ pub fn classify_tier(probe: &DeviceProbe, ovr: &TierOverride) -> Tier {
         };
     }
 
-    // --- T3: RAM 17–32 GB with capable GPU or Apple Silicon Pro/Max ---
-    if ram >= 17 * 1024 && ram < 64 * 1024 {
-        let meets_t3 = has_vram_at_least(probe, 8 * 1024) || is_pro_max_ultra;
-        if meets_t3 {
+    // --- T3: Two qualifying paths ---
+    // (a) Discrete-GPU path: RAM ≥ 16 GB AND VRAM ≥ 8 GB. A dedicated 8 GB-VRAM GPU
+    //     paired with 16 GB system RAM (typical RTX 3050 gaming laptop) is genuinely
+    //     T3-class for local-model inference — VRAM is dedicated, host RAM is not
+    //     contended by GPU memory.
+    // (b) Apple Silicon UMA path: RAM ≥ 17 GB AND Apple Silicon Pro/Max. UMA shares
+    //     RAM with the GPU, so the threshold is higher to keep base M1/M2 16 GB
+    //     devices at T2 where they belong.
+    if ram < 64 * 1024 {
+        let discrete_gpu_t3 = ram >= 16 * 1024 && has_vram_at_least(probe, 8 * 1024);
+        let apple_silicon_t3 = ram >= 17 * 1024 && is_pro_max_ultra;
+        if discrete_gpu_t3 || apple_silicon_t3 {
             return Tier::T3;
         }
-        // High RAM but insufficient GPU → fall through to T2
+        // High RAM but insufficient GPU / non-Pro Apple Silicon → fall through to T2
     }
 
-    // --- T2: Apple Silicon UMA ≥ 8 GB OR RAM 9–16 GB ---
+    // --- T2: Apple Silicon UMA ≥ 8 GB OR RAM 9–15 GB OR 16+ GB without qualifying GPU ---
     if (has_apple_silicon && probe.unified_memory && ram >= 8 * 1024) || ram >= 9 * 1024 {
         return Tier::T2;
     }

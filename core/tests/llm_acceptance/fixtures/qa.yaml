@@ -1,0 +1,14 @@
+# LLM acceptance fixture — CF-01 T03 (question-answering).
+#
+# Smallest possible QA scenario: a well-known factual question whose answer
+# is a single proper noun. Substring match is case-insensitive per harness.
+#
+# Schema: see tests/llm_acceptance/mod.rs (module-level docs).
+name: qa
+prompt: "What is the capital of France?"
+model: stub-v0
+max_tokens: 16
+temperature: 0.0
+min_output_chars: 4
+expected_substrings:
+  - Paris

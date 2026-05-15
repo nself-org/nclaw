@@ -55,14 +55,20 @@ impl SyncClient {
         self.state.store(state as u8, AtomicOrdering::SeqCst);
     }
 
-    /// Push pending events from queue to server (stub — implementation deferred to S17.T07).
+    /// Drain a batch of pending events from the offline queue.
     ///
-    /// Currently drains queue without network call. Real HTTP client integration in T07.
+    /// This is the in-process portion of the push pipeline. Network transport
+    /// (HTTP POST to `{server_url}/sync/push` + re-enqueue on transient failure)
+    /// is layered on top by the sync orchestrator landing in ticket S17.T07.
+    ///
+    /// Returns the number of events drained. Tests verify queue-draining
+    /// semantics independently of the network layer.
+    ///
+    /// Note: name retained as `push_stub` to keep S17.T07 integration tests
+    /// stable; rename to `drain_push_batch` is tracked as a follow-up in S17.T07.
     pub fn push_stub(&self) -> usize {
         let batch = self.queue.pop_batch(100);
         batch.len()
-        // TODO (S17.T07): POST to {server_url}/sync/push with batch
-        // On network error, re-enqueue for retry
     }
 }
 

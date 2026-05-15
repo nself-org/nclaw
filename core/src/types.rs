@@ -76,6 +76,19 @@ pub enum MessageContent {
     Parts(Vec<ContentPart>),
 }
 
+impl MessageContent {
+    /// Return the plain-text representation of this content, if the message is
+    /// purely textual. Returns `Some(&str)` for `Text(_)`, `None` for any
+    /// multimodal `Parts(_)` (callers must walk the parts themselves to extract
+    /// per-part text).
+    pub fn as_text(&self) -> Option<&str> {
+        match self {
+            MessageContent::Text(s) => Some(s.as_str()),
+            MessageContent::Parts(_) => None,
+        }
+    }
+}
+
 /// A single part of a multimodal message.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]

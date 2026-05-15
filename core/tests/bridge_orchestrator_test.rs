@@ -51,7 +51,7 @@ fn make_prompt() -> PromptRequest {
 
 fn make_context() -> BridgeContext {
     BridgeContext {
-        local_tier: Tier::Basic,
+        local_tier: Tier::T1,
         connection_state: ConnectionState::Online,
         latency_budget_ms: 1000,
         cost_budget_usd: 10.0,
@@ -185,7 +185,7 @@ async fn test_orchestrator_frontier_unavailable_error() {
     };
 
     let ctx = BridgeContext {
-        local_tier: Tier::Basic,
+        local_tier: Tier::T1,
         connection_state: ConnectionState::Online,
         latency_budget_ms: 2000,
         cost_budget_usd: 0.05,

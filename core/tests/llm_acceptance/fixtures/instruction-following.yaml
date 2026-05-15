@@ -1,0 +1,21 @@
+# LLM acceptance fixture — CF-01 T05 (instruction-following / formatted output).
+#
+# Asks the model to emit a JSON array of 3 fruit names. The harness checks
+# only structural substrings ('[', ']', and each expected item) because the
+# parser layer is intentionally minimal — real JSON-parse validation lives
+# in the json_mode_validity integration test, not here. This fixture's job
+# is to confirm the model honored a format directive.
+#
+# Schema: see tests/llm_acceptance/mod.rs (module-level docs).
+name: instruction-following
+prompt: "List 3 fruits in a JSON array format."
+model: stub-v0
+max_tokens: 48
+temperature: 0.0
+min_output_chars: 10
+expected_substrings:
+  - "["
+  - "]"
+  - apple
+  - banana
+  - cherry

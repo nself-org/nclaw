@@ -1,0 +1,4 @@
+[submodule "sqlite-vec"]
+	path = core/vendor/sqlite-vec
+	url = https://github.com/asg017/sqlite-vec.git
+	branch = v0.1.9

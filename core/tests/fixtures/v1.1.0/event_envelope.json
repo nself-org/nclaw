@@ -1,0 +1,17 @@
+{
+  "event_id": "aaaaaaaa-0000-0000-0000-000000000001",
+  "entity_type": "message",
+  "entity_id": "bbbbbbbb-0000-0000-0000-000000000001",
+  "op": "insert",
+  "timestamp": {
+    "wall_ms": 1715644800000,
+    "lamport": 1,
+    "device_id": "cccccccc-0000-0000-0000-000000000001"
+  },
+  "user_id": "dddddddd-0000-0000-0000-000000000001",
+  "device_id": "cccccccc-0000-0000-0000-000000000001",
+  "tenant_id": null,
+  "payload": {"body": "hello from v1.1.0"},
+  "schema_version": 1,
+  "signature": []
+}

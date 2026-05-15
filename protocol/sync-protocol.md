@@ -624,25 +624,32 @@ The server stores the `(user_id, device_id, public_key)` tuple in `np_sync_devic
 
 ### 7.3 Event Signing
 
-Before pushing an event, the client signs it. The signed message is the canonical JSON serialization of all event fields except `signature`, with keys sorted lexicographically:
+Before pushing an event, the client signs it. Starting with **v1.1.2** (sync protocol revision **1.1**, P102 S02 fix V04-F02), the signed message is a deterministic byte concatenation with `user_id` bound as the first 16 bytes:
 
 ```
-message = canonical_json({
-  "device_id": "...",
-  "entity_id": "...",
-  "entity_type": "...",
-  "event_id": "...",
-  "op": "insert",
-  "payload": {...},
-  "schema_version": 1,
-  "tenant_id": null,
-  "timestamp": {"device_id": "...", "lamport": 17, "wall_ms": 1715626800000},
-  "user_id": "..."
-})
-signature = ed25519_sign(private_key, sha256(message))
+material =
+  user_id        (16 bytes)              ← V04-F02: prefix binds author identity
+  event_id       (16 bytes)
+  entity_type    (UTF-8 bytes)
+  entity_id      (16 bytes)
+  wall_ms        (i64, little-endian, 8 bytes)
+  lamport        (u64, little-endian, 8 bytes)
+  hlc.device_id  (16 bytes)
+  op             (1 byte: 0=insert, 1=update, 2=delete)
+  payload        (RFC 8785 canonical JSON; omitted if absent)        ← V04-F03
+
+signature = ed25519_sign(private_key, material)
 ```
 
-The server verifies the signature using the registered public key. If verification fails, the event is rejected with `STATUS_ERROR` and message `INVALID_SIGNATURE`.
+The server reconstructs `material` using the **authenticated** `user_id` from the verified JWT (NOT the `user_id` carried inside the event JSON), then verifies the signature using the device's registered public key. If verification fails, the event is rejected with `STATUS_ERROR` and message `INVALID_SIGNATURE`.
+
+This rejects three classes of forgery:
+
+1. **Tampered payload** — any payload modification changes the canonical JSON bytes, breaking the signature.
+2. **Cross-user replay (V04-F02)** — a signature legitimately produced for user A cannot be presented to the server with the JWT of user B; the server reconstructs material with B's `user_id` prefix, the byte sequence under the signature differs, and verification fails.
+3. **Field-reorder forgery (V04-F03)** — payload is re-canonicalized server-side per RFC 8785 (lexicographic key order, no insignificant whitespace), so transport-layer reordering or whitespace insertion cannot break or forge a signature.
+
+**Compatibility note:** the v1.1.2 wire format breaks signatures produced by v1.1.1. v1.1.1 had zero production users, so no backward-compat shim is provided; clients and servers older than v1.1.2 are not supported. Canonical implementations are `nclaw/core/src/sync/sign.rs` (Rust) and `plugins-pro/paid/nself-sync/internal/auth/sig.go` (Go). Both ship golden-fixture tests that lock the byte sequence cross-language.
 
 ### 7.4 JWT + Device Binding
 

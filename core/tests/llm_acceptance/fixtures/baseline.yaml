@@ -1,0 +1,17 @@
+# LLM acceptance baseline fixture (CF-01 T01).
+#
+# This is the first golden scenario. The CF-01 sprint expands fixtures to
+# cover the full 20-ticket matrix (5 platforms × T0-T3). Keep this file
+# minimal and obvious — additional scenarios get their own YAML files so
+# diff history per fixture stays clean.
+#
+# Schema: see tests/llm_acceptance/mod.rs (module-level docs).
+name: summarize-paragraph-baseline
+prompt: "Summarize this in one sentence: A cat climbed a tree, watched birds for an hour, then came down when called."
+model: stub-v0
+max_tokens: 64
+temperature: 0.0
+min_output_chars: 20
+expected_substrings:
+  - cat
+  - tree

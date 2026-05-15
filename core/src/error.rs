@@ -74,6 +74,12 @@ pub enum LlmError {
 
     #[error("Internal error: {0}")]
     InternalError(String),
+
+    #[error("Insufficient memory to load model: required {required} bytes, available {available} bytes")]
+    InsufficientMemory { required: u64, available: u64 },
+
+    #[error("Model load failed: {reason}")]
+    ModelLoadFailed { reason: String },
 }
 
 /// Database errors: connection, query, schema mismatches.
@@ -96,6 +102,9 @@ pub enum DbError {
 
     #[error("Constraint violated: {0}")]
     ConstraintViolation(String),
+
+    #[error("Decryption failed: wrong key or corrupt database")]
+    DbDecryptionFailed,
 }
 
 /// Sync errors: state drift, version mismatch, merge conflicts.
@@ -169,6 +178,18 @@ pub enum TransportError {
 
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),
+
+    /// All retry attempts for a transient transport failure were exhausted.
+    /// `attempts` is the total number of tries (initial + retries); `last_status`
+    /// is the most recent HTTP status code observed (or `0` for non-HTTP
+    /// failures such as connect/timeout). `last_message` carries the trailing
+    /// error string for diagnostics.
+    #[error("retry exhausted after {attempts} attempts (last_status={last_status}): {last_message}")]
+    RetryExhausted {
+        attempts: u32,
+        last_status: u16,
+        last_message: String,
+    },
 }
 
 /// Config errors: missing, invalid, or incompatible settings.

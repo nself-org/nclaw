@@ -82,7 +82,7 @@ pub struct UserPolicy {
 }
 
 /// Per-conversation routing override applied before any rule evaluation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RouteOverride {
     /// Route every prompt in this conversation to local llama.cpp.
     ForceLocal,
@@ -275,9 +275,11 @@ impl Router {
                         model_hint: "auto".into(),
                     }
                 } else {
-                    // ServerMux forced but not configured — fall to local.
-                    RouteDecision::Local {
-                        model_id: local_model_id(ctx.local_tier),
+                    // ServerMux forced but not configured — honor user's explicit
+                    // override by returning Queue rather than silently falling back
+                    // to Local. This preserves the override's semantic intent.
+                    RouteDecision::Queue {
+                        reason: "ServerMux forced but endpoint not configured".into(),
                     }
                 }
             }
@@ -311,6 +313,8 @@ impl Router {
             && req.privacy != Privacy::LocalOnly
         {
             candidates.push(RouteDecision::ServerMux {
+                // SAFETY: guarded by `ctx.server_mux_endpoint.is_some()` two
+                // lines above; the value cannot be None at this point.
                 endpoint: ctx.server_mux_endpoint.clone().unwrap(),
                 model_hint: "auto".into(),
             });
@@ -395,6 +399,12 @@ impl Router {
                 // Slight cloud penalty for Default privacy.
                 if req.privacy == Privacy::Default {
                     s -= 20;
+                }
+
+                // User explicitly opted into frontier — boost so frontier wins
+                // over ServerMux when both are eligible.
+                if req.privacy == Privacy::AllowFrontier {
+                    s += 20;
                 }
 
                 s.max(0) as u32

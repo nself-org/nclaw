@@ -1,0 +1,62 @@
+name: LLM Acceptance (baseline)
+
+# CF-01 baseline (P102 S05.T01). Runs the deterministic-stub-backend
+# acceptance suite on every PR that touches core/ or this workflow.
+#
+# This is the BASELINE job only. The full 5-platform × T0-T3 = 20-job matrix
+# from sprint S05.T01 lands in follow-up tickets that extend the matrix here.
+# Keep this file small and obvious until the matrix expansion ticket arrives.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'core/tests/llm_acceptance/**'
+      - 'core/tests/llm_acceptance_runner.rs'
+      - 'core/Cargo.toml'
+      - '.github/workflows/llm-acceptance.yml'
+  pull_request:
+    paths:
+      - 'core/tests/llm_acceptance/**'
+      - 'core/tests/llm_acceptance_runner.rs'
+      - 'core/Cargo.toml'
+      - '.github/workflows/llm-acceptance.yml'
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  acceptance-stub:
+    name: Stub backend acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: core/target
+          key: ${{ runner.os }}-cargo-llm-acceptance-${{ hashFiles('core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-llm-acceptance-
+
+      - name: Run acceptance suite (stub backend)
+        run: |
+          cargo test \
+            --manifest-path core/Cargo.toml \
+            --features llm-acceptance \
+            --test llm_acceptance_runner \
+            -- --nocapture

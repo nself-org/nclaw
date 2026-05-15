@@ -8,6 +8,37 @@ use crate::bridge::router::RouteOverride;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+/// Recover a poisoned RwLock write guard, logging a warning.
+///
+/// A lock is poisoned when a thread panics while holding it. Recovery via
+/// `into_inner()` extracts the data regardless — the HashMap state is intact
+/// because HashMap operations do not leave partially-written state observable
+/// to other threads. This is safe for routing overrides (in-memory cache).
+macro_rules! write_lock {
+    ($lock:expr) => {
+        $lock.write().unwrap_or_else(|poisoned| {
+            tracing::warn!(
+                "OverridesStore: RwLock write-guard was poisoned; \
+                 recovering data (in-memory routing overrides may be stale)"
+            );
+            poisoned.into_inner()
+        })
+    };
+}
+
+/// Recover a poisoned RwLock read guard, logging a warning.
+macro_rules! read_lock {
+    ($lock:expr) => {
+        $lock.read().unwrap_or_else(|poisoned| {
+            tracing::warn!(
+                "OverridesStore: RwLock read-guard was poisoned; \
+                 recovering data (in-memory routing overrides may be stale)"
+            );
+            poisoned.into_inner()
+        })
+    };
+}
+
 /// Thread-safe store for per-conversation routing overrides.
 ///
 /// Internally uses a `HashMap<conversation_id, RouteOverride>` protected by
@@ -27,32 +58,32 @@ impl OverridesStore {
     /// Set an override for a conversation. Overwrites any prior override.
     pub fn set(&self, conversation_id: impl Into<String>, override_: RouteOverride) {
         let cid = conversation_id.into();
-        self.inner.write().unwrap().insert(cid, override_);
+        write_lock!(self.inner).insert(cid, override_);
     }
 
     /// Get the override for a conversation, if set. Returns `None` if no override.
     pub fn get(&self, conversation_id: &str) -> Option<RouteOverride> {
-        self.inner.read().unwrap().get(conversation_id).cloned()
+        read_lock!(self.inner).get(conversation_id).cloned()
     }
 
     /// Clear the override for a conversation.
     pub fn clear(&self, conversation_id: &str) {
-        self.inner.write().unwrap().remove(conversation_id);
+        write_lock!(self.inner).remove(conversation_id);
     }
 
     /// Get the number of active overrides.
     pub fn count(&self) -> usize {
-        self.inner.read().unwrap().len()
+        read_lock!(self.inner).len()
     }
 
     /// Clear all overrides.
     pub fn clear_all(&self) {
-        self.inner.write().unwrap().clear();
+        write_lock!(self.inner).clear();
     }
 
     /// List all conversations with active overrides.
     pub fn list_conversations(&self) -> Vec<String> {
-        self.inner.read().unwrap().keys().cloned().collect()
+        read_lock!(self.inner).keys().cloned().collect()
     }
 }
 

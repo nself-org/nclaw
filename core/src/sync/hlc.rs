@@ -8,6 +8,52 @@ use std::cmp::Ordering;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering as AtomicOrdering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Abstraction over wall-clock time, enabling deterministic tests via `MockClock`
+/// while production uses `SystemClock`.
+pub trait Clock: Send + Sync {
+    fn now_ms(&self) -> i64;
+}
+
+/// Production clock backed by `SystemTime::now()`.
+#[derive(Debug, Default)]
+pub struct SystemClock;
+
+impl Clock for SystemClock {
+    fn now_ms(&self) -> i64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0)
+    }
+}
+
+/// Test-only mock clock with externally controllable wall time.
+#[cfg(test)]
+pub struct MockClock {
+    now_ms: AtomicI64,
+}
+
+#[cfg(test)]
+impl MockClock {
+    pub fn new(initial: i64) -> Self {
+        Self {
+            now_ms: AtomicI64::new(initial),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn set(&self, ms: i64) {
+        self.now_ms.store(ms, AtomicOrdering::SeqCst);
+    }
+}
+
+#[cfg(test)]
+impl Clock for MockClock {
+    fn now_ms(&self) -> i64 {
+        self.now_ms.load(AtomicOrdering::Acquire)
+    }
+}
+
 /// HybridLogicalClock: (wall_ms, lamport, device_id) with total order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Hlc {
@@ -17,19 +63,31 @@ pub struct Hlc {
 }
 
 /// Generator maintains HLC state and produces ordered timestamps for local and received events.
-pub struct HlcGenerator {
+///
+/// Generic over `Clock` to support deterministic tests. Production code uses the default
+/// `SystemClock` via `HlcGenerator::new(device_id)`.
+pub struct HlcGenerator<C: Clock = SystemClock> {
     device_id: uuid::Uuid,
     wall_ms: AtomicI64,
     lamport: AtomicU64,
+    clock: C,
 }
 
-impl HlcGenerator {
-    /// Create a new HLC generator for a device.
+impl HlcGenerator<SystemClock> {
+    /// Create a new HLC generator for a device using the system clock.
     pub fn new(device_id: uuid::Uuid) -> Self {
+        Self::with_clock(device_id, SystemClock)
+    }
+}
+
+impl<C: Clock> HlcGenerator<C> {
+    /// Create a new HLC generator with a custom clock (primarily for testing).
+    pub fn with_clock(device_id: uuid::Uuid, clock: C) -> Self {
         Self {
             device_id,
             wall_ms: AtomicI64::new(0),
             lamport: AtomicU64::new(0),
+            clock,
         }
     }
 
@@ -37,10 +95,7 @@ impl HlcGenerator {
     ///
     /// Rule (§3.2): If now > hlc.wall_ms, reset lamport to 0. Otherwise increment.
     pub fn tick(&self) -> Hlc {
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as i64)
-            .unwrap_or(0);
+        let now_ms = self.clock.now_ms();
 
         let prev_wall = self.wall_ms.load(AtomicOrdering::Relaxed);
         let new_wall = now_ms.max(prev_wall);
@@ -52,7 +107,9 @@ impl HlcGenerator {
             0
         } else {
             // Wall time didn't advance; increment counter.
-            self.lamport.fetch_add(1, AtomicOrdering::SeqCst)
+            // `fetch_add` returns the previous value; add 1 to get the post-increment
+            // so successive ticks at the same wall_ms produce strictly increasing HLCs.
+            self.lamport.fetch_add(1, AtomicOrdering::SeqCst) + 1
         };
 
         Hlc {
@@ -67,10 +124,7 @@ impl HlcGenerator {
     /// Rule (§3.2): new_wall = max(hlc.wall_ms, recv_wall, now). Update lamport based on
     /// which wall times are equal. Guarantees: local HLC strictly > incoming HLC.
     pub fn merge(&self, incoming: &Hlc) -> Hlc {
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as i64)
-            .unwrap_or(0);
+        let now_ms = self.clock.now_ms();
 
         let prev_wall = self.wall_ms.load(AtomicOrdering::Relaxed);
         let prev_lamport = self.lamport.load(AtomicOrdering::Relaxed);
@@ -122,7 +176,7 @@ impl Ord for Hlc {
     }
 }
 
-impl Default for HlcGenerator {
+impl Default for HlcGenerator<SystemClock> {
     fn default() -> Self {
         Self::new(uuid::Uuid::new_v4())
     }
@@ -134,7 +188,8 @@ mod tests {
 
     #[test]
     fn tick_monotonically_increasing() {
-        let gen = HlcGenerator::new(uuid::Uuid::nil());
+        let clock = MockClock::new(1000);
+        let gen = HlcGenerator::with_clock(uuid::Uuid::nil(), clock);
         let h1 = gen.tick();
         let h2 = gen.tick();
         let h3 = gen.tick();
@@ -144,7 +199,8 @@ mod tests {
 
     #[test]
     fn merge_with_later_wall_ms_updates() {
-        let gen = HlcGenerator::new(uuid::Uuid::nil());
+        let clock = MockClock::new(0);
+        let gen = HlcGenerator::with_clock(uuid::Uuid::nil(), clock);
         let other_id = uuid::Uuid::new_v4();
         let incoming = Hlc {
             wall_ms: 2000,
@@ -180,7 +236,7 @@ mod tests {
         };
         let h3 = Hlc {
             wall_ms: 1000,
-            lamport: 0,
+            lamport: 1,
             device_id: dev_late,
         };
         let h4 = Hlc {
@@ -198,7 +254,8 @@ mod tests {
     fn merge_equal_wall_times() {
         let dev_a = uuid::Uuid::new_v4();
         let dev_b = uuid::Uuid::new_v4();
-        let gen = HlcGenerator::new(dev_a);
+        let clock = MockClock::new(1000);
+        let gen = HlcGenerator::with_clock(dev_a, clock);
 
         // Artificially set the generator's wall_ms to 1000.
         gen.wall_ms.store(1000, AtomicOrdering::SeqCst);

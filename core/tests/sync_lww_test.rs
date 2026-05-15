@@ -239,8 +239,9 @@ fn signing_material_is_deterministic() {
     // Manually set user_id to match ev1 for determinism
     ev2.user_id = ev1.user_id;
 
-    let material1 = signing_material(&ev1);
-    let material2 = signing_material(&ev2);
+    let user_id = ev1.user_id;
+    let material1 = signing_material(&ev1, user_id);
+    let material2 = signing_material(&ev2, user_id);
     assert_eq!(
         material1, material2,
         "identical events produce identical signing material"
@@ -275,8 +276,9 @@ fn signing_material_changes_with_different_op() {
     );
     ev_delete.user_id = ev_insert.user_id;
 
-    let material_insert = signing_material(&ev_insert);
-    let material_delete = signing_material(&ev_delete);
+    let user_id = ev_insert.user_id;
+    let material_insert = signing_material(&ev_insert, user_id);
+    let material_delete = signing_material(&ev_delete, user_id);
     assert_ne!(
         material_insert, material_delete,
         "different op should produce different signing material"
@@ -311,8 +313,9 @@ fn signing_material_changes_with_different_payload() {
     );
     ev2.user_id = ev1.user_id;
 
-    let material1 = signing_material(&ev1);
-    let material2 = signing_material(&ev2);
+    let user_id = ev1.user_id;
+    let material1 = signing_material(&ev1, user_id);
+    let material2 = signing_material(&ev2, user_id);
     assert_ne!(
         material1, material2,
         "different payload should produce different signing material"
@@ -323,7 +326,12 @@ fn signing_material_changes_with_different_payload() {
 fn network_push_request_serializes() {
     use libnclaw::sync::network::{PushRequest, SyncNetwork};
     let net = SyncNetwork::new("http://localhost:8080", "test_jwt");
-    let req = PushRequest { events: vec![] };
+    let req = PushRequest {
+        device_id: uuid::Uuid::nil(),
+        events: vec![],
+        cursor: None,
+        schema_version: None,
+    };
     let json = net.push_request(&req);
     assert!(json.contains("events"));
 }

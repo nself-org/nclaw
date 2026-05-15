@@ -3,9 +3,18 @@
 //! Implements deterministic conflict resolution for concurrent edits across
 //! devices using HLC timestamps. Delete operations create tombstones that
 //! supersede earlier updates.
+//!
+//! ## Wire format note (P102 W11 / V04-F05, 2026-05-14)
+//!
+//! The on-wire JSON shape uses FLAT HLC fields — `hlc_wall_ms`,
+//! `hlc_lamport`, `hlc_device_id` — at the envelope top level, matching the
+//! Go server's `pushRequestEvent` (see
+//! `plugins-pro/paid/nself-sync/cmd/nself-sync/main.go`). The in-memory
+//! Rust struct retains a `timestamp: Hlc` field for ergonomic access; serde
+//! glue below flattens/unflattens on serialize/deserialize.
 
 use crate::sync::hlc::Hlc;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Event operation type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,7 +26,13 @@ pub enum Op {
 }
 
 /// Canonical event envelope with HLC timestamp and cryptographic signature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// In-memory: HLC is a single `timestamp: Hlc` field.
+/// On the wire: HLC is flattened to `hlc_wall_ms` / `hlc_lamport` /
+/// `hlc_device_id` at the envelope top level. This matches the Go server
+/// (`pushRequestEvent` in `nself-sync`'s `main.go`) which uses
+/// `DisallowUnknownFields()` and would reject a nested `timestamp` object.
+#[derive(Debug, Clone, PartialEq)]
 pub struct EventEnvelope {
     pub event_id: uuid::Uuid,
     pub entity_type: String,
@@ -30,6 +45,76 @@ pub struct EventEnvelope {
     pub payload: Option<serde_json::Value>,
     pub schema_version: u32,
     pub signature: Vec<u8>,
+}
+
+/// Private wire DTO: flat HLC fields matching the Go server contract.
+///
+/// `schema_version` is serialized as `i32` because Go's `pushRequestEvent`
+/// types it as plain `int` and `DisallowUnknownFields()` is strict about
+/// numeric type compatibility. Rust's `u32` round-trips cleanly for any
+/// real version number (≤ 2^31 - 1).
+#[derive(Serialize, Deserialize)]
+struct EventEnvelopeWire {
+    event_id: uuid::Uuid,
+    entity_type: String,
+    entity_id: uuid::Uuid,
+    op: Op,
+    hlc_wall_ms: i64,
+    hlc_lamport: u64,
+    hlc_device_id: uuid::Uuid,
+    user_id: uuid::Uuid,
+    device_id: uuid::Uuid,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tenant_id: Option<uuid::Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    payload: Option<serde_json::Value>,
+    schema_version: u32,
+    #[serde(default)]
+    signature: Vec<u8>,
+}
+
+impl Serialize for EventEnvelope {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let wire = EventEnvelopeWire {
+            event_id: self.event_id,
+            entity_type: self.entity_type.clone(),
+            entity_id: self.entity_id,
+            op: self.op,
+            hlc_wall_ms: self.timestamp.wall_ms,
+            hlc_lamport: self.timestamp.lamport,
+            hlc_device_id: self.timestamp.device_id,
+            user_id: self.user_id,
+            device_id: self.device_id,
+            tenant_id: self.tenant_id,
+            payload: self.payload.clone(),
+            schema_version: self.schema_version,
+            signature: self.signature.clone(),
+        };
+        wire.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for EventEnvelope {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let wire = EventEnvelopeWire::deserialize(deserializer)?;
+        Ok(EventEnvelope {
+            event_id: wire.event_id,
+            entity_type: wire.entity_type,
+            entity_id: wire.entity_id,
+            op: wire.op,
+            timestamp: Hlc {
+                wall_ms: wire.hlc_wall_ms,
+                lamport: wire.hlc_lamport,
+                device_id: wire.hlc_device_id,
+            },
+            user_id: wire.user_id,
+            device_id: wire.device_id,
+            tenant_id: wire.tenant_id,
+            payload: wire.payload,
+            schema_version: wire.schema_version,
+            signature: wire.signature,
+        })
+    }
 }
 
 /// Resolve a stream of events for the same (entity_type, entity_id) → return winning state.

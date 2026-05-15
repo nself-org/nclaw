@@ -54,6 +54,13 @@ impl Orchestrator {
         match primary_result {
             Ok(resp) => Ok(resp),
             Err(e) => {
+                // Queue decision means "no eligible route" — propagate the error
+                // rather than silently falling back to Local. Queue is a deliberate
+                // routing outcome (e.g. user override that cannot be satisfied),
+                // not a transport failure.
+                if matches!(decision, RouteDecision::Queue { .. }) {
+                    return Err(e);
+                }
                 // If primary route is not Local, attempt fallback to Local.
                 if !matches!(decision, RouteDecision::Local { .. }) {
                     return self.local.execute(&req).await;
@@ -151,7 +158,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Basic,
+            local_tier: crate::tier::Tier::T1,
             connection_state: crate::bridge::router::ConnectionState::Online,
             latency_budget_ms: 1000,
             cost_budget_usd: 10.0,
@@ -189,7 +196,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Basic,
+            local_tier: crate::tier::Tier::T1,
             connection_state: crate::bridge::router::ConnectionState::Online,
             latency_budget_ms: 1000,
             cost_budget_usd: 10.0,
@@ -227,7 +234,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Basic,
+            local_tier: crate::tier::Tier::T1,
             connection_state: crate::bridge::router::ConnectionState::Offline,
             latency_budget_ms: 1000,
             cost_budget_usd: 10.0,
@@ -265,7 +272,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Basic,
+            local_tier: crate::tier::Tier::T1,
             connection_state: crate::bridge::router::ConnectionState::Online,
             latency_budget_ms: 1000,
             cost_budget_usd: 10.0,
@@ -305,7 +312,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Basic,
+            local_tier: crate::tier::Tier::T1,
             connection_state: crate::bridge::router::ConnectionState::Online,
             latency_budget_ms: 2000,
             cost_budget_usd: 0.05,
@@ -343,7 +350,7 @@ mod tests {
         };
 
         let ctx = BridgeContext {
-            local_tier: crate::tier::Tier::Free,
+            local_tier: crate::tier::Tier::T0,
             connection_state: crate::bridge::router::ConnectionState::Offline,
             latency_budget_ms: 50,
             cost_budget_usd: 0.0,
