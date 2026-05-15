@@ -2,25 +2,53 @@
 
 All notable changes to nClaw clients are documented here.
 
-## v1.2.0 — 2026-05-15
+## [Unreleased]
 
-Minor release. ɳClaw bundle updated to 14 plugins. New mcp and knowledge-base plugins. claw.nself.org multi-tenant managed launch.
+### Planned
 
-### Added
-
-- **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) now installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.
+- **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.
 - **`knowledge-base` plugin integration**: persistent knowledge base plugin for long-term memory extraction and retrieval.
 - **claw.nself.org SaaS launch**: multi-tenant managed ɳClaw available at `claw.nself.org` (web/nclaw) for users who don't want to self-host.
 - **`nself bundle install claw` support**: install all 14 ɳClaw bundle plugins (ai, claw, claw-web, mux, voice, browser, google, notify, cron, claw-budget, claw-news, mcp, knowledge-base + free companion tokens) in one command.
 - **Bundle pricing UI**: in-app upgrade prompt shows ɳClaw bundle at $0.99/mo / $9.99/yr.
-
-### Changed
-
 - ɳClaw bundle expanded from 12 to 14 plugins (added mcp, knowledge-base).
-- Minimum nSelf CLI version: v1.1.0.
-- libnclaw: protocol version bumped to match new plugin capabilities.
 
 ---
+
+## v1.1.2 — 2026-05-15
+
+P101 nClaw groundwork patch. Cross-language signing fix, KEK envelope encryption, SQLCipher scope correction, and Tauri 2 desktop hardening.
+
+### Added
+
+- **KEK envelope encryption** in nself-vault — root-key wrapping with documented rotation procedure.
+- **LlamaCpp real backend** wiring in nclaw-core: GPU offload, sampling, streaming, memory guards.
+- **sqlite-vec cross-compile CI matrix** across 5 target platforms.
+- **Throttle retries with full jitter** — honors `Retry-After` headers when present.
+
+### Fixed
+
+- **Cross-language signing material byte-identical between Rust and Go** — 119-byte golden test locked. libnclaw and Go plugins now produce identical signing bytes.
+- **SQLCipher at-rest encryption scope corrected** — encryption is enabled on iOS, Android, and macOS only. Linux, Windows, and web are unsupported. `EncryptedDbService.open(...)` throws `UnsupportedError` on unsupported platforms (was silently falling back to plaintext).
+- **Tauri 2 updater chain** in nclaw/desktop — plugin in Cargo.toml, Ed25519 minisign signing, real public key, downgrade_guard.
+- **nclaw/desktop Tauri 2 API drift** — 7 compile errors cleared.
+- **nclaw/core test surface** — 16 lib test compile errors plus 15 surfaced runtime failures fixed.
+- **All TODO, stub, and unimplemented! markers** removed from production paths.
+
+### Security
+
+- **Plugin signing canonical SHA-256** of tarball bytes — CLI and Worker aligned.
+- All TLS / WAF / hardening rules ship free at install, update, deploy, and on the daily scan.
+
+### Docs
+
+- Tauri updater signing procedure documented.
+- KEK rotation procedure documented.
+- Mobile platform encryption matrix published: `mobile/docs/platform-encryption-matrix.md`.
+
+### Known limitations (carry-forward to v1.1.3)
+
+- Integration test API drift: httpmock 0.7 → 0.8 migration, nclaw_core → libnclaw rename. Separate sprint.
 
 ## v1.1.1 — 2026-05-13
 
@@ -29,6 +57,13 @@ Minor release. ɳClaw bundle updated to 14 plugins. New mcp and knowledge-base p
 - **Desktop platform swap:** Flutter desktop replaced by Tauri 2 + React + Vite for better native performance and smaller binary footprint
 - Mobile remains on Flutter (iOS, Android)
 - See [migration guide](migration/v1.1.0-to-v1.1.1.md) for details
+
+### At-rest encryption scope (corrected)
+
+- Local-database at-rest encryption (SQLCipher) is enabled on **iOS, Android, and macOS only** in the v1.1.x Flutter client.
+- Linux, Windows, and web are not Flutter mobile targets in v1.1.x. The Tauri 2 desktop client (`nclaw/desktop`) covers Linux and Windows with its own encryption story.
+- `EncryptedDbService.open(...)` now throws `UnsupportedError` on unsupported platforms instead of silently falling back to plaintext sqflite. Earlier release wording that implied ecosystem-wide at-rest encryption is superseded.
+- Full platform matrix: `mobile/docs/platform-encryption-matrix.md`.
 
 ### Unreleased fixes (merged at v1.1.1)
 

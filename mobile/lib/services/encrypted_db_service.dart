@@ -5,10 +5,16 @@
 /// Keystore-backed EncryptedSharedPreferences on Android) via
 /// flutter_secure_storage.
 ///
-/// On platforms where SQLCipher is unavailable (desktop test / web), the
-/// service transparently falls back to plain sqflite. This keeps
-/// `flutter test` green on CI while still encrypting production mobile
-/// builds.
+/// Supported platforms: iOS, Android, macOS only.
+///
+/// On unsupported platforms (Linux, Windows, web), [open] throws
+/// [UnsupportedError] rather than silently falling back to plaintext.
+/// See `mobile/docs/platform-encryption-matrix.md` for the full matrix.
+///
+/// Tests that need a database handle on unsupported platforms must use
+/// the dedicated in-memory plain sqflite test harness (see `test/`) and
+/// explicitly opt out of encryption — production code paths must not
+/// silently downgrade.
 library;
 
 import 'dart:convert';
@@ -18,7 +24,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart' as plain;
 import 'package:sqflite_sqlcipher/sqflite.dart' as cipher;
 
 class EncryptedDbService {
@@ -51,10 +56,15 @@ class EncryptedDbService {
   }
 
   /// Opens an encrypted database at [filename] (relative to app documents
-  /// dir). Falls back to plain sqflite on unsupported platforms.
+  /// dir).
   ///
-  /// Callers receive a dynamic Database handle — both plugins expose the
-  /// same query/execute/insert API surface, so call-sites stay identical.
+  /// Throws [UnsupportedError] on Linux, Windows, and web — those platforms
+  /// have no SQLCipher backend in this build. Production code MUST NOT
+  /// downgrade to plaintext sqflite silently; the caller must explicitly
+  /// pick a different storage path (e.g. an in-memory test harness) when
+  /// running on an unsupported platform.
+  ///
+  /// Callers receive a dynamic Database handle from sqflite_sqlcipher.
   static Future<OpenedDatabase> open(
     String filename, {
     required int version,
@@ -62,20 +72,17 @@ class EncryptedDbService {
     Future<void> Function(dynamic db, int oldVersion, int newVersion)?
         onUpgrade,
   }) async {
+    if (!_shouldEncrypt) {
+      throw UnsupportedError(
+        'Encrypted database is not available on '
+        '${kIsWeb ? "web" : defaultTargetPlatform}. '
+        'SQLCipher is only enabled on iOS, Android, and macOS in v1.1.x. '
+        'See mobile/docs/platform-encryption-matrix.md for the full matrix.',
+      );
+    }
+
     final dir = await getApplicationDocumentsDirectory();
     final path = p.join(dir.path, filename);
-
-    if (!_shouldEncrypt) {
-      final db = await plain.openDatabase(
-        path,
-        version: version,
-        onCreate: (d, v) async => await onCreate(d, v),
-        onUpgrade: onUpgrade == null
-            ? null
-            : (d, o, n) async => await onUpgrade(d, o, n),
-      );
-      return OpenedDatabase._(db, encrypted: false);
-    }
 
     final passphrase = await _getOrCreatePassphrase();
     final db = await cipher.openDatabase(

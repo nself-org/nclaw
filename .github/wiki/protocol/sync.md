@@ -36,7 +36,13 @@ Events flow over two channels: **mutations** (client→server) and **subscriptio
 
 **Mutations** are GraphQL mutations (`insertSyncEvent`, `updateSyncEvent`) sent to the Hasura API over HTTPS. Client signs the event, POSTs to `https://<backend>/graphql` with Authorization header carrying a JWT token.
 
-**Subscriptions** are Hasura real-time subscriptions over WebSocket (WSS). Client connects to `wss://<backend>/graphql` with the same JWT token and subscribes to the event-log subscription, receiving all new events in real time.
+**Subscriptions** are real-time subscriptions over WebSocket (WSS). Client connects to `wss://<backend>/sync/subscribe` **with no token in the URL** (URLs are logged at every proxy hop; a token in the URL leaks at every layer). Immediately after the WebSocket upgrade completes, the client sends a single text frame:
+
+```json
+{"type":"auth","token":"<JWT>"}
+```
+
+The server validates the frame within 5 seconds; failure to deliver a valid auth frame in that window causes the server to close the connection with code 4001. HTTP endpoints (`POST /sync/push`, `POST /sync/pull`, `POST /sync/snapshot`, `POST /sync/ack`) carry the JWT in the `Authorization: Bearer <JWT>` header — also never in the URL.
 
 **JWT token** format (issued by `nself-auth` plugin):
 ```json
