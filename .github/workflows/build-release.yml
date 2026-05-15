@@ -23,7 +23,7 @@ jobs:
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -52,7 +52,7 @@ jobs:
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
 
       - uses: actions/setup-java@v4
         with:
@@ -89,7 +89,7 @@ jobs:
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
 
       - uses: subosito/flutter-action@v2
         with:
