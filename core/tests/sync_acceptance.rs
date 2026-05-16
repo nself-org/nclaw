@@ -4,7 +4,7 @@
 //! Tests cover snapshot bootstrap, heartbeat keep-alive, idempotency, batching, cursor persistence,
 //! schema versioning, and telemetry collection.
 
-use nclaw_core::sync::{
+use libnclaw::sync::{
     check_compat, BatchPolicy, CompatStatus, Cursor, EventEnvelope, HeartbeatPing, HeartbeatTimer,
     Hlc, HlcGenerator, IdempotencyCache, SnapshotRequest, SnapshotResponse, SyncTelemetry,
 };
@@ -177,7 +177,7 @@ fn acceptance_telemetry_metrics() {
 
     // Verify snapshot serialization
     let json = serde_json::to_string(&snap).expect("serialize snapshot");
-    let restored: nclaw_core::sync::SyncTelemetrySnapshot =
+    let restored: libnclaw::sync::SyncTelemetrySnapshot =
         serde_json::from_str(&json).expect("deserialize snapshot");
     assert_eq!(restored.events_pushed, snap.events_pushed);
 }
@@ -193,18 +193,26 @@ fn acceptance_end_to_end_sync() {
     assert_eq!(hlc.device_id, device_id);
     assert!(hlc.wall_ms > 0 || hlc.lamport > 0);
 
-    // Create an envelope (stub — would contain signed data in real code)
+    // Create an envelope with all required fields
     let envelope = EventEnvelope {
         event_id: Uuid::new_v4(),
-        hlc,
-        payload: serde_json::json!({"test": "data"}),
+        entity_type: "TestEntity".to_string(),
+        entity_id: Uuid::new_v4(),
+        op: libnclaw::sync::Op::Insert,
+        timestamp: hlc,
+        user_id: device_id,
+        device_id,
+        tenant_id: None,
+        payload: Some(serde_json::json!({"test": "data"})),
+        schema_version: 1,
+        signature: vec![],
     };
 
     // Verify envelope can be serialized
     let json = serde_json::to_string(&envelope).expect("serialize envelope");
     let restored: EventEnvelope = serde_json::from_str(&json).expect("deserialize");
     assert_eq!(restored.event_id, envelope.event_id);
-    assert_eq!(restored.hlc.device_id, device_id);
+    assert_eq!(restored.timestamp.device_id, device_id);
 }
 
 /// T16: All 8 modules compile and are used in acceptance.

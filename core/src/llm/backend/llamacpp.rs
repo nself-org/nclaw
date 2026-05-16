@@ -302,6 +302,7 @@ mod ffi_impl {
                     break;
                 }
 
+                #[allow(deprecated)] // llama_cpp_2 token_to_str/Special::Tokenize; migrate to token_to_piece when llama_cpp_2 >= 0.2
                 let piece = model
                     .token_to_str(new_token, llama_cpp_2::model::Special::Tokenize)
                     .map_err(|e| LlmError::InternalError(format!("token_to_str: {e}")))?;

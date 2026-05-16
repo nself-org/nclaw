@@ -14,9 +14,11 @@
 //! # });
 //! ```
 
-use serde::{Deserialize, Serialize};
+use std::pin::Pin;
 use std::time::Duration;
-use tokio_stream::StreamExt;
+
+use serde::{Deserialize, Serialize};
+use tokio_stream::{Stream, StreamExt};
 
 use crate::error::LlmError;
 
@@ -128,7 +130,7 @@ impl OllamaBackend {
         &self,
         model: &str,
         messages: &[OllamaMessage],
-    ) -> Result<impl tokio_stream::Stream<Item = Result<String, LlmError>>, LlmError> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<String, LlmError>> + Send>>, LlmError> {
         let url = format!("{}/api/chat", self.base_url);
         let body = serde_json::json!({
             "model": model,
@@ -153,8 +155,8 @@ impl OllamaBackend {
 
         let stream = response.bytes_stream();
 
-        // Use async_stream to parse NDJSON and yield tokens
-        Ok(async_stream::stream! {
+        // Use async_stream to parse NDJSON and yield tokens; box to make the stream Unpin.
+        Ok(Box::pin(async_stream::stream! {
             let mut stream = stream;
             while let Some(chunk_result) = stream.next().await {
                 match chunk_result {
@@ -179,7 +181,7 @@ impl OllamaBackend {
                     }
                 }
             }
-        })
+        }))
     }
 
     /// Generate embeddings for a given text prompt.

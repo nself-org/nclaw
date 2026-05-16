@@ -175,7 +175,7 @@ fn s04_online_server_mux_default_privacy_prefers_server_mux() {
 // ---------------------------------------------------------------------------
 #[test]
 fn s05_frontier_only_allow_frontier() {
-    let r = req(PromptClass::Chat, Privacy::AllowFrontier);
+    let _r = req(PromptClass::Chat, Privacy::AllowFrontier);
     let mut ctx = ctx_base();
     // Remove ServerMux so Frontier is the only cloud option.
     ctx.server_mux_endpoint = None;

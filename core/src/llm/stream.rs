@@ -161,6 +161,12 @@ impl StreamingGenerator {
                         .await;
                     return;
                 }
+
+                // Yield to the executor so the consumer task can run between tokens.
+                // Without this, when the channel has spare capacity the send completes
+                // without a scheduling point — the producer never yields and cancellation
+                // signals set by the consumer are not observed until the channel fills.
+                tokio::task::yield_now().await;
             }
 
             let stats = make_stats(total_tokens, start.elapsed());

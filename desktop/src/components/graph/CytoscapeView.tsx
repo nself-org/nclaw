@@ -1,8 +1,12 @@
+/* cytoscape canvas — not shadcn-portable */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error react-cytoscapejs has no bundled types; @types/react-cytoscapejs covers only v1.x
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
+// @ts-expect-error cytoscape-cola has no @types package available on npm
 import cola from 'cytoscape-cola';
 import type { GraphNode, GraphEdge } from '@/lib/graph-mock';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 cytoscape.use(cola);
 
@@ -25,7 +29,8 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
     [nodes, edges]
   );
 
-  const stylesheet: cytoscape.Stylesheet[] = [
+  // cytoscape.StylesheetStyle uses the `style` key (vs StylesheetCSS which uses `css`).
+  const stylesheet: cytoscape.StylesheetStyle[] = [
     {
       selector: 'node[kind = "topic"]',
       style: {
@@ -76,8 +81,9 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
         label: 'data(label)',
         'font-size': 8,
         color: '#94a3b8',
-        'edge-text-rotation': 'autorotate',
-      },
+        // 'edge-text-rotation' is a valid cytoscape CSS property missing from @types/cytoscape
+        'edge-text-rotation': 'autorotate' as string,
+      } as cytoscape.Css.Edge,
     },
     {
       selector: 'node:selected',
@@ -87,8 +93,6 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
       },
     },
   ];
-
-  const [cy, setCy] = useState<any>(null);
 
   return (
     <CytoscapeComponent
@@ -102,9 +106,8 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
         nodeSpacing: 10,
         edgeLength: 50,
       }}
-      cy={(c) => {
-        setCy(c);
-        c.on('tap', 'node', (evt) => {
+      cy={(c: cytoscape.Core) => {
+        c.on('tap', 'node', (evt: cytoscape.EventObject) => {
           onNodeClick?.(evt.target.id());
         });
       }}

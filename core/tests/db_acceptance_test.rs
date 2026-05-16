@@ -11,6 +11,8 @@ mod db_acceptance {
     // Real modules are in nclaw/core/src/db/.
 
     /// Simulated database engine enum (from migrate.rs)
+    // justification: Pg mirrors real migrate.rs enum — used by future multi-engine acceptance tests
+    #[allow(dead_code)]
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum Engine {
         Pg,
@@ -18,6 +20,8 @@ mod db_acceptance {
     }
 
     /// Simulated migration metadata (from migrate.rs)
+    // justification: name field mirrors real Migration struct — used by future migration-name tests
+    #[allow(dead_code)]
     pub struct Migration {
         pub version: i32,
         pub name: &'static str,

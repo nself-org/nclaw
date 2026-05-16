@@ -1,7 +1,7 @@
 //! Versioned migrations runner. Applies SQL migrations in order, tracks version
 //! in `migrations` table, idempotent.
 
-use crate::error::{CoreError, DbError};
+use crate::error::CoreError;
 
 /// Trait that concrete DB runners (Postgres, SQLite) implement to apply migrations.
 pub trait MigrationRunner {
@@ -81,6 +81,7 @@ pub fn run(runner: &mut dyn MigrationRunner, engine: Engine) -> Result<u32, Core
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::DbError;
 
     /// Mock runner that simulates DB calls without a real database.
     struct MockRunner {

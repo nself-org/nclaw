@@ -56,6 +56,16 @@ pub struct HeartbeatPing {
     pub ts: u64,
 }
 
+impl HeartbeatPing {
+    /// Create a ping payload with the current wall-clock timestamp.
+    ///
+    /// Delegates to [`HeartbeatTimer::ping_payload`]; provided as an associated
+    /// function on `HeartbeatPing` for callers that hold the type directly.
+    pub fn ping_payload() -> Self {
+        HeartbeatTimer::ping_payload()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

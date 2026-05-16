@@ -72,7 +72,7 @@ cc = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
 ts-rs = "10"
 tauri-specta = "2.0.0-rc.25"
-httpmock = "0.7"
+httpmock = "0.8"
 tempfile = "3"
 
 [features]
@@ -105,3 +105,9 @@ required-features = ["ts-export"]
 [[bin]]
 name = "argon2_calibrate"
 path = "src/bin/argon2_calibrate.rs"
+
+# Suppress false-positive cfg warnings from flutter_rust_bridge macro expansions.
+# `frb_expand` is an internal cfg used by flutter_rust_bridge_macros — it is not
+# a user-defined feature but Rust's check-cfg system warns about it anyway.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

@@ -4,13 +4,13 @@
 //! from cloud (ServerMux/Frontier) to local on network failure.
 
 use async_trait::async_trait;
-use nclaw_core::bridge::orchestrator::Orchestrator;
-use nclaw_core::bridge::router::{
-    BridgeContext, ConnectionState, Privacy, PromptClass, PromptRequest, RouteOverride, UserPolicy,
+use libnclaw::bridge::orchestrator::Orchestrator;
+use libnclaw::bridge::router::{
+    BridgeContext, ConnectionState, Privacy, PromptClass, PromptRequest, UserPolicy,
 };
-use nclaw_core::bridge::transport::{Transport, TransportRequest, TransportResponse};
-use nclaw_core::error::CoreError;
-use nclaw_core::tier::Tier;
+use libnclaw::bridge::transport::{Transport, TransportRequest, TransportResponse};
+use libnclaw::error::CoreError;
+use libnclaw::tier::Tier;
 use std::sync::Arc;
 
 /// Mock transport for testing.
@@ -21,7 +21,7 @@ struct MockTransport {
 
 #[async_trait]
 impl Transport for MockTransport {
-    async fn execute(&self, req: &TransportRequest) -> Result<TransportResponse, CoreError> {
+    async fn execute(&self, _req: &TransportRequest) -> Result<TransportResponse, CoreError> {
         if self.should_fail {
             return Err(CoreError::Other(format!("mock failure from {}", self.name)));
         }
@@ -201,8 +201,16 @@ async fn test_orchestrator_frontier_unavailable_error() {
 
     let result = orch.run(&prompt, &ctx).await;
 
-    // Router will try frontier, dispatch will fail with "not configured"
-    assert!(result.is_err());
+    // Router picks DirectFrontier; dispatch fails because frontier transport is
+    // not configured. The orchestrator then falls back to Local (which succeeds).
+    // This verifies the frontier-unavailable → local fallback contract.
+    assert!(result.is_ok(), "frontier unavailable should fall back to local");
+    let resp = result.unwrap();
+    assert!(
+        resp.source.contains("local"),
+        "should have fallen back to local, got source: {}",
+        resp.source
+    );
 }
 
 #[tokio::test]

@@ -208,8 +208,18 @@ impl Cache {
         self.index.insert(id, entry);
     }
 
-    /// Persist index.json to disk with atomic tempfile + rename
-    fn persist_index(&self) -> Result<(), CacheError> {
+    /// Read-only access to index map (exposed for integration tests).
+    pub fn index(&self) -> &HashMap<String, CacheEntry> {
+        &self.index
+    }
+
+    /// Mutable access to index map (exposed for integration tests).
+    pub fn index_mut(&mut self) -> &mut HashMap<String, CacheEntry> {
+        &mut self.index
+    }
+
+    /// Persist index.json to disk with atomic tempfile + rename.
+    pub fn persist_index(&self) -> Result<(), CacheError> {
         let index_path = self.cache_dir.join("index.json");
         let json = serde_json::to_string_pretty(&self.index)?;
 

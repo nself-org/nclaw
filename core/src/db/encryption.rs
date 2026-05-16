@@ -236,6 +236,8 @@ pub fn derive_key(
 /// * `passphrase` — User-provided passphrase bytes
 /// * `salt`       — Device-stable salt (same value used during creation)
 /// * `db_path`    — Path to the encrypted database file (sidecar is loaded from `<db_path>.kdf-params.toml`)
+// sidecar is used in #[cfg(not(test))] branch; under --tests that branch is excluded
+#[allow(unused_variables)]
 pub fn derive_key_from_sidecar(
     passphrase: &[u8],
     salt: &[u8],

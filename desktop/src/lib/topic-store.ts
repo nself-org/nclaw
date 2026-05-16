@@ -34,7 +34,7 @@ export const useTopics = create<TopicStoreState>((set, get) => ({
 
   async load() {
     const topics = await invoke<Topic[]>('list_topics');
-    set({ topics });
+    set({ topics: topics ?? [] });
   },
 
   toggleExpand(id: string) {

@@ -159,40 +159,50 @@ mod tests {
 
     #[test]
     fn test_validate_rejects_temperature_above_2() {
-        let mut params = SamplingParams::default();
-        params.temperature = 3.0;
+        let params = SamplingParams {
+            temperature: 3.0,
+            ..Default::default()
+        };
         assert!(params.validate().is_err());
     }
 
     #[test]
     fn test_validate_rejects_top_p_above_1() {
-        let mut params = SamplingParams::default();
-        params.top_p = 1.5;
+        let params = SamplingParams {
+            top_p: 1.5,
+            ..Default::default()
+        };
         assert!(params.validate().is_err());
     }
 
     #[test]
     fn test_validate_rejects_top_k_above_200() {
-        let mut params = SamplingParams::default();
-        params.top_k = 500;
+        let params = SamplingParams {
+            top_k: 500,
+            ..Default::default()
+        };
         assert!(params.validate().is_err());
     }
 
     #[test]
     fn test_validate_rejects_repeat_penalty_below_0_5() {
-        let mut params = SamplingParams::default();
-        params.repeat_penalty = 0.1;
+        let params = SamplingParams {
+            repeat_penalty: 0.1,
+            ..Default::default()
+        };
         assert!(params.validate().is_err());
     }
 
     #[test]
     fn test_validate_rejects_mirostat_invalid_mode() {
-        let mut params = SamplingParams::default();
-        params.mirostat = Some(MirostatConfig {
-            mode: 3,
-            tau: 5.0,
-            eta: 0.1,
-        });
+        let params = SamplingParams {
+            mirostat: Some(MirostatConfig {
+                mode: 3,
+                tau: 5.0,
+                eta: 0.1,
+            }),
+            ..Default::default()
+        };
         assert!(params.validate().is_err());
     }
 

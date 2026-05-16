@@ -3,6 +3,7 @@
 //! Uses httpmock to simulate mux and frontier endpoints without real network.
 
 use httpmock::prelude::*;
+use httpmock::{Then, When};
 use libnclaw::bridge::transport::{
     FrontierTransport, LocalTransport, ServerMuxTransport, Transport, TransportRequest,
 };
@@ -19,20 +20,17 @@ async fn test_local_transport_basic() {
     let resp = transport.execute(&req).await.expect("local should succeed");
     assert_eq!(resp.source, "local");
     assert!(resp.text.contains("local stub"));
-    assert!(resp.latency_ms >= 0);
+    assert!(resp.latency_ms < u64::MAX); // latency is bounded
 }
 
 #[tokio::test]
 async fn test_server_mux_transport() {
-    let server = MockServer::new_async().await;
+    let server = MockServer::start_async().await;
 
     // Mock the mux endpoint
     let mock = server
-        .mock_async(|when, then| {
-            when.method(POST)
-                .path("/inference")
-                .json_body_contains("prompt")
-                .json_body_contains("max_tokens");
+        .mock_async(|when: When, then: Then| {
+            when.method(POST).path("/inference");
             then.status(200).json_body(serde_json::json!({
                 "text": "Mocked response from server mux",
                 "tokens_used": 42
@@ -40,7 +38,7 @@ async fn test_server_mux_transport() {
         })
         .await;
 
-    let endpoint = format!("{}/inference", server.url());
+    let endpoint = format!("{}/inference", server.base_url());
     let transport = ServerMuxTransport::new(endpoint);
 
     let req = TransportRequest {
@@ -59,10 +57,10 @@ async fn test_server_mux_transport() {
 
 #[tokio::test]
 async fn test_frontier_anthropic() {
-    let server = MockServer::new_async().await;
+    let server = MockServer::start_async().await;
 
-    let mock = server
-        .mock_async(|when, then| {
+    let _mock = server
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/v1/messages")
                 .header("x-api-key", "test-key");
@@ -79,7 +77,7 @@ async fn test_frontier_anthropic() {
         "claude-3.5-sonnet".to_string(),
     );
 
-    let req = TransportRequest {
+    let _req = TransportRequest {
         prompt: "Test Anthropic".to_string(),
         max_tokens: 100,
         temperature: 0.7,

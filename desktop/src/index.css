@@ -1,0 +1,2 @@
+/* Entry-point stylesheet — imports the full shadcn token set and Tailwind directives. */
+@import './styles/globals.css';

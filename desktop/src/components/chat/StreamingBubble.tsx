@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { MessageBubble } from './MessageBubble';
 import type { StreamingBuffer } from '@/lib/streaming-buffer';
 import { safeRenderText } from '@/lib/markdown-incremental';
@@ -54,15 +55,16 @@ export function StreamingBubble({ buffer, onCancel }: Props) {
         <div className="flex items-center gap-2 text-xs text-slate-400 px-4 py-1">
           <span className="inline-block animate-pulse">▍</span>
           <span className="text-slate-500">Streaming...</span>
-          <button
+          <Button
             onClick={onCancel}
-            className="ml-auto px-2 py-0.5 rounded border border-slate-700
-                       hover:border-sky-500 hover:text-sky-400 transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-sky-500"
+            variant="outline"
+            size="sm"
+            className="ml-auto px-2 py-0.5 h-auto rounded border-slate-700
+                       hover:border-sky-500 hover:text-sky-400"
             aria-label="Cancel stream"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       )}
     </div>

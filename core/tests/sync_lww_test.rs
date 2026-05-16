@@ -145,7 +145,7 @@ fn lww_resolve_hlc_total_order() {
     // Test that events are ordered by HLC total order:
     // wall_ms → lamport → device_id (lexicographic)
     let dev_a = Uuid::new_v4();
-    let dev_b = if Uuid::new_v4() < dev_a {
+    let _dev_b = if Uuid::new_v4() < dev_a {
         Uuid::new_v4()
     } else {
         dev_a
@@ -359,7 +359,9 @@ fn network_sync_network_subscribe_url_http() {
     let url = net.subscribe_url();
     assert!(url.starts_with("ws://"));
     assert!(url.contains("/sync/subscribe"));
-    assert!(url.contains("test_jwt"));
+    // V04-F04: JWT must NOT appear in the subscribe URL; auth is delivered
+    // via the post-connect AuthFrame, not as a URL parameter.
+    assert!(!url.contains("test_jwt"));
 }
 
 #[test]

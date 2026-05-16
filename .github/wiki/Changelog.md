@@ -13,6 +13,37 @@ All notable changes to nClaw clients are documented here.
 - **Bundle pricing UI**: in-app upgrade prompt shows ɳClaw bundle at $0.99/mo / $9.99/yr.
 - ɳClaw bundle expanded from 12 to 14 plugins (added mcp, knowledge-base).
 
+### Fixed
+
+- **Streaming cancellation now reliably interrupts mid-generation.** Previously, when the token channel had spare buffer capacity, the producer could emit the full response before a cancel signal was observed. "Stop generation" now takes effect promptly between tokens.
+- **Sync backward compatibility (v1.1.0 ↔ v1.1.1 event envelopes).** v1.1.0-serialized sync events now deserialize cleanly under v1.1.1, and v1.1.1 events are tolerated by v1.1.0 readers. This prevents sync data loss when nodes upgrade across versions.
+
+---
+
+## v1.1.3 — 2026-05-15
+
+P103 Phase 1 test-surface patch. httpmock 0.7 → 0.8 migration, `nclaw_core` → `libnclaw` rename in integration tests, Cache field privacy alignment, and libnclaw import-path corrections.
+
+### Fixed
+
+- **httpmock 0.7 → 0.8 migration** in integration test suite — `Server::run()` replaced with `MockServer::start()`, `expect()`/`mock()` call chains replaced with `Mock::given()`/`.then_return()` fluent API, all affected bridge and transport tests updated.
+- **`nclaw_core` → `libnclaw` crate rename** — all `use nclaw_core::` import paths in integration tests updated to `use libnclaw::`.
+- **Cache field privacy** — direct field access (`cache.index`, `cache.persist_index()`) replaced with the public accessor API (`cache.index()`, `cache.index_mut()`, `cache.persist()`).
+- **libnclaw import-path corrections** — bridge transport types (`FrontierTransport`, `LocalTransport`, `ServerMuxTransport`) and LLM types (`OllamaBackend`, `OllamaMessage`) resolved via correct `libnclaw::` paths.
+
+### Changed (desktop)
+
+- **`tauri.conf.json` version bumped** from 1.1.2 to 1.1.3 to align with release.
+- **`createUpdaterArtifacts: true`** added to `bundle` section in `tauri.conf.json` — Tauri bundler now produces `.sig` sidecar files and updater JSON alongside each platform artifact.
+- **Updater endpoint verified**: `plugins.updater.endpoints` points to `https://packages.nself.org/desktop/latest-{{target}}.json`. Endpoint not yet live — requires tag `v1.1.3` trigger and artifact upload to packages.nself.org. See `.github/wiki/DESKTOP.md` for per-platform status and checksum table.
+- **All platform CI workflows confirmed at `nclaw/desktop`** (canonical path): linux (T13), windows (T14), and macos all reference `nclaw/desktop` correctly with no residual `nclaw/apps/desktop` references.
+
+### Known limitations (carry-forward to v1.1.4)
+
+- `cargo build --tests` zero errors after Phase 1 lands; runtime integration test pass-rate to be confirmed in Phase 2 soak.
+- Updater endpoints not yet published (pending packages.nself.org upload after first v1.1.3 CI run on tag).
+- Windows artifacts unsigned (EV cert pending, T06).
+
 ---
 
 ## v1.1.2 — 2026-05-15

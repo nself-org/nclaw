@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { ACCENT_PRESETS, isValidHex } from '@/lib/theme';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 export function ThemeSettings(): React.ReactElement {
   const { mode, setMode, accentHex, setAccentHex } = useTheme();
@@ -40,14 +43,14 @@ export function ThemeSettings(): React.ReactElement {
       <div>
         <h3 className="text-sm font-semibold text-slate-100 mb-3">Theme</h3>
         <div className="space-y-2">
-          {['light', 'dark', 'system'].map((m) => (
+          {(['light', 'dark', 'system'] as const).map((m) => (
             <label key={m} className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="radio"
                 name="theme-mode"
                 value={m}
                 checked={mode === m}
-                onChange={(e) => setMode(e.target.value as 'light' | 'dark' | 'system')}
+                onChange={() => setMode(m)}
                 className="w-4 h-4 rounded-full border border-slate-600 bg-surface checked:bg-sky-500 checked:border-sky-400 cursor-pointer"
               />
               <span className="text-sm text-slate-300 capitalize group-hover:text-slate-100 transition-colors">
@@ -88,22 +91,26 @@ export function ThemeSettings(): React.ReactElement {
         <h3 className="text-sm font-semibold text-slate-100 mb-3">Custom Color</h3>
         <div className="flex gap-2">
           <div className="flex-1">
-            <input
+            <Label htmlFor="custom-hex-input" className="sr-only">
+              Custom hex color
+            </Label>
+            <Input
+              id="custom-hex-input"
               type="text"
               value={customHex}
               onChange={handleCustomHexChange}
               placeholder="#0ea5e9"
-              className="w-full px-3 py-2 rounded-md bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              aria-label="Custom hex color"
             />
             {customError && <p className="text-xs text-rose-400 mt-1">{customError}</p>}
           </div>
-          <button
+          <Button
             onClick={handleApplyCustom}
             disabled={!customHex || !isValidHex(customHex)}
-            className="px-3 py-2 rounded-md bg-sky-500/20 text-sky-400 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            variant="secondary"
           >
             Apply
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -123,12 +130,13 @@ export function ThemeSettings(): React.ReactElement {
       </div>
 
       {/* Reset Button */}
-      <button
+      <Button
+        variant="secondary"
         onClick={handleReset}
-        className="w-full px-4 py-2 rounded-md bg-slate-700/50 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
+        className="w-full"
       >
         Reset to Defaults
-      </button>
+      </Button>
     </div>
   );
 }

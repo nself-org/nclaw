@@ -19,6 +19,17 @@ export function isValidHex(hex: string): boolean {
   return /^#?[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(hex);
 }
 
+/**
+ * Resolves a theme preference to a concrete 'light' or 'dark' value.
+ * When pref is 'system', reads the OS preference via matchMedia.
+ */
+export function resolveTheme(pref: ThemeMode): 'light' | 'dark' {
+  if (pref === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return pref;
+}
+
 export function applyTheme(mode: ThemeMode, accentHex: string): void {
   const root = document.documentElement;
   let effectiveMode: 'light' | 'dark' = 'dark';

@@ -49,7 +49,7 @@ pub fn fetch_secret(account: &str) -> Result<Vec<u8>, CoreError> {
     })?;
     STANDARD
         .decode(pw.as_bytes())
-        .map_err(|e| CoreError::Vault(VaultError::InvalidFormat))
+        .map_err(|_e| CoreError::Vault(VaultError::InvalidFormat))
 }
 
 /// Delete a secret from the OS keychain.
@@ -71,16 +71,59 @@ pub fn delete_secret(account: &str) -> Result<(), CoreError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::OnceLock;
 
-    // Skip keychain tests on CI / non-interactive environments.
-    // The OS keychain (macOS Keychain.app / Win DPAPI / Linux Secret Service) is
-    // not available in CI sandboxes and headless environments, where the calls
-    // either fail outright or require interactive unlock.
+    // Skip keychain tests when the OS keychain is genuinely unavailable.
+    //
+    // Fast-path: honour explicit env-var overrides and known CI signals so the
+    // probe cost is never paid in automated pipelines.
+    //
+    // Probe path: attempt a trivial store→fetch→delete round-trip with a
+    // throwaway key.  Any error (no Security Server, sandbox denial, access
+    // denied) returns true (skip).  The result is cached in a OnceLock so the
+    // probe runs at most once per test-binary invocation.
     fn should_skip_keychain_tests() -> bool {
-        std::env::var("NCLAW_SKIP_KEYCHAIN").is_ok()
+        // Fast-path env overrides — no probe needed.
+        if std::env::var("NCLAW_SKIP_KEYCHAIN").is_ok()
             || std::env::var("CI").is_ok()
             || std::env::var("GITHUB_ACTIONS").is_ok()
             || std::env::var("NCLAW_SKIP_KEYCHAIN_TESTS").is_ok()
+        {
+            return true;
+        }
+
+        // Cached probe result (runs once per test-binary invocation).
+        static PROBE: OnceLock<bool> = OnceLock::new();
+        *PROBE.get_or_init(|| {
+            const PROBE_KEY: &str = "__nclaw_probe__";
+            let probe_value = b"probe";
+
+            // store
+            if store_secret(PROBE_KEY, probe_value).is_err() {
+                return true; // keychain unavailable — skip
+            }
+
+            // fetch — must round-trip correctly
+            match fetch_secret(PROBE_KEY) {
+                Err(_) => {
+                    // Best-effort cleanup; ignore result.
+                    let _ = delete_secret(PROBE_KEY);
+                    return true;
+                }
+                Ok(fetched) if fetched != probe_value => {
+                    let _ = delete_secret(PROBE_KEY);
+                    return true;
+                }
+                Ok(_) => {}
+            }
+
+            // delete — leave no trace
+            if delete_secret(PROBE_KEY).is_err() {
+                return true;
+            }
+
+            false // keychain is available; run the real tests
+        })
     }
 
     #[test]

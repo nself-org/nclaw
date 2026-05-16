@@ -3,10 +3,9 @@
 //! Tests use `httpmock` to serve fake model bytes locally, avoiding real network calls.
 
 use httpmock::prelude::*;
-use libnclaw::models::downloader::{DownloadEvent, Downloader};
+use libnclaw::models::downloader::DownloadEvent;
 use libnclaw::registry::ModelEntry;
 use libnclaw::tier::Tier;
-use tokio_stream::StreamExt;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -34,6 +33,9 @@ fn make_entry(id: &'static str, sha256: &'static str, size_mb: u32) -> ModelEntr
 // Test 1: full download — receives correct Progress totals + Verified
 // ---------------------------------------------------------------------------
 
+// entry is test scaffold — sha256/size_mb fields are mutated to prepare for future
+// Downloader stream integration but the mock-file path is used instead (see test comments)
+#[allow(unused_variables, unused_assignments)]
 #[tokio::test]
 async fn test_full_download_progress_and_verified() {
     let server = MockServer::start();

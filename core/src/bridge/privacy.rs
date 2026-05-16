@@ -37,7 +37,7 @@ fn strip_emails(input: &str) -> String {
     while let Some(ch) = chars.next() {
         // Naive heuristic: look for patterns like "word@domain.tld"
         if is_email_char(ch) {
-            let start_pos = result.len();
+            let _start_pos = result.len();
             let mut candidate = ch.to_string();
 
             while let Some(&next) = chars.peek() {

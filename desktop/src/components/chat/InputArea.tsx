@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   value: string;
@@ -15,7 +17,7 @@ const MAX_ROWS = 8;
  * Enter sends; Shift+Enter inserts newline. File paste is stubbed (v1.2.0).
  */
 export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<React.ElementRef<typeof Textarea>>(null);
 
   // Auto-resize on content change.
   useEffect(() => {
@@ -28,7 +30,7 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
   }, [value]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent<HTMLElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (!isStreaming && value.trim()) {
@@ -39,7 +41,7 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
     [isStreaming, onSubmit, value]
   );
 
-  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLElement>) => {
     const hasFiles = Array.from(e.clipboardData.items).some(
       (item) => item.kind === 'file'
     );
@@ -54,7 +56,7 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
 
   return (
     <div className="flex items-end gap-2 px-4 py-3 border-t border-gray-800 bg-gray-950">
-      <textarea
+      <Textarea
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -62,24 +64,22 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
         onPaste={handlePaste}
         rows={1}
         placeholder="Message ɳClaw…"
+        data-testid="chat-input"
         className="flex-1 resize-none rounded-xl bg-gray-800 px-4 py-2
                    text-slate-100 placeholder-gray-500 text-sm leading-6
-                   focus:outline-none focus:ring-2 focus:ring-sky-500
-                   min-h-[2.5rem] max-h-[12rem]"
+                   min-h-[2.5rem] max-h-[12rem] min-h-0"
         style={{ overflowY: 'hidden' }}
       />
-      <button
+      <Button
         onClick={onSubmit}
         disabled={disabled}
-        className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium
-                   bg-sky-500 text-white transition-opacity
-                   disabled:opacity-40 disabled:cursor-not-allowed
-                   hover:not-disabled:bg-sky-400 focus:outline-none
-                   focus:ring-2 focus:ring-sky-500"
+        variant="default"
+        size="sm"
+        className="flex-shrink-0 rounded-xl bg-sky-500 text-white hover:bg-sky-400"
         aria-label="Send message"
       >
         Send
-      </button>
+      </Button>
     </div>
   );
 }

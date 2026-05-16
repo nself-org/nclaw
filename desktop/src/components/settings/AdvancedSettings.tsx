@@ -1,10 +1,20 @@
 // ɳClaw Desktop — Advanced Settings section
 import React, { useEffect, useState } from "react";
 import { useSettings } from "../../lib/settings-store";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const LOG_LEVELS = ["error", "warn", "info", "debug", "trace"] as const;
 
-interface ToggleProps {
+interface SwitchRowProps {
   id: string;
   label: string;
   description: string;
@@ -12,28 +22,21 @@ interface ToggleProps {
   onChange: (v: boolean) => void;
 }
 
-function Toggle({ id, label, description, checked, onChange }: ToggleProps): React.ReactElement {
+function SwitchRow({ id, label, description, checked, onChange }: SwitchRowProps): React.ReactElement {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <label htmlFor={id} className="text-sm font-medium text-slate-200 cursor-pointer">
+        <Label htmlFor={id} className="text-sm font-medium text-slate-200 cursor-pointer">
           {label}
-        </label>
+        </Label>
         <p className="text-xs text-slate-500 mt-0.5">{description}</p>
       </div>
-      <button
+      <Switch
         id={id}
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer ${checked ? "bg-sky-600" : "bg-slate-600"}`}
+        checked={checked}
+        onCheckedChange={onChange}
         aria-label={label}
-      >
-        <span
-          aria-hidden="true"
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${checked ? "translate-x-4" : "translate-x-0"}`}
-        />
-      </button>
+      />
     </div>
   );
 }
@@ -69,34 +72,36 @@ export function AdvancedSettings(): React.ReactElement {
 
       {/* Log level */}
       <div className="mb-5">
-        <label htmlFor="log-level" className="block text-sm font-medium text-slate-300 mb-1">
+        <Label htmlFor="log-level" className="block text-sm font-medium text-slate-300 mb-1">
           Log level
-        </label>
+        </Label>
         <p className="text-xs text-slate-500 mb-2">
           Controls verbosity of the local log file. Restart required for changes to take effect.
         </p>
-        <select
-          id="log-level"
+        <Select
           value={draft.log_level}
-          onChange={(e) =>
+          onValueChange={(v) =>
             setDraft((d) => ({
               ...d,
-              log_level: e.target.value as typeof draft.log_level,
+              log_level: v as typeof draft.log_level,
             }))
           }
-          className="w-full rounded-md bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          aria-label="Log level"
         >
-          {LOG_LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {l.charAt(0).toUpperCase() + l.slice(1)}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="log-level" aria-label="Log level">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LOG_LEVELS.map((l) => (
+              <SelectItem key={l} value={l}>
+                {l.charAt(0).toUpperCase() + l.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-4 mb-6">
-        <Toggle
+        <SwitchRow
           id="toggle-telemetry"
           label="Usage telemetry"
           description="Send anonymous crash reports and usage statistics to help improve ɳClaw."
@@ -104,7 +109,7 @@ export function AdvancedSettings(): React.ReactElement {
           onChange={(v) => setDraft((d) => ({ ...d, telemetry: v }))}
         />
 
-        <Toggle
+        <SwitchRow
           id="toggle-check-updates"
           label="Check for updates"
           description="Automatically check for new ɳClaw Desktop releases on startup."
@@ -119,13 +124,12 @@ export function AdvancedSettings(): React.ReactElement {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
-        className="rounded-md bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
         aria-label="Save advanced settings"
       >
         {saved ? "Saved" : "Save"}
-      </button>
+      </Button>
     </section>
   );
 }
