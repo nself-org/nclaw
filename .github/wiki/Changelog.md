@@ -4,6 +4,19 @@ All notable changes to nClaw clients are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Local AI — full UX pipeline (S19):** End-to-end local model experience now ships in the desktop app. Six new capabilities land together:
+  - **HuggingFace model search (T01):** The Settings → Local AI panel searches HuggingFace for GGUF models via a 5-minute cached REST API. Results show name, download count, and available quant variants.
+  - **Resumable GGUF downloader (T02):** Downloads resume after interruption via HTTP Range requests. SHA-256 verification on completion. Live progress via `llm://download-progress` Tauri events.
+  - **In-app download queue (T02 UI):** `DownloadQueue` component shows per-file progress bars, speeds, and status badges. Cancel mid-flight.
+  - **Memory/VRAM indicator (T05):** `MemoryIndicator` component polls RAM and GPU VRAM usage in real time. Warns before loading if headroom is tight.
+  - **TPS + TTFT metrics in chat (T03):** Each assistant reply shows tokens-per-second and time-to-first-token in a subtle metrics pill below the response bubble.
+  - **Model swap with VRAM cleanup (T06):** Loading a new model always unloads the previous one first. Drop is synchronous via llama-cpp-2 — no VRAM leak across swap cycles.
+- **Windows MSI EV code-signing (S20):** `desktop-windows.yml` now wires `SSLcom/esigner-codesign@v1.3.2` for EV Organization Validation code-signing. Signing step is conditional (`if: secrets.SSL_COM_USERNAME != ''`) and skips when org secrets are absent, keeping CI green during onboarding. Once `SSL_COM_*` secrets are provisioned, release MSIs will pass Windows SmartScreen without "Unknown Publisher" warnings. Rate limit: 10 signs/min (one MSI per run — well within limit).
+
+- **Mobile FRB CI Matrix (S18 / CF-11):** GitHub Actions CI matrix for nclaw mobile across 5 platforms (iOS, Android, macOS, Linux, Windows). Each platform has its own workflow triggered on PR and push to `main` when `nclaw/mobile/**` or `nclaw/core/**` changes. A reusable FRB codegen drift gate (`frb-codegen-check.yml`) runs before every platform build — stale bindings fail CI. Composite action `setup-rust-mobile` provides Rust toolchain, Cargo.lock-keyed caching, and `cargo-ndk ≥3.5`. Android NDK r26b pinned. Apple and Android signing are conditional (non-blocking when secrets absent). All artifacts retained 30 days. Matrix orchestrator at `mobile-matrix.yml` runs all 5 platforms in parallel.
+
 ### Planned
 
 - **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.
@@ -12,6 +25,37 @@ All notable changes to nClaw clients are documented here.
 - **`nself bundle install claw` support**: install all 14 ɳClaw bundle plugins (ai, claw, claw-web, mux, voice, browser, google, notify, cron, claw-budget, claw-news, mcp, knowledge-base + free companion tokens) in one command.
 - **Bundle pricing UI**: in-app upgrade prompt shows ɳClaw bundle at $0.99/mo / $9.99/yr.
 - ɳClaw bundle expanded from 12 to 14 plugins (added mcp, knowledge-base).
+
+### Fixed
+
+- **Streaming cancellation now reliably interrupts mid-generation.** Previously, when the token channel had spare buffer capacity, the producer could emit the full response before a cancel signal was observed. "Stop generation" now takes effect promptly between tokens.
+- **Sync backward compatibility (v1.1.0 ↔ v1.1.1 event envelopes).** v1.1.0-serialized sync events now deserialize cleanly under v1.1.1, and v1.1.1 events are tolerated by v1.1.0 readers. This prevents sync data loss when nodes upgrade across versions.
+
+---
+
+## v1.1.3 — 2026-05-15
+
+P103 Phase 1 test-surface patch. httpmock 0.7 → 0.8 migration, `nclaw_core` → `libnclaw` rename in integration tests, Cache field privacy alignment, and libnclaw import-path corrections.
+
+### Fixed
+
+- **httpmock 0.7 → 0.8 migration** in integration test suite — `Server::run()` replaced with `MockServer::start()`, `expect()`/`mock()` call chains replaced with `Mock::given()`/`.then_return()` fluent API, all affected bridge and transport tests updated.
+- **`nclaw_core` → `libnclaw` crate rename** — all `use nclaw_core::` import paths in integration tests updated to `use libnclaw::`.
+- **Cache field privacy** — direct field access (`cache.index`, `cache.persist_index()`) replaced with the public accessor API (`cache.index()`, `cache.index_mut()`, `cache.persist()`).
+- **libnclaw import-path corrections** — bridge transport types (`FrontierTransport`, `LocalTransport`, `ServerMuxTransport`) and LLM types (`OllamaBackend`, `OllamaMessage`) resolved via correct `libnclaw::` paths.
+
+### Changed (desktop)
+
+- **`tauri.conf.json` version bumped** from 1.1.2 to 1.1.3 to align with release.
+- **`createUpdaterArtifacts: true`** added to `bundle` section in `tauri.conf.json` — Tauri bundler now produces `.sig` sidecar files and updater JSON alongside each platform artifact.
+- **Updater endpoint verified**: `plugins.updater.endpoints` points to `https://packages.nself.org/desktop/latest-{{target}}.json`. Endpoint not yet live — requires tag `v1.1.3` trigger and artifact upload to packages.nself.org. See `.github/wiki/DESKTOP.md` for per-platform status and checksum table.
+- **All platform CI workflows confirmed at `nclaw/desktop`** (canonical path): linux (T13), windows (T14), and macos all reference `nclaw/desktop` correctly with no residual `nclaw/apps/desktop` references.
+
+### Known limitations (carry-forward to v1.1.4)
+
+- `cargo build --tests` zero errors after Phase 1 lands; runtime integration test pass-rate to be confirmed in Phase 2 soak.
+- Updater endpoints not yet published (pending packages.nself.org upload after first v1.1.3 CI run on tag).
+- Windows artifacts unsigned (EV cert pending, T06).
 
 ---
 

@@ -13,7 +13,6 @@ use libnclaw::error::CoreError;
 use libnclaw::types::{
     Conversation, Memory, MemoryType, Message, MessageContent, MessageMetadata, MessageRole, Topic,
 };
-use serde_json::json;
 use std::sync::Mutex;
 use uuid::Uuid;
 

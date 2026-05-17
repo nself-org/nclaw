@@ -468,6 +468,7 @@ mod tests_windows {
 
 /// Low-power mode flag set by Flutter via FFI (iOS).
 /// Default: false. Use `ios_set_low_power(true)` from Flutter layer.
+#[allow(dead_code)] // only read inside #[cfg(target_os = "ios")] ios_set_low_power
 static IOS_LOW_POWER_MODE: AtomicBool = AtomicBool::new(false);
 
 /// Set the low-power mode flag (callable from Flutter FFI).

@@ -1,12 +1,21 @@
 // ɳClaw Desktop — Command Palette (Cmd-K)
 
-import React, { useEffect, useState } from 'react';
-import { Command } from 'cmdk';
+import { useEffect, useState } from 'react';
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+} from '@/components/ui/command';
 import {
   PaletteResult,
   STATIC_COMMANDS,
   paletteSearch,
 } from '../../lib/palette-actions';
+import { useConversationStore } from '../../stores/conversationStore';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -21,45 +30,15 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PaletteResult[]>([]);
-  const [recentConversations, setRecentConversations] = useState<
-    PaletteResult[]
-  >([]);
 
-  // Load recent conversations on mount (stub — real data wires in S17)
+  // Load recent conversations from embedded-PG backend via pglite IPC client.
+  // Returns [] gracefully when the backend is not yet available (S17 / NotImplemented).
+  const { loadRecentConversations, toPaletteResults } = useConversationStore();
+  const recentConversations = toPaletteResults();
+
   useEffect(() => {
-    setRecentConversations([
-      {
-        kind: 'conversation',
-        id: '1',
-        label: 'Debugging Auth Flow',
-        description: 'TypeScript auth integration',
-      },
-      {
-        kind: 'conversation',
-        id: '2',
-        label: 'Design System Colors',
-        description: 'Tailwind palette review',
-      },
-      {
-        kind: 'conversation',
-        id: '3',
-        label: 'API Schema Discussion',
-        description: 'GraphQL types',
-      },
-      {
-        kind: 'conversation',
-        id: '4',
-        label: 'Performance Tuning',
-        description: 'React optimization notes',
-      },
-      {
-        kind: 'conversation',
-        id: '5',
-        label: 'Deployment Strategy',
-        description: 'CI/CD pipeline',
-      },
-    ]);
-  }, []);
+    loadRecentConversations();
+  }, [loadRecentConversations]);
 
   // Search on query change
   useEffect(() => {
@@ -87,118 +66,114 @@ export function CommandPalette({
   };
 
   return (
-    <Command.Dialog open={open} onOpenChange={onClose}>
-      <Command.Input
+    <CommandDialog open={open} onOpenChange={onClose}>
+      <CommandInput
         placeholder="Search topics, conversations, settings…"
         value={query}
         onValueChange={setQuery}
       />
-      <Command.List>
+      <CommandList>
         {!query ? (
           <>
             {/* Show recent conversations when no search query */}
-            <Command.Group heading="Recent">
+            <CommandGroup heading="Recent">
               {recentConversations.map((conv) => (
-                <Command.Item
+                <CommandItem
                   key={conv.id}
                   value={conv.id}
                   onSelect={() => handleSelect(conv)}
                 >
                   <span>{conv.label}</span>
                   {conv.description && (
-                    <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       {conv.description}
                     </span>
                   )}
-                </Command.Item>
+                </CommandItem>
               ))}
-            </Command.Group>
+            </CommandGroup>
 
             {/* Show commands without search */}
-            <Command.Group heading="Commands">
+            <CommandGroup heading="Commands">
               {STATIC_COMMANDS.map((cmd) => (
-                <Command.Item
+                <CommandItem
                   key={cmd.id}
                   value={cmd.id}
                   onSelect={() => handleSelect(cmd)}
                 >
                   <span>{cmd.label}</span>
                   {cmd.shortcut && (
-                    <span className="ml-auto text-xs text-gray-400">
-                      {cmd.shortcut}
-                    </span>
+                    <CommandShortcut>{cmd.shortcut}</CommandShortcut>
                   )}
-                </Command.Item>
+                </CommandItem>
               ))}
-            </Command.Group>
+            </CommandGroup>
           </>
         ) : results.length > 0 ? (
           <>
             {/* Topics */}
             {results.some((r) => r.kind === 'topic') && (
-              <Command.Group heading="Topics">
+              <CommandGroup heading="Topics">
                 {results
                   .filter((r) => r.kind === 'topic')
                   .map((topic) => (
-                    <Command.Item
+                    <CommandItem
                       key={topic.id}
                       value={topic.id}
                       onSelect={() => handleSelect(topic)}
                     >
                       {topic.label}
-                    </Command.Item>
+                    </CommandItem>
                   ))}
-              </Command.Group>
+              </CommandGroup>
             )}
 
             {/* Conversations */}
             {results.some((r) => r.kind === 'conversation') && (
-              <Command.Group heading="Conversations">
+              <CommandGroup heading="Conversations">
                 {results
                   .filter((r) => r.kind === 'conversation')
                   .map((conv) => (
-                    <Command.Item
+                    <CommandItem
                       key={conv.id}
                       value={conv.id}
                       onSelect={() => handleSelect(conv)}
                     >
                       <span>{conv.label}</span>
                       {conv.description && (
-                        <span className="ml-2 text-xs text-gray-500">
+                        <span className="ml-2 text-xs text-muted-foreground">
                           {conv.description}
                         </span>
                       )}
-                    </Command.Item>
+                    </CommandItem>
                   ))}
-              </Command.Group>
+              </CommandGroup>
             )}
 
             {/* Commands */}
             {results.some((r) => r.kind === 'command') && (
-              <Command.Group heading="Commands">
+              <CommandGroup heading="Commands">
                 {results
                   .filter((r) => r.kind === 'command')
                   .map((cmd) => (
-                    <Command.Item
+                    <CommandItem
                       key={cmd.id}
                       value={cmd.id}
                       onSelect={() => handleSelect(cmd)}
                     >
                       <span>{cmd.label}</span>
                       {cmd.shortcut && (
-                        <span className="ml-auto text-xs text-gray-400">
-                          {cmd.shortcut}
-                        </span>
+                        <CommandShortcut>{cmd.shortcut}</CommandShortcut>
                       )}
-                    </Command.Item>
+                    </CommandItem>
                   ))}
-              </Command.Group>
+              </CommandGroup>
             )}
           </>
         ) : (
-          <Command.Empty>No results found.</Command.Empty>
+          <CommandEmpty>No results found.</CommandEmpty>
         )}
-      </Command.List>
-    </Command.Dialog>
+      </CommandList>
+    </CommandDialog>
   );
 }

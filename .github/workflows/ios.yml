@@ -71,6 +71,7 @@ jobs:
           fi
 
       - name: Run fastlane
+        if: ${{ env.MATCH_PASSWORD != '' }}
         run: fastlane ${{ steps.lane.outputs.name }}
         working-directory: app/ios
 

@@ -16,10 +16,18 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    timeout: 60_000,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      url: 'http://localhost:5173',
+      timeout: 60_000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'pnpm tsx tests/e2e/mock/server.ts',
+      url: 'http://localhost:5174',
+      timeout: 15_000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

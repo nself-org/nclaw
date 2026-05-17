@@ -1,0 +1,27 @@
+name = "packages-nself-org"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Deployment: UA-12 gate (P104 user-authorized release step).
+# Never deploy this worker from a CI branch push.
+# Deploy command (P104 only, after UA-12): wrangler deploy --env production
+
+[env.production]
+name = "packages-nself-org"
+route = { pattern = "packages.nself.org/*", zone_name = "nself.org" }
+workers_dev = false
+
+[[env.production.r2_buckets]]
+binding = "PACKAGES_BUCKET"
+bucket_name = "packages-nself-org"
+
+[env.staging]
+name = "packages-nself-org-staging"
+workers_dev = true
+
+[[env.staging.r2_buckets]]
+binding = "PACKAGES_BUCKET"
+bucket_name = "packages-nself-org-staging"
+
+# Local dev: wrangler dev --env staging
+# Requires: wrangler login with Cloudflare API token (CLOUDFLARE_API_TOKEN in vault.env)

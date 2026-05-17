@@ -174,19 +174,62 @@ impl AuthFrame {
 /// The `jwt` field is treated as a bearer credential. It is attached to HTTP requests
 /// via the `Authorization` header and to WebSocket sessions via a post-connect auth
 /// frame. It MUST NOT be embedded in any URL emitted by this struct.
+///
+/// `retry_policy` configures exponential backoff for the `*_with_default_retry` family
+/// of methods. Callers that need per-call control can still supply a policy directly
+/// to the `*_with_retry` variants.
 pub struct SyncNetwork {
     pub server_url: String,
     pub jwt: String,
     pub client: reqwest::Client,
+    /// Backoff configuration injected at construction time. Used by
+    /// [`Self::push_with_default_retry`], [`Self::ack_with_default_retry`], and
+    /// [`Self::snapshot_with_default_retry`].
+    pub retry_policy: RetryPolicy,
 }
 
 impl SyncNetwork {
-    /// Create a new sync network client.
+    /// Create a new sync network client with the default [`RetryPolicy`]
+    /// (base 200 ms, factor 2.0, cap 30 s, 5 attempts).
     pub fn new(server_url: impl Into<String>, jwt: impl Into<String>) -> Self {
         Self {
             server_url: server_url.into(),
             jwt: jwt.into(),
             client: reqwest::Client::new(),
+            retry_policy: RetryPolicy::default(),
+        }
+    }
+
+    /// Create a sync network client with a custom [`RetryPolicy`].
+    ///
+    /// Use this when you need to tune backoff parameters at construction time
+    /// (e.g. tighter budgets for unit tests, relaxed caps for low-priority syncs).
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use libnclaw::sync::network::SyncNetwork;
+    /// use libnclaw::sync::retry::RetryPolicy;
+    /// use std::time::Duration;
+    ///
+    /// let policy = RetryPolicy::new(
+    ///     Duration::from_millis(100),
+    ///     2.0,
+    ///     Duration::from_secs(10),
+    ///     3,
+    /// );
+    /// let client = SyncNetwork::with_policy("https://api.example.com", "jwt", policy);
+    /// ```
+    pub fn with_policy(
+        server_url: impl Into<String>,
+        jwt: impl Into<String>,
+        policy: RetryPolicy,
+    ) -> Self {
+        Self {
+            server_url: server_url.into(),
+            jwt: jwt.into(),
+            client: reqwest::Client::new(),
+            retry_policy: policy,
         }
     }
 
@@ -399,6 +442,7 @@ impl SyncNetwork {
 
     /// Variant of [`Self::push_with_retry`] that takes an injectable random
     /// source so tests can produce deterministic backoffs without sleeping.
+    #[allow(unused_assignments)] // last_status/last_message accumulate across retry iterations
     pub async fn push_with_retry_rng<R>(
         &self,
         req: &PushRequest,
@@ -480,10 +524,14 @@ impl SyncNetwork {
             let body = resp.text().await.unwrap_or_default();
             if is_retryable_status(code) {
                 // Budget exhausted on a retryable status — surface as RetryExhausted.
+                // Accumulate last_status/last_message so the error carries diagnostics
+                // from the most recent transient failure across all retry branches.
+                last_status = code;
+                last_message = body;
                 return Err(CoreError::Transport(TransportError::RetryExhausted {
                     attempts: attempt + 1,
-                    last_status: code,
-                    last_message: body,
+                    last_status,
+                    last_message,
                 }));
             }
             return Err(map_push_status(code, &body));
@@ -501,6 +549,7 @@ impl SyncNetwork {
     }
 
     /// Test-friendly variant of [`Self::ack_with_retry`].
+    #[allow(unused_assignments)] // last_status/last_message accumulate across retry iterations
     pub async fn ack_with_retry_rng<R>(
         &self,
         req: &AckRequest,
@@ -580,6 +629,38 @@ impl SyncNetwork {
         }
     }
 
+    /// POST a push request using the backoff policy stored in [`Self::retry_policy`].
+    ///
+    /// Identical to [`Self::push_with_retry`] but takes the policy from the struct
+    /// rather than from the caller. Prefer this when the retry budget is fixed at
+    /// construction time (most production paths).
+    pub async fn push_with_default_retry(
+        &self,
+        req: &PushRequest,
+    ) -> Result<PushResponse, CoreError> {
+        self.push_with_retry_rng(req, self.retry_policy.clone(), rand_unit)
+            .await
+    }
+
+    /// POST an ack request using the backoff policy stored in [`Self::retry_policy`].
+    ///
+    /// Identical to [`Self::ack_with_retry`] but takes the policy from the struct.
+    pub async fn ack_with_default_retry(&self, req: &AckRequest) -> Result<(), CoreError> {
+        self.ack_with_retry_rng(req, self.retry_policy.clone(), rand_unit)
+            .await
+    }
+
+    /// POST a snapshot request using the backoff policy stored in [`Self::retry_policy`].
+    ///
+    /// Identical to [`Self::snapshot_with_retry`] but takes the policy from the struct.
+    pub async fn snapshot_with_default_retry(
+        &self,
+        req: &SnapshotRequest,
+    ) -> Result<SnapshotResponse, CoreError> {
+        self.snapshot_with_retry_rng(req, self.retry_policy.clone(), rand_unit)
+            .await
+    }
+
     /// POST a snapshot request with bounded retry on transient failures.
     pub async fn snapshot_with_retry(
         &self,
@@ -590,6 +671,7 @@ impl SyncNetwork {
     }
 
     /// Test-friendly variant of [`Self::snapshot_with_retry`].
+    #[allow(unused_assignments)] // last_status/last_message accumulate across retry iterations
     pub async fn snapshot_with_retry_rng<R>(
         &self,
         req: &SnapshotRequest,
@@ -730,6 +812,20 @@ mod tests {
         let client = SyncNetwork::new("http://localhost:8080", "test_jwt_token");
         assert_eq!(client.server_url, "http://localhost:8080");
         assert_eq!(client.jwt, "test_jwt_token");
+    }
+
+    #[test]
+    fn sync_network_with_policy_stores_custom_retry_policy() {
+        let policy = RetryPolicy::new(
+            Duration::from_millis(50),
+            3.0,
+            Duration::from_secs(5),
+            2,
+        );
+        let client = SyncNetwork::with_policy("http://localhost:8080", "jwt", policy.clone());
+        assert_eq!(client.retry_policy.max_attempts, 2);
+        assert_eq!(client.retry_policy.factor, 3.0);
+        assert_eq!(client.retry_policy.max_delay, Duration::from_secs(5));
     }
 
     #[test]

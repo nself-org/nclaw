@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { MessageBubble } from './MessageBubble';
 import type { StreamingBuffer } from '@/lib/streaming-buffer';
 import { safeRenderText } from '@/lib/markdown-incremental';
+import { useStreamMetrics } from '@/hooks/useStreamMetrics';
 
 interface Props {
   buffer: StreamingBuffer;
@@ -16,6 +18,7 @@ interface Props {
 export function StreamingBubble({ buffer, onCancel }: Props) {
   const [text, setText] = useState(buffer.current());
   const [done, setDone] = useState(buffer.isDone());
+  const metrics = useStreamMetrics(buffer);
 
   useEffect(() => {
     // Subscribe to buffer updates
@@ -54,15 +57,35 @@ export function StreamingBubble({ buffer, onCancel }: Props) {
         <div className="flex items-center gap-2 text-xs text-slate-400 px-4 py-1">
           <span className="inline-block animate-pulse">▍</span>
           <span className="text-slate-500">Streaming...</span>
-          <button
+
+          {/* T04 — TPS + TTFT metrics pill */}
+          {(metrics.tps !== null || metrics.ttft_ms !== null) && (
+            <span
+              className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-slate-400 tabular-nums"
+              aria-label="Streaming metrics"
+            >
+              {metrics.tps !== null && (
+                <span title="Tokens per second">{metrics.tps} t/s</span>
+              )}
+              {metrics.tps !== null && metrics.ttft_ms !== null && (
+                <span className="mx-1 text-slate-600">·</span>
+              )}
+              {metrics.ttft_ms !== null && (
+                <span title="Time to first token">{metrics.ttft_ms} ms TTFT</span>
+              )}
+            </span>
+          )}
+
+          <Button
             onClick={onCancel}
-            className="ml-auto px-2 py-0.5 rounded border border-slate-700
-                       hover:border-sky-500 hover:text-sky-400 transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-sky-500"
+            variant="outline"
+            size="sm"
+            className="ml-auto px-2 py-0.5 h-auto rounded border-slate-700
+                       hover:border-sky-500 hover:text-sky-400"
             aria-label="Cancel stream"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       )}
     </div>

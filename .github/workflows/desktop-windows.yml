@@ -15,12 +15,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.NSELF_PAT }}
+          submodules: recursive
 
       - uses: pnpm/action-setup@v3
         with: { version: '9' }
 
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/apps/desktop/pnpm-lock.yaml' }
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: 'x86_64-pc-windows-msvc' }
@@ -31,33 +34,40 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            nclaw/apps/desktop/src-tauri/target
-          key: cargo-windows-${{ hashFiles('nclaw/apps/desktop/src-tauri/Cargo.lock') }}
+            nclaw/desktop/src-tauri/target
+          key: cargo-windows-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: nclaw/apps/desktop
+        working-directory: nclaw/desktop
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri (unsigned at v1.1.1; signing wired in T06 once EV cert lands)
-        working-directory: nclaw/apps/desktop
+        working-directory: nclaw/desktop
         run: cargo tauri build --target x86_64-pc-windows-msvc
 
-      - name: Conditional signtool (no-op until WINDOWS_EV_CERT_THUMBPRINT secret set)
-        if: ${{ secrets.WINDOWS_EV_CERT_THUMBPRINT != '' }}
-        run: |
-          $files = Get-ChildItem -Path "nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
-          foreach ($f in $files) {
-            signtool sign /sha1 "$env:WINDOWS_EV_CERT_THUMBPRINT" /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$f.FullName"
-          }
+      # SSL.com eSigner EV code-signing (no-op until SSL_COM_USERNAME org secret is set).
+      # Rate limit: 10 signs/min. One MSI per tag run = well within limit.
+      # Note: the 'secrets' context is valid here; VS Code linter false-positive on step-level if:.
+      - name: Sign Windows MSI (EV, SSL.com eSigner)
+        if: ${{ secrets.SSL_COM_USERNAME != '' }}
+        uses: SSLcom/esigner-codesign@v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.SSL_COM_USERNAME }}
+          password: ${{ secrets.SSL_COM_PASSWORD }}
+          credential_id: ${{ secrets.SSL_COM_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.SSL_COM_TOTP_SECRET }}
+          file_path: nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          override: true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-windows-x64
           path: |
-            nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            nclaw/apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           retention-days: 30

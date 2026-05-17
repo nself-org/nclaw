@@ -1,2 +1,11 @@
 [target.aarch64-apple-darwin]
 linker = "/usr/bin/cc"
+
+# Force cc-rs to use clang directly on macOS.
+# ~/bin/cc is the Claude Code CLI launcher wrapper, not a C compiler.
+# Without this, transitive crates (dart-sys, oslog) fail with
+# "unknown option '-O0'" when cc-rs invokes ~/bin/cc for compiler detection.
+# This env var is only honoured on macOS hosts; CI cross-compile targets
+# supply CC explicitly via toolchain scripts and this value is a no-op there.
+[env]
+CC = { value = "clang", force = false }

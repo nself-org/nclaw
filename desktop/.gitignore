@@ -14,3 +14,6 @@ tauri-updater.key.*
 node_modules/
 dist/
 .vite/
+
+# tsc emit artifacts alongside source (tsc && vite build emits .js next to .tsx)
+src/**/*.js

@@ -261,7 +261,7 @@ mod tests {
         let mut messages = vec![];
 
         // Add 10 user/assistant pairs
-        for i in 0..10 {
+        for _i in 0..10 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,
@@ -377,7 +377,7 @@ mod tests {
         }
 
         // Add many body messages
-        for i in 0..20 {
+        for _i in 0..20 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,
@@ -419,7 +419,7 @@ mod tests {
         let conv_id = uuid::Uuid::new_v4();
         let mut messages = vec![];
 
-        for i in 0..10 {
+        for _i in 0..10 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,

@@ -51,3 +51,30 @@ Users can manually override model or tier per role (chat, summarize, embed, code
 - Llama 3.2: https://github.com/meta-llama/llama-models  
 - Qwen 2.5: https://github.com/QwenLM/Qwen2.5  
 - llama.cpp quantization: https://github.com/ggerganov/llama.cpp
+
+---
+
+## S19 Outcome (2026-05-16)
+
+**Sprint:** S19 "llama.cpp Live UX" (P103 Theme 02)
+
+The device-aware architecture described in this ADR was partially realised in S19. The following components shipped:
+
+**Implemented:**
+- `llm::hf_search` — HuggingFace GGUF search with 5-minute in-memory cache. Satisfies the "Browse HuggingFace for GGUF models" step of the first-run flow.
+- `llm::downloader` — Resumable HTTP Range download with SHA-256 verification. Satisfies the "Download default model for that tier" step.
+- `llm::telemetry::poll_memory()` — Polls RAM and GPU VRAM. Used by the in-app memory indicator and the VRAM-leak integration gate.
+- `LlamaCpp::load_model` / `unload_model` — Model swap with synchronous Drop. Confirmed no VRAM accumulation across 10 consecutive swap cycles (integration test gate CR-C §5, tolerance 50 MB GPU / 200 MB RAM).
+- `StreamTimings` — Captures `t_request_ms`, `t_first_token_ms`, `tokens_produced` per inference. Exposed in chat UI as TPS + TTFT metrics pill.
+- Desktop UX: `ModelPicker`, `DownloadQueue`, `MemoryIndicator`, `StreamingBubble`, `ModelSettings` components.
+
+**Deferred (per ADR scope):**
+- Automatic device fingerprinting and tier selection at first run (T0–T4 matrix, benchmarking). The ADR specifies this full flow; S19 lays the download and swap infrastructure. Tier auto-selection is a future sprint.
+- Monthly re-benchmark cron.
+- iOS / Android local model support.
+- Per-role model selection (chat vs summarise vs embed vs code).
+
+**Implementation notes:**
+- `llama-cpp-2` Drop guarantee: `LlamaModel::drop` calls `llama_free_model()` synchronously; `LlamaContext::drop` calls `llama_free()`. No deferred cleanup. If a future upstream release defers these calls to a background thread, an explicit barrier will be required. Tracked via the llama-cpp-rs repository monitor.
+- VRAM tolerance chosen at 50 MB GPU to account for OS page cache variance across 10 swap cycles.
+- HuggingFace API access is unauthenticated for public model metadata. Authenticated access (for private models or higher rate limits) is deferred.

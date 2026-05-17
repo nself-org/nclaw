@@ -1,0 +1,94 @@
+name: Mobile Android CI
+
+on:
+  pull_request:
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+      - 'nclaw/android/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+      - 'nclaw/android/**'
+
+jobs:
+  frb-drift:
+    uses: ./.github/workflows/frb-codegen-check.yml
+
+  android:
+    runs-on: ubuntu-latest
+    needs: frb-drift
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-rust-mobile
+        with:
+          targets: aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android NDK r26b
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: r26b
+
+      - name: Build Rust .so via cargo-ndk
+        working-directory: nclaw/core
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          cargo ndk \
+            -t armeabi-v7a \
+            -t arm64-v8a \
+            -t x86 \
+            -t x86_64 \
+            -o ../mobile/android/app/src/main/jniLibs \
+            build --release
+
+      - name: Import Android keystore (conditional)
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/upload-keystore.jks
+          cat > /tmp/key.properties <<EOF
+          storePassword=$ANDROID_STORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=/tmp/upload-keystore.jks
+          EOF
+          cp /tmp/key.properties nclaw/mobile/android/key.properties
+
+      - name: Flutter build Android
+        working-directory: nclaw/mobile
+        run: |
+          flutter pub get
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            flutter build appbundle --release
+          else
+            flutter build apk --release --no-shrink
+          fi
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nclaw-android
+          path: |
+            nclaw/mobile/build/app/outputs/bundle/release/*.aab
+            nclaw/mobile/build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
+          if-no-files-found: warn

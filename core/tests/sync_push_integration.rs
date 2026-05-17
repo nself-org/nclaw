@@ -24,6 +24,7 @@
 //! Pairs with `plugins-pro/paid/nself-sync/cmd/nself-sync/push_test.go`.
 
 use httpmock::prelude::*;
+use httpmock::{Then, When};
 use libnclaw::error::{CoreError, SyncError, TransportError};
 use libnclaw::sync::canonical::canonical_json;
 use libnclaw::sync::hlc::Hlc;
@@ -111,18 +112,17 @@ async fn push_round_trip_happy_path_with_signed_event() {
     let resp_body = golden["response_all_accepted"].clone();
 
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 // V04-F04: no token anywhere in URL or query
-                .matches(|req| {
-                    let qs = req
-                        .query_params
-                        .as_ref()
-                        .map(|p| p.iter().any(|(_, v)| v.contains(TEST_JWT)))
-                        .unwrap_or(false);
-                    !qs
+                .is_true(|req: &HttpMockRequest| {
+                    let token_in_query = req
+                        .query_params()
+                        .iter()
+                        .any(|(_, v)| v.contains(TEST_JWT));
+                    !token_in_query
                 });
             then.status(200).json_body(resp_body);
         })
@@ -143,18 +143,17 @@ async fn push_round_trip_happy_path_with_signed_event() {
 async fn push_request_wire_shape_matches_golden_fixture() {
     let server = MockServer::start_async().await;
 
-    // httpmock 0.7's `.matches()` accepts a `fn` pointer (no captures), so we
-    // verify the bulk of the wire shape via direct `.json_body_partial(...)`
-    // matchers on the well-known field paths. The full envelope is
-    // additionally serialized client-side and compared against the golden
-    // fixture below — this catches drift in field ordering or naming that the
-    // partial matcher alone would miss.
+    // Verify the bulk of the wire shape via `.json_body_includes(...)` matchers
+    // on the well-known field paths. The full envelope is additionally
+    // serialized client-side and compared against the golden fixture below —
+    // this catches drift in field ordering or naming that the partial matcher
+    // alone would miss.
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
-                .json_body_partial(
+                .json_body_includes(
                     r#"{
                         "device_id": "44444444-4444-4444-4444-444444444444",
                         "events": [
@@ -167,8 +166,7 @@ async fn push_request_wire_shape_matches_golden_fixture() {
                                 "schema_version": 1
                             }
                         ]
-                    }"#
-                    .to_string(),
+                    }"#,
                 );
             then.status(200)
                 .json_body(serde_json::json!({"results": [], "acks": []}));
@@ -220,7 +218,7 @@ async fn push_surfaces_per_event_rejections_without_failing_call() {
     let resp_body = golden["response_mixed_rejection"].clone();
 
     server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT));
@@ -247,7 +245,7 @@ async fn push_surfaces_per_event_rejections_without_failing_call() {
 async fn push_with_status(status_code: u16, body: serde_json::Value) -> CoreError {
     let server = MockServer::start_async().await;
     server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST).path("/sync/push");
             then.status(status_code).json_body(body);
         })

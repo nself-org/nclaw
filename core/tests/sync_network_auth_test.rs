@@ -7,6 +7,7 @@
 //!   `{"type":"auth","token":"<JWT>"}`
 
 use httpmock::prelude::*;
+use httpmock::{Then, When};
 use libnclaw::sync::network::{
     AckRequest, AuthFrame, PullRequest, PushRequest, SyncNetwork,
 };
@@ -18,19 +19,20 @@ const TEST_JWT: &str = "eyJhbGciOiJIUzI1NiJ9.test_payload.test_sig";
 async fn push_sends_jwt_in_authorization_header_not_url() {
     let server = MockServer::start_async().await;
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 // V04-F04: the URL must not contain the token at all.
-                .matches(|req| {
+                .is_true(|req: &HttpMockRequest| {
                     let url_str = format!("{:?}", req);
-                    !url_str.contains("token=") && !url_str.contains(TEST_JWT.split('.').next().unwrap_or(""))
-                        || !req
-                            .query_params
-                            .as_ref()
-                            .map(|p| p.iter().any(|(_, v)| v.contains(TEST_JWT)))
-                            .unwrap_or(false)
+                    let token_in_query = req
+                        .query_params()
+                        .iter()
+                        .any(|(_, v)| v.contains(TEST_JWT));
+                    (!url_str.contains("token=")
+                        && !url_str.contains(TEST_JWT.split('.').next().unwrap_or("")))
+                        || !token_in_query
                 });
             then.status(200).json_body(serde_json::json!({"acks": []}));
         })
@@ -52,7 +54,7 @@ async fn push_sends_jwt_in_authorization_header_not_url() {
 async fn pull_sends_jwt_in_authorization_header_not_url() {
     let server = MockServer::start_async().await;
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/pull")
                 .header("Authorization", format!("Bearer {}", TEST_JWT));
@@ -77,7 +79,7 @@ async fn pull_sends_jwt_in_authorization_header_not_url() {
 async fn snapshot_sends_jwt_in_authorization_header_not_url() {
     let server = MockServer::start_async().await;
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/snapshot")
                 .header("Authorization", format!("Bearer {}", TEST_JWT));
@@ -97,7 +99,7 @@ async fn snapshot_sends_jwt_in_authorization_header_not_url() {
 async fn ack_sends_jwt_in_authorization_header() {
     let server = MockServer::start_async().await;
     let mock = server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/ack")
                 .header("Authorization", format!("Bearer {}", TEST_JWT));
@@ -118,7 +120,7 @@ async fn missing_authorization_header_yields_server_401() {
     let server = MockServer::start_async().await;
     // Mock will only respond 200 if Authorization is present and matches; otherwise default 404 simulates rejection.
     server
-        .mock_async(|when, then| {
+        .mock_async(|when: When, then: Then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT));

@@ -2,8 +2,8 @@ use chrono::Utc;
 /// Integration tests for context window truncation policies.
 ///
 /// Tests cover all truncation policies, boundary conditions, and system message preservation.
-use nclaw_core::llm::context::{ContextManager, TruncationPolicy};
-use nclaw_core::types::{Message, MessageContent, MessageMetadata, MessageRole};
+use libnclaw::llm::context::{ContextManager, TruncationPolicy};
+use libnclaw::types::{Message, MessageContent, MessageMetadata, MessageRole};
 use uuid::Uuid;
 
 /// Helper to create a message with given role and content.
@@ -112,7 +112,9 @@ fn test_summarize_middle_policy() {
         recent_keep: 8,
     };
 
-    let fitted = mgr.fit(&messages, 400);
+    // Budget 150 is below the ~311 tokens total (1 sys + 20 body × ~15 tokens each),
+    // so SummarizeMiddle must drop middle messages and insert a placeholder.
+    let fitted = mgr.fit(&messages, 150);
 
     // Should have system + placeholder + recent messages (max ~10 total)
     assert!(
@@ -153,7 +155,7 @@ fn test_keep_recent_policy() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..10 {
+    for _i in 0..10 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -166,7 +168,9 @@ fn test_keep_recent_policy() {
         recent_keep: 8,
     };
 
-    let fitted = mgr.fit(&messages, 300);
+    // Budget 50 is below the ~140 tokens total (10 msgs × ~14 tokens each),
+    // so KeepRecent must drop oldest messages to fit.
+    let fitted = mgr.fit(&messages, 50);
 
     // Should keep some recent messages, drop older ones
     assert!(fitted.len() < messages.len(), "Should drop older messages");
@@ -194,7 +198,7 @@ fn test_system_messages_always_preserved() {
     }
 
     // Add many body messages
-    for i in 0..20 {
+    for _i in 0..20 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -202,7 +206,14 @@ fn test_system_messages_always_preserved() {
         ));
     }
 
-    let mgr = ContextManager::default();
+    // Use KeepRecent so the system count reflects exactly the 3 original system messages.
+    // The default policy (SummarizeMiddle) inserts an additional System-role summary
+    // placeholder, yielding 4 system messages and breaking the count assertion.
+    // Budget 200 < ~304 tokens total (3 sys + 20 user) triggers truncation.
+    let mgr = ContextManager {
+        policy: TruncationPolicy::KeepRecent,
+        recent_keep: 8,
+    };
     let fitted = mgr.fit(&messages, 200);
 
     // All 3 system messages should be present
@@ -227,7 +238,7 @@ fn test_truncate_oldest_equivalent_to_keep_recent() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..10 {
+    for _i in 0..10 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -274,7 +285,7 @@ fn test_very_tight_budget_preserves_system() {
     ));
 
     // Add many user messages
-    for i in 0..30 {
+    for _i in 0..30 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -303,7 +314,7 @@ fn test_recent_keep_count_respected() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..30 {
+    for _i in 0..30 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -317,7 +328,9 @@ fn test_recent_keep_count_respected() {
         recent_keep: 5,
     };
 
-    let fitted = mgr.fit(&messages, 500); // Loose budget
+    // Budget 80 is below the ~270 tokens total (30 msgs × ~9 tokens each),
+    // so SummarizeMiddle activates: drops 25 oldest, keeps 5 recent + 1 placeholder.
+    let fitted = mgr.fit(&messages, 80);
 
     // Count non-system messages (should respect recent_keep)
     let non_system_count = fitted
@@ -343,7 +356,7 @@ And this continues with more text that should be counted toward token estimation
 The token count should be significant.
 "#;
 
-    for i in 0..10 {
+    for _i in 0..10 {
         messages.push(make_message(conv_id, MessageRole::User, long_content));
     }
 

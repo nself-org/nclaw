@@ -38,7 +38,7 @@ pub struct ModelEntry {
 
 /// Default model catalog — one entry per tier (T0–T4).
 /// These are the recommended models for each tier, shipping by default.
-pub static DEFAULT_CATALOG: &'static [ModelEntry] = &[
+pub static DEFAULT_CATALOG: &[ModelEntry] = &[
     // T0: Qwen 2.5 0.5B (352 MB, mobile/IoT minimal)
     ModelEntry {
         id: "qwen2.5-0.5b-q4km",
@@ -113,7 +113,7 @@ pub static DEFAULT_CATALOG: &'static [ModelEntry] = &[
 
 /// Alternative model catalog — fallbacks and specialized models per tier.
 /// Users can switch to alternatives if default doesn't meet their needs.
-pub static ALTERNATIVE_CATALOG: &'static [ModelEntry] = &[
+pub static ALTERNATIVE_CATALOG: &[ModelEntry] = &[
     // T1 alt: Phi 3.5 Mini (2.3B, 1100 MB)
     ModelEntry {
         id: "phi3.5-mini-q4km",

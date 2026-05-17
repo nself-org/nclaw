@@ -10,7 +10,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone)]
 pub struct IdempotencyCache {
     /// Bounded set of recent event IDs; older entries are evicted FIFO.
-    cache: VecDeque<Uuid>,
+    pub cache: VecDeque<Uuid>,
     /// Maximum number of event IDs to track.
     max_size: usize,
 }

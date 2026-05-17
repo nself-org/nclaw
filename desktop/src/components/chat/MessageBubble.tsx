@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -48,15 +49,17 @@ function CodeBlock({
 
   return (
     <div className="relative group">
-      <button
+      <Button
         onClick={handleCopy}
+        variant="ghost"
+        size="sm"
         className="absolute top-2 right-2 px-2 py-0.5 text-xs rounded
                    bg-gray-700 text-slate-300 opacity-0 group-hover:opacity-100
-                   transition-opacity focus:outline-none focus:ring-2 focus:ring-sky-500"
+                   transition-opacity h-auto"
         aria-label="Copy code"
       >
         {copied ? 'Copied!' : 'Copy'}
-      </button>
+      </Button>
       <SyntaxHighlighter
         style={oneDark}
         language={language}
@@ -100,7 +103,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: Prop
 
   return (
     <div className={`${wrapperClass} px-4 py-1`}>
-      <div className={bubbleClass}>
+      <div className={`message-bubble ${bubbleClass}`}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={rehypePlugins as never}

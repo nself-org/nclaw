@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettings } from "../../lib/settings-store";
+import { Button } from "@/components/ui/button";
 
 export function VaultSettings(): React.ReactElement {
   const { settings, load } = useSettings();
@@ -71,20 +72,20 @@ export function VaultSettings(): React.ReactElement {
           Re-pairing will generate new device keys. Any data encrypted with the current
           key will need to be re-synced. This cannot be undone.
           <div className="flex gap-2 mt-3">
-            <button
+            <Button
+              variant="destructive"
               onClick={handleRepairClick}
-              className="rounded-md bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
               aria-label="Confirm device re-pair"
             >
               Confirm re-pair
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => setConfirming(false)}
-              className="rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
               aria-label="Cancel re-pair"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -99,14 +100,14 @@ export function VaultSettings(): React.ReactElement {
       )}
 
       {!confirming && (
-        <button
+        <Button
+          variant="secondary"
           onClick={handleRepairClick}
           disabled={repairing}
-          className="rounded-md bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
           aria-label="Re-pair this device with the OS keychain"
         >
           {repairing ? "Re-pairing…" : "Re-pair device"}
-        </button>
+        </Button>
       )}
     </section>
   );

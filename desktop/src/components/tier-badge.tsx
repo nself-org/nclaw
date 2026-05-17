@@ -1,5 +1,6 @@
 // TierBadge — displays local AI tier (T0..T4) with sky-500 accent and override indicator.
 import React from "react";
+import { Badge } from "@/components/ui/badge";
 
 export type TierLevel = 0 | 1 | 2 | 3 | 4;
 
@@ -22,12 +23,13 @@ export function TierBadge({ tier, isOverride = false, className = "" }: TierBadg
   const mode = isOverride ? "Override" : "Auto";
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-0.5 text-xs font-semibold text-sky-400 ${className}`}
+    <Badge
+      variant="outline"
+      className={`gap-1.5 border-sky-500/40 bg-sky-500/10 text-sky-400 hover:bg-sky-500/10 ${className}`}
     >
       {label}
       <span className="text-sky-500/60">·</span>
       <span className="text-sky-300/70">{mode}</span>
-    </span>
+    </Badge>
   );
 }

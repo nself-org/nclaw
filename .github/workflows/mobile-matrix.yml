@@ -1,0 +1,76 @@
+name: Mobile CI Matrix
+
+on:
+  pull_request:
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+      - 'nclaw/android/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+      - 'nclaw/android/**'
+  workflow_dispatch:
+
+# Cancel in-progress runs on the same ref
+concurrency:
+  group: mobile-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frb-drift:
+    name: FRB Codegen Drift Check
+    uses: ./.github/workflows/frb-codegen-check.yml
+
+  ios:
+    name: iOS Build
+    needs: frb-drift
+    uses: ./.github/workflows/mobile-ios.yml
+
+  android:
+    name: Android Build
+    needs: frb-drift
+    uses: ./.github/workflows/mobile-android.yml
+
+  macos:
+    name: macOS Build
+    needs: frb-drift
+    uses: ./.github/workflows/mobile-macos.yml
+
+  linux:
+    name: Linux Build
+    needs: frb-drift
+    uses: ./.github/workflows/mobile-linux.yml
+
+  windows:
+    name: Windows Build
+    needs: frb-drift
+    uses: ./.github/workflows/mobile-windows.yml
+
+  matrix-summary:
+    name: Matrix Summary
+    runs-on: ubuntu-latest
+    needs: [frb-drift, ios, android, macos, linux, windows]
+    if: always()
+    steps:
+      - name: Check matrix results
+        run: |
+          echo "=== Mobile CI Matrix Summary ==="
+          echo "FRB Drift: ${{ needs.frb-drift.result }}"
+          echo "iOS:       ${{ needs.ios.result }}"
+          echo "Android:   ${{ needs.android.result }}"
+          echo "macOS:     ${{ needs.macos.result }}"
+          echo "Linux:     ${{ needs.linux.result }}"
+          echo "Windows:   ${{ needs.windows.result }}"
+          if [[ "${{ needs.frb-drift.result }}" != "success" || \
+                "${{ needs.ios.result }}" != "success" || \
+                "${{ needs.android.result }}" != "success" || \
+                "${{ needs.macos.result }}" != "success" || \
+                "${{ needs.linux.result }}" != "success" || \
+                "${{ needs.windows.result }}" != "success" ]]; then
+            echo "ERROR: One or more matrix jobs failed."
+            exit 1
+          fi
+          echo "All matrix jobs passed."

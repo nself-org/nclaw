@@ -1,0 +1,49 @@
+name: Mobile Windows CI
+
+on:
+  pull_request:
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+
+jobs:
+  frb-drift:
+    uses: ./.github/workflows/frb-codegen-check.yml
+
+  windows:
+    runs-on: windows-latest
+    needs: frb-drift
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-rust-mobile
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build Rust for Windows
+        working-directory: nclaw/core
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Flutter build Windows
+        working-directory: nclaw/mobile
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nclaw-windows
+          path: nclaw/mobile/build/windows/x64/runner/Release/
+          retention-days: 30
+          if-no-files-found: warn

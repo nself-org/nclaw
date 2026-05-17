@@ -101,6 +101,26 @@ mod ffi_impl {
     /// available memory. 1.2 covers KV cache + scratch overhead beyond model weights.
     const MEMORY_HEADROOM_MULT: f64 = 1.2;
 
+    // -------------------------------------------------------------------------
+    // StreamTimings — backend-side TPS / TTFT data (T04)
+    // -------------------------------------------------------------------------
+
+    /// Backend-side timing metrics captured during `generate_stream`.
+    ///
+    /// All values are wall-clock milliseconds since UNIX epoch. Callers
+    /// compute TPS and TTFT from these fields; the frontend also does this
+    /// independently via `useStreamMetrics` for a smoother UX.
+    #[derive(Debug, Clone)]
+    pub struct StreamTimings {
+        /// Wall-clock ms at the point `generate_stream` was invoked.
+        pub t_request_ms: u64,
+        /// Wall-clock ms when the first token exited the decode loop.
+        /// `None` if no tokens were produced before the channel closed.
+        pub t_first_token_ms: Option<u64>,
+        /// Total number of tokens produced.
+        pub tokens_produced: usize,
+    }
+
     /// Default GPU layer count by feature flag.
     #[allow(dead_code)]
     const fn default_n_gpu_layers() -> u32 {
@@ -122,6 +142,14 @@ mod ffi_impl {
         n_gpu_layers: u32,
         /// Sampling RNG seed for `dist()` — overridable for deterministic tests.
         seed: u32,
+    }
+
+    /// Current Unix timestamp in milliseconds — helper used for `StreamTimings`.
+    fn now_ms() -> u64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64
     }
 
     impl LlamaCpp {
@@ -302,6 +330,7 @@ mod ffi_impl {
                     break;
                 }
 
+                #[allow(deprecated)] // llama_cpp_2 token_to_str/Special::Tokenize; migrate to token_to_piece when llama_cpp_2 >= 0.2
                 let piece = model
                     .token_to_str(new_token, llama_cpp_2::model::Special::Tokenize)
                     .map_err(|e| LlmError::InternalError(format!("token_to_str: {e}")))?;
@@ -332,22 +361,33 @@ mod ffi_impl {
 
         /// Stream tokens over a bounded mpsc channel.
         ///
-        /// Returns a receiver that yields `Result<String, LlmError>` per token.
+        /// Returns `(receiver, timings_receiver)`. `receiver` yields
+        /// `Result<String, LlmError>` per token. `timings_receiver` yields a
+        /// single `StreamTimings` value once the decode loop finishes.
+        ///
         /// The decode loop runs on a blocking thread (llama.cpp inference is
-        /// CPU-bound) and the channel closes on completion or error.
+        /// CPU-bound) and the token channel closes on completion or error.
         ///
         /// Each emitted item is a detokenised string fragment.
         pub fn generate_stream(
             self: std::sync::Arc<Self>,
             prompt: String,
             opts: GenOpts,
-        ) -> mpsc::Receiver<Result<String, LlmError>> {
+        ) -> (mpsc::Receiver<Result<String, LlmError>>, tokio::sync::oneshot::Receiver<StreamTimings>) {
+            let t_request_ms = now_ms();
             let (tx, rx) = mpsc::channel(32);
+            let (timing_tx, timing_rx) = tokio::sync::oneshot::channel();
             tokio::task::spawn_blocking(move || {
                 let send_err = |e: LlmError| {
                     let _ = tx.blocking_send(Err(e));
                 };
+                let mut t_first_token_ms: Option<u64> = None;
+                let mut tokens_produced: usize = 0;
                 let res = self.decode_with(&prompt, &opts, |piece| {
+                    if t_first_token_ms.is_none() {
+                        t_first_token_ms = Some(now_ms());
+                    }
+                    tokens_produced += 1;
                     // If the receiver was dropped, abort the decode loop.
                     tx.blocking_send(Ok(piece)).map_err(|_| {
                         LlmError::InternalError("stream receiver dropped".into())
@@ -356,9 +396,14 @@ mod ffi_impl {
                 if let Err(e) = res {
                     send_err(e);
                 }
+                let _ = timing_tx.send(StreamTimings {
+                    t_request_ms,
+                    t_first_token_ms,
+                    tokens_produced,
+                });
                 // Channel drops here — receiver sees None and knows we're done.
             });
-            rx
+            (rx, timing_rx)
         }
     }
 
@@ -494,6 +539,14 @@ pub use ffi_impl::LlamaCppBackend;
     feature = "vulkan"
 ))]
 pub use ffi_impl::LlamaCpp;
+
+#[cfg(any(
+    feature = "cpu",
+    feature = "metal",
+    feature = "cuda",
+    feature = "vulkan"
+))]
+pub use ffi_impl::StreamTimings;
 
 #[cfg(not(any(
     feature = "cpu",

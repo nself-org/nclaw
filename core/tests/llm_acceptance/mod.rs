@@ -70,6 +70,8 @@ pub enum CaseOutcome {
 /// Returns fixtures in filename-sorted order so test output is stable.
 /// Uses a minimal hand-rolled YAML parser (only the subset our schema needs)
 /// to avoid pulling a YAML dep into `[dev-dependencies]` for this baseline.
+// justification: shared test-scaffold helper — called by future acceptance-runner expansions
+#[allow(dead_code)]
 pub fn load_fixtures(dir: &Path) -> Result<Vec<AcceptanceCase>, String> {
     let mut entries: Vec<_> = fs::read_dir(dir)
         .map_err(|e| format!("read_dir({}): {}", dir.display(), e))?

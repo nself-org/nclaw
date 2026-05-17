@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettings, maskKey } from "../../lib/settings-store";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 type TestState = "idle" | "testing" | "ok" | "fail";
 
@@ -64,32 +67,30 @@ export function SyncSettings(): React.ReactElement {
 
       {/* Server URL */}
       <div className="mb-4">
-        <label htmlFor="sync-server-url" className="block text-sm font-medium text-slate-300 mb-1">
+        <Label htmlFor="sync-server-url" className="block text-sm font-medium text-slate-300 mb-1">
           nSelf server URL
-        </label>
-        <input
+        </Label>
+        <Input
           id="sync-server-url"
           type="url"
           value={draft.server_url}
           onChange={(e) => setDraft((d) => ({ ...d, server_url: e.target.value }))}
           placeholder="https://your-nself-server.example.com"
-          className="w-full rounded-md bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder:text-slate-600"
           aria-label="nSelf server URL"
         />
       </div>
 
       {/* License key */}
       <div className="mb-4">
-        <label htmlFor="sync-license-key" className="block text-sm font-medium text-slate-300 mb-1">
+        <Label htmlFor="sync-license-key" className="block text-sm font-medium text-slate-300 mb-1">
           License key
-        </label>
-        <input
+        </Label>
+        <Input
           id="sync-license-key"
           type="password"
           value={draft.license_key_raw}
           onChange={(e) => setDraft((d) => ({ ...d, license_key_raw: e.target.value }))}
           placeholder={current.license_key_masked || "nself_pro_…"}
-          className="w-full rounded-md bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder:text-slate-600"
           autoComplete="off"
           aria-label="License key (masked)"
         />
@@ -102,14 +103,14 @@ export function SyncSettings(): React.ReactElement {
 
       {/* Test connection */}
       <div className="flex items-center gap-3 mb-4">
-        <button
+        <Button
+          variant="secondary"
           onClick={handleTestConnection}
           disabled={!draft.server_url || testState === "testing"}
-          className="rounded-md bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
           aria-label="Test sync connection"
         >
           {testState === "testing" ? "Testing…" : "Test connection"}
-        </button>
+        </Button>
         {testState !== "idle" && testState !== "testing" && (
           <span
             role="status"
@@ -126,13 +127,12 @@ export function SyncSettings(): React.ReactElement {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
-        className="rounded-md bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
         aria-label="Save sync settings"
       >
         {saved ? "Saved" : "Save"}
-      </button>
+      </Button>
     </section>
   );
 }

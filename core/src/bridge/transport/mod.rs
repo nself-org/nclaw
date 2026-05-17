@@ -9,6 +9,10 @@ pub mod frontier;
 pub mod local;
 pub mod server_mux;
 
+pub use frontier::FrontierTransport;
+pub use local::LocalTransport;
+pub use server_mux::ServerMuxTransport;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 

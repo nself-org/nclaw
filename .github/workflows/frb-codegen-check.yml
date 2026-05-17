@@ -1,0 +1,37 @@
+# FRB Codegen Drift Check — reusable workflow
+# IMPORTANT: The frb_version default MUST match flutter_rust_bridge version
+# pinned in nclaw/core/Cargo.toml. Currently: 2.5 (see Cargo.toml).
+# When bumping the Cargo.toml pin, update the default here in lockstep.
+name: FRB Codegen Drift Check
+on:
+  workflow_call:
+    inputs:
+      frb_version:
+        description: 'flutter_rust_bridge_codegen version to pin'
+        required: false
+        default: '2.5.0'
+        type: string
+jobs:
+  frb-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install flutter_rust_bridge_codegen (pinned)
+        run: cargo install flutter_rust_bridge_codegen --version "${{ inputs.frb_version }}" --locked
+      - name: Run FRB codegen
+        working-directory: nclaw
+        run: flutter_rust_bridge_codegen generate
+      - name: Check for stale bindings
+        run: |
+          if ! git diff --exit-code nclaw/mobile/lib/src/rust/ nclaw/core/bridge_generated.h; then
+            echo "ERROR: FRB bindings are stale. Run 'flutter_rust_bridge_codegen generate' locally and commit the changes."
+            echo "Stale files:"
+            git diff --name-only nclaw/mobile/lib/src/rust/ nclaw/core/bridge_generated.h
+            exit 1
+          fi
+          echo "FRB bindings are up to date."

@@ -12,6 +12,19 @@
 //! `plugins-pro/paid/nself-sync/cmd/nself-sync/main.go`). The in-memory
 //! Rust struct retains a `timestamp: Hlc` field for ergonomic access; serde
 //! glue below flattens/unflattens on serialize/deserialize.
+//!
+//! ## Backward-compatibility (S01.T-bc-compat, 2026-05-16)
+//!
+//! v1.1.0 clients serialised the HLC as a nested `"timestamp"` object:
+//!   `{"timestamp": {"wall_ms": N, "lamport": N, "device_id": "..."}, ...}`
+//!
+//! v1.1.1 serialises a FLAT envelope:
+//!   `{"hlc_wall_ms": N, "hlc_lamport": N, "hlc_device_id": "...", ...}`
+//!
+//! The Serialize impl writes the v1.1.1 flat shape (unchanged, Go-server compatible).
+//! The Deserialize impl accepts BOTH shapes: if `hlc_wall_ms` is present it uses
+//! the flat v1.1.1 path; if `timestamp` is present it uses the nested v1.1.0 path.
+//! Unknown fields in either shape are silently ignored (no `deny_unknown_fields`).
 
 use crate::sync::hlc::Hlc;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -94,26 +107,84 @@ impl Serialize for EventEnvelope {
     }
 }
 
+/// Dual-shape wire DTO used only for deserialization of the v1.1.0 nested-HLC
+/// format. Fields that may be absent in v1.1.0 are wrapped in `Option`.
+///
+/// `serde_json` will ignore unknown fields because we do NOT annotate with
+/// `#[serde(deny_unknown_fields)]`, satisfying the BC-07 unknown-field contract.
+#[derive(Deserialize)]
+struct EventEnvelopeWireV110 {
+    event_id: uuid::Uuid,
+    entity_type: String,
+    entity_id: uuid::Uuid,
+    op: Op,
+    /// v1.1.0 nested HLC object.
+    timestamp: Hlc,
+    user_id: uuid::Uuid,
+    device_id: uuid::Uuid,
+    #[serde(default)]
+    tenant_id: Option<uuid::Uuid>,
+    #[serde(default)]
+    payload: Option<serde_json::Value>,
+    schema_version: u32,
+    #[serde(default)]
+    signature: Vec<u8>,
+}
+
 impl<'de> Deserialize<'de> for EventEnvelope {
+    /// Accept both wire shapes without data loss:
+    ///
+    /// - v1.1.1 (flat):   `hlc_wall_ms` / `hlc_lamport` / `hlc_device_id` at top level.
+    /// - v1.1.0 (nested): `timestamp: {wall_ms, lamport, device_id}` at top level.
+    ///
+    /// Strategy: buffer into `serde_json::Value` (no network; these are small sync
+    /// envelopes), probe for the discriminating key, then deserialize the appropriate
+    /// concrete DTO. Unknown fields are dropped by both DTOs (no deny_unknown_fields).
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let wire = EventEnvelopeWire::deserialize(deserializer)?;
-        Ok(EventEnvelope {
-            event_id: wire.event_id,
-            entity_type: wire.entity_type,
-            entity_id: wire.entity_id,
-            op: wire.op,
-            timestamp: Hlc {
-                wall_ms: wire.hlc_wall_ms,
-                lamport: wire.hlc_lamport,
-                device_id: wire.hlc_device_id,
-            },
-            user_id: wire.user_id,
-            device_id: wire.device_id,
-            tenant_id: wire.tenant_id,
-            payload: wire.payload,
-            schema_version: wire.schema_version,
-            signature: wire.signature,
-        })
+        let raw = serde_json::Value::deserialize(deserializer)?;
+
+        // Detect shape by presence of flat HLC key.
+        let has_flat_hlc = raw.get("hlc_wall_ms").is_some();
+
+        if has_flat_hlc {
+            // v1.1.1 flat shape — reuse the existing wire DTO.
+            let wire: EventEnvelopeWire =
+                serde_json::from_value(raw).map_err(serde::de::Error::custom)?;
+            Ok(EventEnvelope {
+                event_id: wire.event_id,
+                entity_type: wire.entity_type,
+                entity_id: wire.entity_id,
+                op: wire.op,
+                timestamp: Hlc {
+                    wall_ms: wire.hlc_wall_ms,
+                    lamport: wire.hlc_lamport,
+                    device_id: wire.hlc_device_id,
+                },
+                user_id: wire.user_id,
+                device_id: wire.device_id,
+                tenant_id: wire.tenant_id,
+                payload: wire.payload,
+                schema_version: wire.schema_version,
+                signature: wire.signature,
+            })
+        } else {
+            // v1.1.0 nested-timestamp shape.
+            let wire: EventEnvelopeWireV110 =
+                serde_json::from_value(raw).map_err(serde::de::Error::custom)?;
+            Ok(EventEnvelope {
+                event_id: wire.event_id,
+                entity_type: wire.entity_type,
+                entity_id: wire.entity_id,
+                op: wire.op,
+                timestamp: wire.timestamp,
+                user_id: wire.user_id,
+                device_id: wire.device_id,
+                tenant_id: wire.tenant_id,
+                payload: wire.payload,
+                schema_version: wire.schema_version,
+                signature: wire.signature,
+            })
+        }
     }
 }
 

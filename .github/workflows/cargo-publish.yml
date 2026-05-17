@@ -1,0 +1,89 @@
+name: Publish libnclaw to crates.io
+
+# Publishes libnclaw (nclaw/core) and nclaw-desktop-tauri shell crates to crates.io.
+# Gate: requires CARGO_REGISTRY_TOKEN org secret (UA-18) and workspace version >= 1.2.0.
+# Without the secret, or at version < 1.2.0, this workflow is a no-op.
+#
+# Decision (S44.T03 — 2026-05-17): publish libnclaw at v1.2 per R4 (nothing-deferred doctrine).
+# Only the core Rust library publishes to crates.io; the desktop Tauri shell is an app, not a library.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 1.2.0). Must match workspace Cargo.toml version.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-publish:
+    name: Publish libnclaw to crates.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Gate 1: secret must be set (UA-18 authorization required).
+    # Gate 2: version must be >= 1.2.0 (pre-1.2 crates are not published).
+    if: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Read workspace version
+        id: ver
+        run: |
+          WS_VER=$(grep '^version' Cargo.toml | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+          echo "version=${WS_VER}" >> "$GITHUB_OUTPUT"
+          echo "Workspace version: ${WS_VER}"
+
+      - name: Version gate (>= 1.2.0 required to publish)
+        id: gate
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          MAJOR=$(echo "$VER" | cut -d. -f1)
+          MINOR=$(echo "$VER" | cut -d. -f2)
+          if [ "$MAJOR" -lt 1 ] || { [ "$MAJOR" -eq 1 ] && [ "$MINOR" -lt 2 ]; }; then
+            echo "Version ${VER} < 1.2.0 — P104 hold, skipping publish."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version ${VER} >= 1.2.0 — proceeding with publish."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache cargo registry
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-registry-
+
+      - name: Publish libnclaw (core library)
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cd core
+          # Idempotent: skip if this version already exists on crates.io
+          PUBLISHED=$(cargo search libnclaw --limit 1 2>/dev/null | grep '^libnclaw' | sed 's/.*= "\(.*\)".*/\1/' || true)
+          CURRENT="${{ steps.ver.outputs.version }}"
+          if [ "$PUBLISHED" = "$CURRENT" ]; then
+            echo "libnclaw ${CURRENT} already on crates.io — skipping."
+          else
+            cargo publish --token "$CARGO_REGISTRY_TOKEN"
+          fi
+
+      - name: Publish summary
+        if: steps.gate.outputs.proceed == 'true'
+        run: |
+          echo "### crates.io Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "- libnclaw \`${{ steps.ver.outputs.version }}\` → [crates.io](https://crates.io/crates/libnclaw)" >> "$GITHUB_STEP_SUMMARY"

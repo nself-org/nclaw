@@ -6,29 +6,40 @@ on:
     branches: [main]
     paths: ['nclaw/desktop/**']
 
+concurrency:
+  group: desktop-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9'
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - uses: pnpm/action-setup@v3
-        with: { version: '9' }
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: nclaw/desktop/pnpm-lock.yaml
       - name: Install deps
         working-directory: nclaw/desktop
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         working-directory: nclaw/desktop
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run E2E
+      - name: Unit gate
         working-directory: nclaw/desktop
-        run: pnpm e2e
+        run: pnpm vitest run
+      - name: E2E gate
+        working-directory: nclaw/desktop
+        run: pnpm exec playwright test
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

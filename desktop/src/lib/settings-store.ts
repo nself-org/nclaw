@@ -45,7 +45,7 @@ export interface Settings {
 
 // ---- Defaults (used until backend responds) --------------------------------
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   provider: { id: "local-llamacpp", base_url: "", api_key_masked: "" },
   model: { chat: "", summarizer: "", embedder: "", code: "" },
   vault: { paired: false, backend: "" },
