@@ -1,0 +1,25 @@
+name: 'Setup Rust Mobile'
+description: 'Install Rust toolchain + cross-compile targets + cargo-ndk for mobile CI'
+inputs:
+  targets:
+    description: 'Space-separated list of Rust targets to add'
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ inputs.targets }}
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          nclaw/core/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('nclaw/core/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    - name: Install cargo-ndk
+      shell: bash
+      run: cargo install cargo-ndk --version ">=3.5" --locked

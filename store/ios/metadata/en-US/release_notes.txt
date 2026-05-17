@@ -1,0 +1,5 @@
+v1.1.2 — Initial iOS release
+
+- Tauri 2 desktop and Flutter mobile unified codebase
+- Shared Rust core (libnclaw FFI) for memory and sync
+- Protocol-based sync schema for cross-device memory

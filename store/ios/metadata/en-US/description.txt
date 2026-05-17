@@ -1,0 +1,14 @@
+ɳClaw is a personal AI assistant with infinite, self-organizing memory. You just talk to it.
+
+It auto-detects topics, branches conversations, extracts facts, decisions, and entities, and builds a knowledge graph that compounds over time. The sidebar shows your life organized by topics — not "New Chat".
+
+Self-host your own backend or connect to ɳCloud. Your data stays yours.
+
+Key features:
+- Infinite memory across every conversation
+- Auto-organized topics — no manual filing
+- Knowledge graph that grows with you
+- Self-hosted: your data, your server
+- Powered by the nSelf open-source stack
+
+Requires an nSelf backend with the ɳClaw plugin bundle ($0.99/month) or an ɳSelf+ subscription ($3.99/month).

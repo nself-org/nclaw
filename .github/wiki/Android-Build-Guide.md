@@ -9,7 +9,7 @@ By the end of this guide you will:
 
 - Android Studio Hedgehog (2023.1.1) or newer (`Help > About`).
 - Android SDK Platform 34 (target) and Build Tools 34.0.0+.
-- Android NDK r25+ (for cross-compiling libnclaw to Android).
+- Android NDK r26b (pinned — matches CI; r26b required for ABI stability with cargo-ndk ≥3.5).
 - Flutter 3.x (`flutter --version`).
 - Rust stable toolchain (`rustc --version`) with `cargo-ndk`: `cargo install cargo-ndk`.
 - JDK 17 (Android Studio bundles this).
@@ -157,11 +157,23 @@ Expected: `jar verified.`
 **Cause:** `google-services.json` is missing or wrong package name.
 **Fix:** Re-download from Firebase console with the exact Bundle ID. Verify `app/android/app/google-services.json` exists. Rebuild with `flutter clean && flutter pub get && flutter build`.
 
+## CI (GitHub Actions)
+
+Android builds run automatically on every PR and push to `main` that touches `nclaw/mobile/**`, `nclaw/core/**`, or `nclaw/android/**`. The CI workflow mirrors these manual steps exactly:
+
+- NDK r26b is pinned via `android-actions/setup-android@v3` with `ndk-version: r26b`.
+- cargo-ndk ≥3.5 is installed via the `setup-rust-mobile` composite action (`nclaw/.github/actions/setup-rust-mobile/action.yml`).
+- Keystore signing is **conditional**: if `ANDROID_KEYSTORE_BASE64` secret is not set, CI builds an unsigned APK with `--no-shrink` instead.
+- The FRB codegen drift gate runs before every platform build — stale bindings fail the build before compilation starts.
+
+See `.github/workflows/mobile-android.yml` for the full CI definition. The matrix orchestrator at `.github/workflows/mobile-matrix.yml` runs all 5 platform builds in parallel.
+
 ## Next Steps
 
 - [[iOS-Build-Guide]] — build for iOS
 - [[macOS-Build-Guide]] — build for macOS
 - [[libnclaw-Dev-Guide]] — work on the Rust FFI library
 - [[Troubleshooting]] — common errors across platforms
+- [[MOBILE]] — full mobile CI matrix reference
 
 ← [[Home]] | [[Home]] →

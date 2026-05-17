@@ -48,13 +48,20 @@ jobs:
         working-directory: nclaw/desktop
         run: cargo tauri build --target x86_64-pc-windows-msvc
 
-      - name: Conditional signtool (no-op until WINDOWS_EV_CERT_THUMBPRINT secret set)
-        if: ${{ secrets.WINDOWS_EV_CERT_THUMBPRINT != '' }}
-        run: |
-          $files = Get-ChildItem -Path "nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
-          foreach ($f in $files) {
-            signtool sign /sha1 "$env:WINDOWS_EV_CERT_THUMBPRINT" /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$f.FullName"
-          }
+      # SSL.com eSigner EV code-signing (no-op until SSL_COM_USERNAME org secret is set).
+      # Rate limit: 10 signs/min. One MSI per tag run = well within limit.
+      # Note: the 'secrets' context is valid here; VS Code linter false-positive on step-level if:.
+      - name: Sign Windows MSI (EV, SSL.com eSigner)
+        if: ${{ secrets.SSL_COM_USERNAME != '' }}
+        uses: SSLcom/esigner-codesign@v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.SSL_COM_USERNAME }}
+          password: ${{ secrets.SSL_COM_PASSWORD }}
+          credential_id: ${{ secrets.SSL_COM_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.SSL_COM_TOTP_SECRET }}
+          file_path: nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          override: true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

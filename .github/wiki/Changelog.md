@@ -4,6 +4,19 @@ All notable changes to nClaw clients are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Local AI — full UX pipeline (S19):** End-to-end local model experience now ships in the desktop app. Six new capabilities land together:
+  - **HuggingFace model search (T01):** The Settings → Local AI panel searches HuggingFace for GGUF models via a 5-minute cached REST API. Results show name, download count, and available quant variants.
+  - **Resumable GGUF downloader (T02):** Downloads resume after interruption via HTTP Range requests. SHA-256 verification on completion. Live progress via `llm://download-progress` Tauri events.
+  - **In-app download queue (T02 UI):** `DownloadQueue` component shows per-file progress bars, speeds, and status badges. Cancel mid-flight.
+  - **Memory/VRAM indicator (T05):** `MemoryIndicator` component polls RAM and GPU VRAM usage in real time. Warns before loading if headroom is tight.
+  - **TPS + TTFT metrics in chat (T03):** Each assistant reply shows tokens-per-second and time-to-first-token in a subtle metrics pill below the response bubble.
+  - **Model swap with VRAM cleanup (T06):** Loading a new model always unloads the previous one first. Drop is synchronous via llama-cpp-2 — no VRAM leak across swap cycles.
+- **Windows MSI EV code-signing (S20):** `desktop-windows.yml` now wires `SSLcom/esigner-codesign@v1.3.2` for EV Organization Validation code-signing. Signing step is conditional (`if: secrets.SSL_COM_USERNAME != ''`) and skips when org secrets are absent, keeping CI green during onboarding. Once `SSL_COM_*` secrets are provisioned, release MSIs will pass Windows SmartScreen without "Unknown Publisher" warnings. Rate limit: 10 signs/min (one MSI per run — well within limit).
+
+- **Mobile FRB CI Matrix (S18 / CF-11):** GitHub Actions CI matrix for nclaw mobile across 5 platforms (iOS, Android, macOS, Linux, Windows). Each platform has its own workflow triggered on PR and push to `main` when `nclaw/mobile/**` or `nclaw/core/**` changes. A reusable FRB codegen drift gate (`frb-codegen-check.yml`) runs before every platform build — stale bindings fail CI. Composite action `setup-rust-mobile` provides Rust toolchain, Cargo.lock-keyed caching, and `cargo-ndk ≥3.5`. Android NDK r26b pinned. Apple and Android signing are conditional (non-blocking when secrets absent). All artifacts retained 30 days. Matrix orchestrator at `mobile-matrix.yml` runs all 5 platforms in parallel.
+
 ### Planned
 
 - **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.

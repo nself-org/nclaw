@@ -4,9 +4,12 @@ pub mod backend;
 pub mod constraint;
 pub mod context;
 pub mod dampers;
+pub mod downloader;
+pub mod hf_search;
 pub mod roles;
 pub mod sampling;
 pub mod stream;
+pub mod telemetry;
 
 pub use backend::ollama::{OllamaBackend, OllamaMessage, OllamaModel};
 pub use constraint::{parse_tool_call, GenerationConstraint, Grammars, ToolCall};

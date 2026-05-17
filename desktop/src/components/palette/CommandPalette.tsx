@@ -15,6 +15,7 @@ import {
   STATIC_COMMANDS,
   paletteSearch,
 } from '../../lib/palette-actions';
+import { useConversationStore } from '../../stores/conversationStore';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -29,45 +30,15 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PaletteResult[]>([]);
-  const [recentConversations, setRecentConversations] = useState<
-    PaletteResult[]
-  >([]);
 
-  // Load recent conversations on mount (stub — real data wires in S17)
+  // Load recent conversations from embedded-PG backend via pglite IPC client.
+  // Returns [] gracefully when the backend is not yet available (S17 / NotImplemented).
+  const { loadRecentConversations, toPaletteResults } = useConversationStore();
+  const recentConversations = toPaletteResults();
+
   useEffect(() => {
-    setRecentConversations([
-      {
-        kind: 'conversation',
-        id: '1',
-        label: 'Debugging Auth Flow',
-        description: 'TypeScript auth integration',
-      },
-      {
-        kind: 'conversation',
-        id: '2',
-        label: 'Design System Colors',
-        description: 'Tailwind palette review',
-      },
-      {
-        kind: 'conversation',
-        id: '3',
-        label: 'API Schema Discussion',
-        description: 'GraphQL types',
-      },
-      {
-        kind: 'conversation',
-        id: '4',
-        label: 'Performance Tuning',
-        description: 'React optimization notes',
-      },
-      {
-        kind: 'conversation',
-        id: '5',
-        label: 'Deployment Strategy',
-        description: 'CI/CD pipeline',
-      },
-    ]);
-  }, []);
+    loadRecentConversations();
+  }, [loadRecentConversations]);
 
   // Search on query change
   useEffect(() => {

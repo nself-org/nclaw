@@ -1,0 +1,57 @@
+name: Mobile Linux CI
+
+on:
+  pull_request:
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+  push:
+    branches: [main]
+    paths:
+      - 'nclaw/mobile/**'
+      - 'nclaw/core/**'
+
+jobs:
+  frb-drift:
+    uses: ./.github/workflows/frb-codegen-check.yml
+
+  linux:
+    runs-on: ubuntu-latest
+    needs: frb-drift
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-rust-mobile
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev libblkid-dev liblzma-dev \
+            libsecret-1-dev libjsoncpp-dev
+
+      - name: Build Rust for Linux
+        working-directory: nclaw/core
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Flutter build Linux
+        working-directory: nclaw/mobile
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nclaw-linux
+          path: nclaw/mobile/build/linux/x64/release/bundle/
+          retention-days: 30
+          if-no-files-found: warn

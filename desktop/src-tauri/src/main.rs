@@ -37,7 +37,19 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             open_settings_cmd,
             toggle_debug_cmd,
+            // S17 — Embedded-PG backend launch command
+            commands::backend::start_embedded_pg,
             commands::chat::stream_chat,
+            // LLM commands — T01 (HF search), T02 (download queue), T05 (telemetry), T06 (swap)
+            commands::llm::llm_get_models_dir,
+            commands::llm::llm_search_hf,
+            commands::llm::llm_download_start,
+            commands::llm::llm_download_cancel,
+            commands::llm::llm_download_list,
+            commands::llm::llm_telemetry_start,
+            commands::llm::llm_telemetry_stop,
+            commands::llm::llm_memory_snapshot,
+            commands::llm::llm_swap_model,
             commands::local_ai::get_tier,
             commands::local_ai::get_benchmark_history,
             commands::local_ai::list_models,

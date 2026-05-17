@@ -1,10 +1,12 @@
-// ɳClaw Desktop — Model Settings section
+// ɳClaw Desktop — Model Settings section (T03: local-AI config controls added)
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { TierBadge, type TierLevel } from "../tier-badge";
 import { useSettings } from "../../lib/settings-store";
+import { useModelConfig } from "@/hooks/useModelConfig";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ModelConfig } from "@/types/llm";
 
 interface ModelEntry {
   id: string;
@@ -26,6 +29,138 @@ const ROLES: { key: "chat" | "summarizer" | "embedder" | "code"; label: string; 
   { key: "embedder", label: "Embedder", description: "Vector embeddings for memory search" },
   { key: "code", label: "Code", description: "Code generation and explanation" },
 ];
+
+// ---------------------------------------------------------------------------
+// Local-AI config sub-section (T03)
+// ---------------------------------------------------------------------------
+
+const CTX_OPTIONS: ModelConfig["n_ctx"][] = [512, 1024, 2048, 4096, 8192, 16384, 32768];
+const QUANT_OPTIONS: { value: ModelConfig["quant"]; label: string }[] = [
+  { value: "Q4_K_M", label: "Q4_K_M — balanced" },
+  { value: "Q5_K_M", label: "Q5_K_M — quality+" },
+  { value: "Q8_0", label: "Q8_0 — high quality" },
+  { value: "F16", label: "F16 — full precision" },
+  { value: "auto", label: "Auto — pick by tier" },
+];
+
+function LocalAiConfig(): React.ReactElement {
+  const { config, loading, patch, save, saved: cfgSaved, error: cfgError } = useModelConfig();
+
+  const handleGpuLayers = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseInt(e.target.value, 10);
+    if (!Number.isNaN(v) && v >= 0 && v <= 999) {
+      patch("n_gpu_layers", v);
+    }
+  };
+
+  return (
+    <section aria-labelledby="local-ai-heading" className="mt-8 pt-6 border-t border-slate-700">
+      <h3
+        id="local-ai-heading"
+        className="text-base font-semibold text-slate-100 mb-4"
+      >
+        Local AI (llama.cpp)
+      </h3>
+
+      {loading ? (
+        <p className="text-sm text-slate-500">Loading local AI config…</p>
+      ) : (
+        <div className="space-y-5">
+          {/* GPU Layers */}
+          <div>
+            <Label htmlFor="gpu-layers" className="text-sm font-medium text-slate-300">
+              GPU layers
+            </Label>
+            <p className="text-xs text-slate-500 mb-1">
+              Number of model layers offloaded to GPU (0 = CPU only).
+            </p>
+            <Input
+              id="gpu-layers"
+              type="number"
+              min={0}
+              max={999}
+              value={config.n_gpu_layers}
+              onChange={handleGpuLayers}
+              className="w-32"
+              aria-label="GPU layers"
+            />
+          </div>
+
+          {/* Context window */}
+          <div>
+            <Label htmlFor="n-ctx-select" className="text-sm font-medium text-slate-300">
+              Context window
+            </Label>
+            <p className="text-xs text-slate-500 mb-1">
+              Number of tokens held in context. Larger values use more memory.
+            </p>
+            <Select
+              value={String(config.n_ctx)}
+              onValueChange={(v) =>
+                patch("n_ctx", parseInt(v, 10) as ModelConfig["n_ctx"])
+              }
+            >
+              <SelectTrigger id="n-ctx-select" className="w-48" aria-label="Context window size">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CTX_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={String(opt)}>
+                    {opt.toLocaleString()} tokens
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Quantization */}
+          <div>
+            <Label htmlFor="quant-select" className="text-sm font-medium text-slate-300">
+              Quantization (download preference)
+            </Label>
+            <p className="text-xs text-slate-500 mb-1">
+              Preferred GGUF quant when searching and downloading models.
+            </p>
+            <Select
+              value={config.quant}
+              onValueChange={(v) => patch("quant", v as ModelConfig["quant"])}
+            >
+              <SelectTrigger id="quant-select" className="w-64" aria-label="Quantization preference">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUANT_OPTIONS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {cfgError && (
+        <p role="alert" className="mt-3 text-sm text-red-400">
+          {cfgError}
+        </p>
+      )}
+
+      <Button
+        onClick={save}
+        disabled={loading}
+        className="mt-4"
+        aria-label="Save local AI config"
+      >
+        {cfgSaved ? "Saved" : "Save local AI config"}
+      </Button>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function ModelSettings(): React.ReactElement {
   const { settings, saveSection } = useSettings();
@@ -126,6 +261,9 @@ export function ModelSettings(): React.ReactElement {
       >
         {saved ? "Saved" : "Save"}
       </Button>
+
+      {/* T03 — local llama.cpp inference config */}
+      <LocalAiConfig />
     </section>
   );
 }

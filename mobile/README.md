@@ -2,6 +2,17 @@
 
 Flutter mobile codebase (iOS + Android). Carries forward from v1.1.0 `app/`.
 
+## CI Status
+
+| Platform | Status |
+|---|---|
+| iOS | [![iOS CI](https://github.com/nself-org/nclaw/actions/workflows/mobile-ios.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/mobile-ios.yml) |
+| Android | [![Android CI](https://github.com/nself-org/nclaw/actions/workflows/mobile-android.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/mobile-android.yml) |
+| macOS | [![macOS CI](https://github.com/nself-org/nclaw/actions/workflows/mobile-macos.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/mobile-macos.yml) |
+| Linux | [![Linux CI](https://github.com/nself-org/nclaw/actions/workflows/mobile-linux.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/mobile-linux.yml) |
+| Windows | [![Windows CI](https://github.com/nself-org/nclaw/actions/workflows/mobile-windows.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/mobile-windows.yml) |
+| FRB Drift | [![FRB Codegen Check](https://github.com/nself-org/nclaw/actions/workflows/frb-codegen-check.yml/badge.svg)](https://github.com/nself-org/nclaw/actions/workflows/frb-codegen-check.yml) |
+
 Per [architecture-decisions.md](../.claude/phases/current/p101-storm/architecture-decisions.md) Decision #1, mobile is Flutter-only. Desktop has moved to Tauri 2 in `../desktop/`. Desktop targets (`linux/`, `macos/`) inside this Flutter tree are residual from v1.1.0 and are archived alongside `../legacy-flutter-desktop/` in v1.2.0.
 
 ## Build
