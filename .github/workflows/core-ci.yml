@@ -21,10 +21,28 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # Only `stable` is tested: the dependency tree (specta-rc's edition2024 +
+        # debug_closure_helpers, darling 0.23, idna_adapter, image, keyring,
+        # serde_with) tracks the latest stable Rust, so a pinned older MSRV is
+        # not buildable. Reintroduce a pin if/when the deps support one.
         os: [macos-14, ubuntu-latest, windows-latest]
-        rust: [stable, 1.80]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v4
+
+      # Linux desktop dev-dependency (tauri-specta -> tauri) links GTK/glib via
+      # pkg-config; install the system libraries before any cargo build.
+      - name: Install GTK/WebKit system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
@@ -56,7 +74,10 @@ jobs:
             ${{ runner.os }}-cargo-build-${{ matrix.rust }}-
 
       - name: Run tests
-        run: cargo test --workspace --manifest-path core/Cargo.toml
+        # Scope to the libnclaw package, not the whole workspace: the desktop
+        # tauri crate is built/validated by the Desktop Build Check job, and its
+        # Windows resource compile (icon.ico) is irrelevant to core tests.
+        run: cargo test -p libnclaw --manifest-path core/Cargo.toml
 
   fmt:
     name: Rustfmt
@@ -73,6 +94,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # --all-targets compiles test/bench targets that pull the tauri-specta
+      # dev-dependency (-> tauri -> glib-sys/gobject-sys), which links GTK via
+      # pkg-config. Install the system libraries first.
+      - name: Install GTK/WebKit system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -103,9 +137,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rustsec/audit-check-action@v1
+      - uses: dtolnay/rust-toolchain@stable
+      # Cargo.lock is gitignored. core is a workspace member, so the lockfile is
+      # generated at the workspace root (./Cargo.lock), which is where the action
+      # looks by default (working-directory ".").
+      - name: Generate lockfile
+        run: cargo generate-lockfile --manifest-path core/Cargo.toml
+      - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Unmaintained advisories only — transitive, no vulnerability, no
+          # upgrade path. Kept in sync with core/deny.toml's ignore list.
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0384,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0436,RUSTSEC-2025-0052,RUSTSEC-2025-0075,RUSTSEC-2025-0080,RUSTSEC-2025-0081,RUSTSEC-2025-0098,RUSTSEC-2025-0100
 
   deny:
     name: License Check
@@ -113,6 +156,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           manifest-path: core/Cargo.toml
+          # The action's bundled Cargo must be new enough to parse edition2024
+          # manifests in the dependency tree (clap_lex, idna_adapter, etc.).
+          rust-version: "1.95.0"

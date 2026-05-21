@@ -8,7 +8,7 @@ use crate::types::{Message, MessageRole};
 use std::collections::VecDeque;
 
 /// Defines how to reduce message history when it exceeds the context window limit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TruncationPolicy {
     /// Drop oldest non-system messages from the start, keeping recent ones.
     /// This is the most straightforward approach.
@@ -17,16 +17,11 @@ pub enum TruncationPolicy {
     /// Keep system messages + recent N messages + a summary placeholder for dropped middle.
     /// This preserves the end of the conversation while signaling content was dropped.
     /// **Default policy.**
+    #[default]
     SummarizeMiddle,
 
     /// Alias for KeepRecent — drops oldest messages at message-level boundaries.
     TruncateOldest,
-}
-
-impl Default for TruncationPolicy {
-    fn default() -> Self {
-        TruncationPolicy::SummarizeMiddle
-    }
 }
 
 /// Manages fitting conversation message history into a context window budget.
@@ -178,7 +173,7 @@ fn estimate_tokens(msg: &Message) -> u32 {
 
     // Rough estimate: role name + content + metadata overhead
     let total_chars = msg.role.as_str().len() + content_len + 8;
-    ((total_chars + 3) / 4) as u32
+    total_chars.div_ceil(4) as u32
 }
 
 /// Estimates tokens for a ContentPart.
@@ -200,7 +195,7 @@ fn estimate_part_tokens(part: &crate::types::ContentPart) -> u32 {
         } => tool_call_id.len() + content.len(),
     };
 
-    ((chars + 3) / 4) as u32
+    chars.div_ceil(4) as u32
 }
 
 impl MessageRole {
@@ -261,7 +256,7 @@ mod tests {
         let mut messages = vec![];
 
         // Add 10 user/assistant pairs
-        for i in 0..10 {
+        for _i in 0..10 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,
@@ -349,7 +344,7 @@ mod tests {
             m.role == MessageRole::System
                 && m.content
                     .as_text()
-                    .map_or(false, |t| t.contains("earlier messages"))
+                    .is_some_and(|t| t.contains("earlier messages"))
         });
         assert!(has_summary);
 
@@ -377,7 +372,7 @@ mod tests {
         }
 
         // Add many body messages
-        for i in 0..20 {
+        for _i in 0..20 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,
@@ -409,8 +404,8 @@ mod tests {
         assert_eq!(system_count, 3);
 
         // First 3 should be the original system messages
-        for i in 0..3 {
-            assert_eq!(fitted[i].role, MessageRole::System);
+        for msg in fitted.iter().take(3) {
+            assert_eq!(msg.role, MessageRole::System);
         }
     }
 
@@ -419,7 +414,7 @@ mod tests {
         let conv_id = uuid::Uuid::new_v4();
         let mut messages = vec![];
 
-        for i in 0..10 {
+        for _i in 0..10 {
             messages.push(Message {
                 id: uuid::Uuid::new_v4(),
                 conversation_id: conv_id,

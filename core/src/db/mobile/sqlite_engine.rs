@@ -243,7 +243,9 @@ mod tests {
 
         // Create the DB with the correct key.
         let mut engine = MobileSqliteEngine::new();
-        engine.open(&db_path, &key).expect("create with correct key");
+        engine
+            .open(&db_path, &key)
+            .expect("create with correct key");
         engine
             .conn
             .as_ref()

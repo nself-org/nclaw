@@ -8,7 +8,6 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 /// standard Services / Hide items. Windows and Linux skip the App submenu and
 /// instead append Close + Quit to the File submenu.
 pub fn build_app_menu(handle: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-
     // ── File ──────────────────────────────────────────────────────────────────
     let new_chat = MenuItem::with_id(handle, "new-chat", "New Chat", true, Some("CmdOrCtrl+N"))?;
     let export = MenuItem::with_id(handle, "export", "Export", true, None::<&str>)?;

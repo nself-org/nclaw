@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nclaw/services/sync_service.dart';
-import 'package:nclaw/services/db_service.dart';
-import 'package:nclaw/services/vault_service.dart';
-import 'package:nclaw/services/llm_service.dart';
-import 'package:nclaw/services/migration_service.dart';
+import 'package:nself_claw/services/sync_service.dart';
+import 'package:nself_claw/services/db_service.dart';
+import 'package:nself_claw/services/vault_service.dart';
+import 'package:nself_claw/services/llm_service.dart';
+import 'package:nself_claw/services/migration_service.dart';
 
 void main() {
   group('S20 Mobile Sprint Acceptance Tests (T14)', () {
@@ -99,8 +99,8 @@ void main() {
 
     test('MigrationService.migrate completes without error', () async {
       final service = MigrationService();
-      // Stub: no-op on fresh install
-      expect(await service.migrate(), isNull);
+      // migrate() returns Future<void>; success is completing without throwing.
+      await service.migrate();
     });
 
     // Sprint-level integration

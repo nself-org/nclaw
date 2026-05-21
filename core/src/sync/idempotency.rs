@@ -46,6 +46,11 @@ impl IdempotencyCache {
         true // New event
     }
 
+    /// Whether `event_id` is currently tracked in the cache.
+    pub fn contains(&self, event_id: &Uuid) -> bool {
+        self.cache.contains(event_id)
+    }
+
     /// Get the current cache size.
     pub fn len(&self) -> usize {
         self.cache.len()

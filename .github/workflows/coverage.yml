@@ -24,22 +24,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # P99 S1.8 T01 triage 2026-05-04: plugins-pro is a PRIVATE repo.
-      # The default GITHUB_TOKEN cannot read it cross-repo (returns 404).
-      # Use GH_PAT_PLUGINS_PRO (fine-grained PAT, Contents:Read on plugins-pro)
-      # provisioned via S1.4 T07-prereq. The probe step gates the checkout so
-      # CI stays green during user-action provisioning — when the secret is
-      # missing, Coverage falls through to its "no coverage data — skip" guard.
-      - name: Probe plugins-pro PAT availability
+      # plugins-pro is a PRIVATE repo; the default GITHUB_TOKEN cannot read it
+      # cross-repo. Use PLUGINS_PRO_READ_TOKEN (Contents:Read on plugins-pro).
+      # The probe gates the checkout so CI stays green if the secret is absent —
+      # Coverage then falls through to its "no coverage data — skip" guard.
+      - name: Probe plugins-pro read token
         id: pat
         env:
-          PLUGINS_PRO_PAT: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+          PLUGINS_PRO_PAT: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
         run: |
           if [ -n "$PLUGINS_PRO_PAT" ]; then
             echo "have_pat=true" >> "$GITHUB_OUTPUT"
           else
             echo "have_pat=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::GH_PAT_PLUGINS_PRO secret not set — skipping plugins-pro checkout. Coverage gate may report 'no data' until secret is provisioned (P99 S1.4 T07-prereq)."
+            echo "::warning::PLUGINS_PRO_READ_TOKEN secret not set — skipping plugins-pro checkout. Coverage gate reports 'no data' until the secret is provisioned."
           fi
 
       - name: Checkout plugins-pro (private)
@@ -48,23 +46,35 @@ jobs:
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+
+      # The pubspec path dependency resolves to mobile/../../../plugins-pro
+      # (= /home/runner/work/plugins-pro, two levels above the workspace).
+      # actions/checkout cannot write outside the workspace, so link the
+      # in-workspace checkout to that location.
+      - name: Link plugins-pro to expected relative path
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ln -sfn "$GITHUB_WORKSPACE/plugins-pro" "$GITHUB_WORKSPACE/../../plugins-pro"
 
       - uses: subosito/flutter-action@v2
+        if: steps.pat.outputs.have_pat == 'true'
         with:
           flutter-version: '3.x'
           channel: 'stable'
 
       - name: Install dependencies
-        working-directory: app
+        if: steps.pat.outputs.have_pat == 'true'
+        working-directory: mobile
         run: flutter pub get
 
       - name: Run tests with coverage
-        working-directory: app
+        if: steps.pat.outputs.have_pat == 'true'
+        working-directory: mobile
         run: flutter test --coverage || true
 
       - name: Enforce coverage floor (≥30%)
-        working-directory: app
+        if: steps.pat.outputs.have_pat == 'true'
+        working-directory: mobile
         run: |
           if [ ! -f coverage/lcov.info ]; then
             echo "WARN: no coverage data — skipping floor check (no tests ran)"

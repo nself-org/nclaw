@@ -48,13 +48,12 @@ fn main() {
     // -------------------------------------------------------------------------
     // SQLITE_VEC_VERSION guard: mismatch is a hard build error.
     // -------------------------------------------------------------------------
-    let vendored_version = std::fs::read_to_string(&version_file)
-        .unwrap_or_else(|e| {
-            panic!(
-                "build.rs: cannot read vendor/sqlite-vec/VERSION: {e}\n\
+    let vendored_version = std::fs::read_to_string(&version_file).unwrap_or_else(|e| {
+        panic!(
+            "build.rs: cannot read vendor/sqlite-vec/VERSION: {e}\n\
                  Run: git submodule update --init core/vendor/sqlite-vec"
-            )
-        });
+        )
+    });
     let vendored_version = vendored_version.trim();
     if vendored_version != SQLITE_VEC_VERSION {
         panic!(

@@ -1,6 +1,5 @@
 //! Smoke tests for client vault module: keypair, envelope, keychain
 
-use libnclaw::error::CoreError;
 use libnclaw::vault::keypair::{verify, DeviceKeypair};
 
 #[test]

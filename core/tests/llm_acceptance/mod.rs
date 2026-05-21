@@ -60,7 +60,10 @@ pub enum CaseOutcome {
     Pass,
     /// Output failed at least one assertion. `reasons` lists every failure
     /// (not just the first) so CI logs explain all gaps at once.
-    Fail { reasons: Vec<String>, output: String },
+    Fail {
+        reasons: Vec<String>,
+        output: String,
+    },
     /// Backend returned an error before any assertion could run.
     BackendError(String),
 }
@@ -70,6 +73,10 @@ pub enum CaseOutcome {
 /// Returns fixtures in filename-sorted order so test output is stable.
 /// Uses a minimal hand-rolled YAML parser (only the subset our schema needs)
 /// to avoid pulling a YAML dep into `[dev-dependencies]` for this baseline.
+///
+/// Only the `llm-acceptance`-feature runner calls this; without that feature the
+/// including test binary compiles it but never invokes it.
+#[cfg_attr(not(feature = "llm-acceptance"), allow(dead_code))]
 pub fn load_fixtures(dir: &Path) -> Result<Vec<AcceptanceCase>, String> {
     let mut entries: Vec<_> = fs::read_dir(dir)
         .map_err(|e| format!("read_dir({}): {}", dir.display(), e))?
@@ -87,10 +94,9 @@ pub fn load_fixtures(dir: &Path) -> Result<Vec<AcceptanceCase>, String> {
     let mut out = Vec::with_capacity(entries.len());
     for entry in entries {
         let path = entry.path();
-        let text = fs::read_to_string(&path)
-            .map_err(|e| format!("read {}: {}", path.display(), e))?;
-        let case = parse_fixture(&text)
-            .map_err(|e| format!("parse {}: {}", path.display(), e))?;
+        let text =
+            fs::read_to_string(&path).map_err(|e| format!("read {}: {}", path.display(), e))?;
+        let case = parse_fixture(&text).map_err(|e| format!("parse {}: {}", path.display(), e))?;
         out.push(case);
     }
     Ok(out)
@@ -154,9 +160,9 @@ fn parse_fixture(text: &str) -> Result<AcceptanceCase, String> {
         }
         // List item line: "  - value"
         if let Some(rest) = line.trim_start().strip_prefix("- ") {
-            let key = current_list.as_ref().ok_or_else(|| {
-                format!("line {}: list item without parent key", lineno + 1)
-            })?;
+            let key = current_list
+                .as_ref()
+                .ok_or_else(|| format!("line {}: list item without parent key", lineno + 1))?;
             lists
                 .entry(key.clone())
                 .or_default()
@@ -167,7 +173,11 @@ fn parse_fixture(text: &str) -> Result<AcceptanceCase, String> {
         let (k, v) = match line.split_once(':') {
             Some((k, v)) => (k.trim().to_string(), v.trim().to_string()),
             None => {
-                return Err(format!("line {}: not a key:value pair: {:?}", lineno + 1, line));
+                return Err(format!(
+                    "line {}: not a key:value pair: {:?}",
+                    lineno + 1,
+                    line
+                ));
             }
         };
         if v.is_empty() {
@@ -263,13 +273,9 @@ impl AcceptanceBackend for StubBackend {
             }
             // CF-01 T02: code-completion. Returns the canonical body for the
             // prompt `fn add(a, b) -> i32`. Substring match covers `a + b`.
-            "code-completion" => {
-                "    a + b\n}"
-            }
+            "code-completion" => "    a + b\n}",
             // CF-01 T03: question-answering. Single-noun factual answer.
-            "qa" => {
-                "The capital of France is Paris."
-            }
+            "qa" => "The capital of France is Paris.",
             // CF-01 T04: longer summarization. Two-sentence collapse with the
             // central noun ("garden") preserved.
             "summarize-long" => {
@@ -280,9 +286,7 @@ impl AcceptanceBackend for StubBackend {
             // CF-01 T05: instruction-following / formatted output. Emits a JSON
             // array of three fruit names — the harness only checks structural
             // substrings, deep JSON validity lives in json_mode_validity.rs.
-            "instruction-following" => {
-                "[\"apple\", \"banana\", \"cherry\"]"
-            }
+            "instruction-following" => "[\"apple\", \"banana\", \"cherry\"]",
             _ => {
                 return Err(format!(
                     "StubBackend: no canned response for case {:?} (add one in \
@@ -356,7 +360,10 @@ expected_substrings:
             CaseOutcome::Fail { reasons, .. } => {
                 assert!(reasons.iter().any(|r| r.contains("min_output_chars")));
                 assert_eq!(
-                    reasons.iter().filter(|r| r.contains("missing expected")).count(),
+                    reasons
+                        .iter()
+                        .filter(|r| r.contains("missing expected"))
+                        .count(),
                     2
                 );
             }

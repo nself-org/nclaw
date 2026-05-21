@@ -7,14 +7,12 @@
 //
 // All fixtures are loaded from tests/fixtures/v1.1.0/. No network. No DB.
 
-use nclaw_core::sync::{
-    check_compat, CompatStatus, EventEnvelope, Hlc, Op,
-};
+use libnclaw::sync::{check_compat, CompatStatus, EventEnvelope, Hlc, Op};
 use uuid::Uuid;
 
 // Version constants — encode as (major=1, minor=1, patch=0/1).
 // Format: major << 16 | minor << 8 | patch (per upgrade.rs decode_version).
-const VERSION_V110: u32 = (1u32 << 16) | (1u32 << 8) | 0u32;
+const VERSION_V110: u32 = (1u32 << 16) | (1u32 << 8);
 const VERSION_V111: u32 = (1u32 << 16) | (1u32 << 8) | 1u32;
 
 // --- compat negotiation tests ---
@@ -51,8 +49,14 @@ fn bc_compat_v110_client_v111_server_client_needs_upgrade() {
 /// BC-03: same version on both sides — always compatible.
 #[test]
 fn bc_compat_same_version_compatible() {
-    assert_eq!(check_compat(VERSION_V110, VERSION_V110), CompatStatus::Compatible);
-    assert_eq!(check_compat(VERSION_V111, VERSION_V111), CompatStatus::Compatible);
+    assert_eq!(
+        check_compat(VERSION_V110, VERSION_V110),
+        CompatStatus::Compatible
+    );
+    assert_eq!(
+        check_compat(VERSION_V111, VERSION_V111),
+        CompatStatus::Compatible
+    );
 }
 
 /// BC-04: CompatStatus is not panic-prone for any u32 version combination.
@@ -90,11 +94,17 @@ fn bc_event_envelope_v110_fixture_parses_cleanly() {
     assert_ne!(env.event_id, Uuid::nil(), "event_id must not be nil");
     assert_eq!(env.entity_type, "message", "entity_type mismatch");
     assert_eq!(env.op, Op::Insert, "op mismatch");
-    assert_eq!(env.schema_version, 1, "schema_version must be 1 for v1.1.0 fixture");
+    assert_eq!(
+        env.schema_version, 1,
+        "schema_version must be 1 for v1.1.0 fixture"
+    );
     assert_eq!(env.timestamp.wall_ms, 1715644800000, "hlc.wall_ms mismatch");
     assert_eq!(env.timestamp.lamport, 1, "hlc.lamport mismatch");
     assert!(env.tenant_id.is_none(), "v1.1.0 fixture has null tenant_id");
-    assert!(env.payload.is_some(), "payload must not be None after parsing v1.1.0 fixture");
+    assert!(
+        env.payload.is_some(),
+        "payload must not be None after parsing v1.1.0 fixture"
+    );
 }
 
 /// BC-06: v1.1.0 EventEnvelope round-trip (serialise → deserialise) loses no fields.
@@ -104,10 +114,10 @@ fn bc_event_envelope_v110_fixture_parses_cleanly() {
 /// the round-trip byte-for-byte.
 #[test]
 fn bc_event_envelope_v110_roundtrip_no_data_loss() {
-    let device_id = Uuid::parse_str("cccccccc-0000-0000-0000-000000000001")
-        .expect("parse device_id UUID");
-    let event_id = Uuid::parse_str("aaaaaaaa-0000-0000-0000-000000000001")
-        .expect("parse event_id UUID");
+    let device_id =
+        Uuid::parse_str("cccccccc-0000-0000-0000-000000000001").expect("parse device_id UUID");
+    let event_id =
+        Uuid::parse_str("aaaaaaaa-0000-0000-0000-000000000001").expect("parse event_id UUID");
 
     let original = EventEnvelope {
         event_id,
@@ -133,15 +143,33 @@ fn bc_event_envelope_v110_roundtrip_no_data_loss() {
     let restored: EventEnvelope = serde_json::from_str(&json)
         .expect("v1.1.1 EventEnvelope must deserialise v1.1.0 serialisation without error");
 
-    assert_eq!(restored.event_id, original.event_id, "event_id mismatch after round-trip");
-    assert_eq!(restored.entity_type, original.entity_type, "entity_type mismatch");
+    assert_eq!(
+        restored.event_id, original.event_id,
+        "event_id mismatch after round-trip"
+    );
+    assert_eq!(
+        restored.entity_type, original.entity_type,
+        "entity_type mismatch"
+    );
     assert_eq!(restored.op, original.op, "op mismatch");
     assert_eq!(restored.schema_version, 1, "schema_version must be 1");
-    assert_eq!(restored.timestamp.wall_ms, original.timestamp.wall_ms, "hlc.wall_ms mismatch");
-    assert_eq!(restored.timestamp.lamport, original.timestamp.lamport, "hlc.lamport mismatch");
-    assert_eq!(restored.timestamp.device_id, original.timestamp.device_id, "hlc.device_id mismatch");
+    assert_eq!(
+        restored.timestamp.wall_ms, original.timestamp.wall_ms,
+        "hlc.wall_ms mismatch"
+    );
+    assert_eq!(
+        restored.timestamp.lamport, original.timestamp.lamport,
+        "hlc.lamport mismatch"
+    );
+    assert_eq!(
+        restored.timestamp.device_id, original.timestamp.device_id,
+        "hlc.device_id mismatch"
+    );
     assert!(restored.tenant_id.is_none(), "tenant_id must remain None");
-    assert!(restored.payload.is_some(), "payload must survive round-trip");
+    assert!(
+        restored.payload.is_some(),
+        "payload must survive round-trip"
+    );
 }
 
 /// BC-07: v1.1.1 EventEnvelope with new fields (schema_version=2) is silently
@@ -158,7 +186,9 @@ fn bc_event_envelope_v111_unknown_fields_ignored_by_v110_reader() {
         "entity_type": "message",
         "entity_id": "bbbbbbbb-0000-0000-0000-000000000002",
         "op": "update",
-        "timestamp": {"wall_ms": 1715644900000, "lamport": 5, "device_id": "cccccccc-0000-0000-0000-000000000001"},
+        "hlc_wall_ms": 1715644900000,
+        "hlc_lamport": 5,
+        "hlc_device_id": "cccccccc-0000-0000-0000-000000000001",
         "user_id": "dddddddd-0000-0000-0000-000000000001",
         "device_id": "cccccccc-0000-0000-0000-000000000001",
         "tenant_id": null,
@@ -188,9 +218,17 @@ fn bc_hlc_ordering_stable_across_versions() {
     let dev_b = Uuid::parse_str("bbbbbbbb-0000-0000-0000-000000000001").unwrap();
 
     // v1.1.0-era event (lower wall_ms)
-    let hlc_v110 = Hlc { wall_ms: 1_000_000, lamport: 1, device_id: dev_a };
+    let hlc_v110 = Hlc {
+        wall_ms: 1_000_000,
+        lamport: 1,
+        device_id: dev_a,
+    };
     // v1.1.1-era event (higher wall_ms)
-    let hlc_v111 = Hlc { wall_ms: 2_000_000, lamport: 0, device_id: dev_b };
+    let hlc_v111 = Hlc {
+        wall_ms: 2_000_000,
+        lamport: 0,
+        device_id: dev_b,
+    };
 
     assert!(
         hlc_v110 < hlc_v111,
@@ -198,13 +236,36 @@ fn bc_hlc_ordering_stable_across_versions() {
     );
 
     // Same wall_ms: lamport breaks the tie.
-    let hlc_lower_lamport = Hlc { wall_ms: 1_500_000, lamport: 2, device_id: dev_a };
-    let hlc_higher_lamport = Hlc { wall_ms: 1_500_000, lamport: 9, device_id: dev_a };
-    assert!(hlc_lower_lamport < hlc_higher_lamport, "lower lamport must sort before higher");
+    let hlc_lower_lamport = Hlc {
+        wall_ms: 1_500_000,
+        lamport: 2,
+        device_id: dev_a,
+    };
+    let hlc_higher_lamport = Hlc {
+        wall_ms: 1_500_000,
+        lamport: 9,
+        device_id: dev_a,
+    };
+    assert!(
+        hlc_lower_lamport < hlc_higher_lamport,
+        "lower lamport must sort before higher"
+    );
 
     // Same wall_ms + lamport: device_id (UUID bytes) breaks the tie.
-    let hlc_dev_a = Hlc { wall_ms: 1_500_000, lamport: 5, device_id: dev_a };
-    let hlc_dev_b = Hlc { wall_ms: 1_500_000, lamport: 5, device_id: dev_b };
+    let hlc_dev_a = Hlc {
+        wall_ms: 1_500_000,
+        lamport: 5,
+        device_id: dev_a,
+    };
+    let hlc_dev_b = Hlc {
+        wall_ms: 1_500_000,
+        lamport: 5,
+        device_id: dev_b,
+    };
     // dev_a < dev_b by UUID byte ordering (aa < bb prefix).
-    assert_ne!(hlc_dev_a.cmp(&hlc_dev_b), std::cmp::Ordering::Equal, "device_id must break tie");
+    assert_ne!(
+        hlc_dev_a.cmp(&hlc_dev_b),
+        std::cmp::Ordering::Equal,
+        "device_id must break tie"
+    );
 }

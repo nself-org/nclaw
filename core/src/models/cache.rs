@@ -208,8 +208,8 @@ impl Cache {
         self.index.insert(id, entry);
     }
 
-    /// Persist index.json to disk with atomic tempfile + rename
-    fn persist_index(&self) -> Result<(), CacheError> {
+    /// Persist index.json to disk with atomic tempfile + rename.
+    pub fn persist_index(&self) -> Result<(), CacheError> {
         let index_path = self.cache_dir.join("index.json");
         let json = serde_json::to_string_pretty(&self.index)?;
 
@@ -219,6 +219,28 @@ impl Cache {
         fs::rename(&temp_path, &index_path)?;
 
         Ok(())
+    }
+
+    /// Return the cache entry for `id`, if present.
+    pub fn entry(&self, id: &str) -> Option<&CacheEntry> {
+        self.index.get(id)
+    }
+
+    /// Whether `id` is tracked in the index.
+    pub fn contains(&self, id: &str) -> bool {
+        self.index.contains_key(id)
+    }
+
+    /// Overwrite an entry's `last_used_at` timestamp. Test/maintenance support
+    /// for simulating aging; production code mutates this via `touch`.
+    #[doc(hidden)]
+    pub fn set_last_used_at(&mut self, id: &str, ts: chrono::DateTime<Utc>) -> bool {
+        if let Some(entry) = self.index.get_mut(id) {
+            entry.last_used_at = ts;
+            true
+        } else {
+            false
+        }
     }
 }
 

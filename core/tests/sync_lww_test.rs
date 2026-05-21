@@ -5,6 +5,7 @@ use libnclaw::sync::lww::{merge_field_updates, resolve, EventEnvelope, Op};
 use libnclaw::sync::sign::signing_material;
 use uuid::Uuid;
 
+#[allow(clippy::too_many_arguments)] // test fixture builder mirrors EventEnvelope's fields
 fn make_event(
     event_id: Uuid,
     entity_type: &str,
@@ -54,7 +55,7 @@ fn lww_resolve_single_insert() {
         dev,
         Some(serde_json::json!({"name": "Alice"})),
     );
-    let result = resolve(&[ev.clone()]);
+    let result = resolve(std::slice::from_ref(&ev));
     assert!(result.is_some());
     let resolved = result.unwrap();
     assert_eq!(resolved.event_id, ev.event_id);
@@ -145,11 +146,6 @@ fn lww_resolve_hlc_total_order() {
     // Test that events are ordered by HLC total order:
     // wall_ms → lamport → device_id (lexicographic)
     let dev_a = Uuid::new_v4();
-    let dev_b = if Uuid::new_v4() < dev_a {
-        Uuid::new_v4()
-    } else {
-        dev_a
-    };
     let id = Uuid::new_v4();
 
     // Same wall, different lamports
@@ -359,7 +355,10 @@ fn network_sync_network_subscribe_url_http() {
     let url = net.subscribe_url();
     assert!(url.starts_with("ws://"));
     assert!(url.contains("/sync/subscribe"));
-    assert!(url.contains("test_jwt"));
+    // The JWT must NOT appear in the URL — it is delivered via the post-connect
+    // auth frame so credentials never leak into URLs or logs.
+    assert!(!url.contains("test_jwt"));
+    assert!(net.auth_frame().to_json().contains("test_jwt"));
 }
 
 #[test]

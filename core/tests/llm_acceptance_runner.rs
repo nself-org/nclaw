@@ -69,7 +69,5 @@ fn runs_all_baseline_fixtures_against_stub() {
 #[cfg(not(feature = "llm-acceptance"))]
 #[test]
 fn llm_acceptance_feature_disabled() {
-    eprintln!(
-        "llm_acceptance_runner: skipped — enable with --features llm-acceptance"
-    );
+    eprintln!("llm_acceptance_runner: skipped — enable with --features llm-acceptance");
 }

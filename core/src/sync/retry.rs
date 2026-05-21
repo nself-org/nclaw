@@ -74,12 +74,7 @@ impl Default for RetryPolicy {
 
 impl RetryPolicy {
     /// Construct a policy with explicit knobs.
-    pub fn new(
-        base_delay: Duration,
-        factor: f64,
-        max_delay: Duration,
-        max_attempts: u32,
-    ) -> Self {
+    pub fn new(base_delay: Duration, factor: f64, max_delay: Duration, max_attempts: u32) -> Self {
         Self {
             base_delay,
             factor,
@@ -134,11 +129,7 @@ impl RetryPolicy {
     /// Combine a computed jittered backoff with an optional server-supplied
     /// `Retry-After` hint. The hint supersedes the computed value when larger;
     /// the combined result is then clamped to [`Self::max_delay`].
-    pub fn merge_retry_after(
-        &self,
-        computed: Duration,
-        retry_after: Option<Duration>,
-    ) -> Duration {
+    pub fn merge_retry_after(&self, computed: Duration, retry_after: Option<Duration>) -> Duration {
         let chosen = match retry_after {
             Some(hint) if hint > computed => hint,
             _ => computed,
@@ -228,7 +219,7 @@ mod tests {
         assert_eq!(p.should_retry(1), RetryDecision::Retry);
         assert_eq!(p.should_retry(2), RetryDecision::Retry);
         assert_eq!(p.should_retry(3), RetryDecision::Retry); // 4 retries used, 1 left? no — see below
-        assert_eq!(p.should_retry(4), RetryDecision::Stop);  // 5 attempts total reached
+        assert_eq!(p.should_retry(4), RetryDecision::Stop); // 5 attempts total reached
         assert_eq!(p.should_retry(99), RetryDecision::Stop);
     }
 
@@ -250,7 +241,8 @@ mod tests {
     fn retry_after_clamped_to_max_delay() {
         let p = RetryPolicy::default();
         // Server says wait 10 minutes; we cap at 30s.
-        let merged = p.merge_retry_after(Duration::from_millis(100), Some(Duration::from_secs(600)));
+        let merged =
+            p.merge_retry_after(Duration::from_millis(100), Some(Duration::from_secs(600)));
         assert_eq!(merged, Duration::from_secs(30));
     }
 
@@ -266,7 +258,7 @@ mod tests {
         assert_eq!(parse_retry_after(""), None);
         assert_eq!(parse_retry_after("soon"), None);
         assert_eq!(parse_retry_after("-3"), None); // not a u64
-        // HTTP-date form intentionally unsupported in this code path.
+                                                   // HTTP-date form intentionally unsupported in this code path.
         assert_eq!(parse_retry_after("Wed, 21 Oct 2026 07:28:00 GMT"), None);
     }
 

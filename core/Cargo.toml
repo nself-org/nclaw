@@ -5,8 +5,19 @@ edition = "2021"
 description = "Shared types, protocol, and E2E encryption for nClaw clients"
 license = "MIT"
 
+# "lib" (rlib) keeps the crate usable as a normal workspace dependency
+# (desktop/src-tauri, benches, bins). "staticlib" emits libnclaw.a for the
+# mobile C-ABI exports in src/mobile_ffi.rs so the iOS platform layer can link
+# the FFI symbols (nclaw_set_low_power et al.) at build time via the
+# libnclaw.xcframework that scripts/build-ios.sh packages.
 [lib]
-crate-type = ["lib"]
+crate-type = ["lib", "staticlib"]
+
+[lints.rust]
+# `frb_expand` is a custom cfg the flutter_rust_bridge `#[frb]` macro expands to.
+# Declare it so `unexpected_cfgs` (which clippy promotes under -D warnings) is
+# satisfied without an inline allow on every bridge function.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
 
 [[bench]]
 name = "types_serde"

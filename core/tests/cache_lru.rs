@@ -26,10 +26,13 @@ fn test_lru_eviction_respects_currently_loaded() {
     // Simulate aging: update last_used_at to be spaced 1 hour apart (oldest to newest)
     // Note: in a real scenario, these would be set at install time and updated on use
     let now = chrono::Utc::now();
-    for (i, entry) in cache.list_installed().iter().enumerate() {
-        if let Some(cached_entry) = cache.index.get_mut(&entry.id) {
-            cached_entry.last_used_at = now - chrono::Duration::hours((5 - i as i64 - 1) * 1);
-        }
+    let ids: Vec<String> = cache
+        .list_installed()
+        .iter()
+        .map(|e| e.id.clone())
+        .collect();
+    for (i, id) in ids.iter().enumerate() {
+        cache.set_last_used_at(id, now - chrono::Duration::hours(5 - i as i64 - 1));
     }
     cache.persist_index().unwrap();
 
@@ -77,7 +80,7 @@ fn test_user_imported_never_evicted() {
     assert!(evicted.contains(&"model-1".to_string()) || evicted.contains(&"model-2".to_string()));
 
     // user-custom should still be in index
-    assert!(cache.index.contains_key("user-custom"));
+    assert!(cache.contains("user-custom"));
 }
 
 #[test]
@@ -145,7 +148,7 @@ fn test_touch_updates_last_used() {
     let mut cache = Cache::open(models_dir).unwrap();
     cache.register("model-1".to_string(), 1024, false);
 
-    let original_used = cache.index.get("model-1").unwrap().last_used_at;
+    let original_used = cache.entry("model-1").unwrap().last_used_at;
 
     // Sleep a tiny bit to ensure time difference
     std::thread::sleep(std::time::Duration::from_millis(10));
@@ -153,7 +156,7 @@ fn test_touch_updates_last_used() {
     // Touch the model
     cache.touch("model-1").unwrap();
 
-    let updated_used = cache.index.get("model-1").unwrap().last_used_at;
+    let updated_used = cache.entry("model-1").unwrap().last_used_at;
     assert!(updated_used > original_used);
 }
 
@@ -173,11 +176,11 @@ fn test_persist_and_reload_roundtrip() {
     let cache = Cache::open(temp.path()).unwrap();
     assert_eq!(cache.list_installed().len(), 2);
 
-    let model1 = cache.index.get("model-1").unwrap();
+    let model1 = cache.entry("model-1").unwrap();
     assert_eq!(model1.size_mb, 2048);
     assert!(model1.user_imported);
 
-    let model2 = cache.index.get("model-2").unwrap();
+    let model2 = cache.entry("model-2").unwrap();
     assert_eq!(model2.size_mb, 1024);
     assert!(!model2.user_imported);
 }

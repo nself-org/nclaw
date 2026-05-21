@@ -118,7 +118,8 @@ impl OllamaBackend {
     /// let msgs = vec![
     ///     OllamaMessage { role: "user".into(), content: "Hello!".into() }
     /// ];
-    /// let mut stream = backend.chat_stream("llama2", &msgs).await.unwrap();
+    /// // The returned stream is not Unpin; pin it before calling `.next()`.
+    /// let mut stream = Box::pin(backend.chat_stream("llama2", &msgs).await.unwrap());
     /// while let Some(Ok(token)) = stream.next().await {
     ///     print!("{}", token);
     /// }

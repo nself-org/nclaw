@@ -49,7 +49,7 @@ pub fn fetch_secret(account: &str) -> Result<Vec<u8>, CoreError> {
     })?;
     STANDARD
         .decode(pw.as_bytes())
-        .map_err(|e| CoreError::Vault(VaultError::InvalidFormat))
+        .map_err(|_e| CoreError::Vault(VaultError::InvalidFormat))
 }
 
 /// Delete a secret from the OS keychain.
@@ -86,7 +86,9 @@ mod tests {
     #[test]
     fn test_store_and_fetch_roundtrip() {
         if should_skip_keychain_tests() {
-            eprintln!("SKIP: test_store_and_fetch_roundtrip — keychain unavailable in CI/headless env");
+            eprintln!(
+                "SKIP: test_store_and_fetch_roundtrip — keychain unavailable in CI/headless env"
+            );
             return;
         }
 
@@ -141,7 +143,9 @@ mod tests {
     #[test]
     fn test_fetch_nonexistent_secret() {
         if should_skip_keychain_tests() {
-            eprintln!("SKIP: test_fetch_nonexistent_secret — keychain unavailable in CI/headless env");
+            eprintln!(
+                "SKIP: test_fetch_nonexistent_secret — keychain unavailable in CI/headless env"
+            );
             return;
         }
 

@@ -359,7 +359,7 @@ fn signing_material_starts_with_event_id_v04_f05() {
     //   event_id(16) || etype_len(4) || etype(4) || entity_id(16) || op(1)
     //   || wall_ms(8) || lamport(8) || hlc_dev_id(16)  = 73
     // user_id starts at byte 73.
-    let etype_len = env.entity_type.as_bytes().len();
+    let etype_len = env.entity_type.len();
     let user_id_offset = 16 + 4 + etype_len + 16 + 1 + 8 + 8 + 16;
     assert_eq!(
         &material[user_id_offset..user_id_offset + 16],

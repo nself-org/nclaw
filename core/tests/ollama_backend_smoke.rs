@@ -7,7 +7,7 @@
 //! - Embedding generation via mocked /api/embeddings
 
 use httpmock::prelude::*;
-use libnclaw::llm::{OllamaBackend, OllamaMessage};
+use libnclaw::llm::backend::ollama::{OllamaBackend, OllamaMessage};
 use tokio_stream::StreamExt;
 
 #[tokio::test]
@@ -39,13 +39,10 @@ async fn test_list_models_mocked() {
         ]
     }"#;
 
-    server.expect(
-        mock()
-            .method(GET)
-            .path("/api/tags")
-            .return_status(200)
-            .return_body(response_body),
-    );
+    server.mock(|when, then| {
+        when.method(GET).path("/api/tags");
+        then.status(200).body(response_body);
+    });
 
     let backend = OllamaBackend::new(server.base_url());
     let models = backend.list_models().await.unwrap();
@@ -65,13 +62,10 @@ async fn test_chat_stream_mocked() {
     let chunk3 = r#"{"message":{"role":"assistant","content":"!"},"done":true}"#;
     let response_body = format!("{}\n{}\n{}\n", chunk1, chunk2, chunk3);
 
-    server.expect(
-        mock()
-            .method(POST)
-            .path("/api/chat")
-            .return_status(200)
-            .return_body(response_body),
-    );
+    server.mock(|when, then| {
+        when.method(POST).path("/api/chat");
+        then.status(200).body(response_body);
+    });
 
     let backend = OllamaBackend::new(server.base_url());
     let msgs = vec![OllamaMessage {
@@ -79,7 +73,8 @@ async fn test_chat_stream_mocked() {
         content: "Say hello".into(),
     }];
 
-    let mut stream = backend.chat_stream("llama2", &msgs).await.unwrap();
+    // chat_stream returns an `impl Stream` that is not Unpin; pin it for `.next()`.
+    let mut stream = Box::pin(backend.chat_stream("llama2", &msgs).await.unwrap());
 
     let mut tokens = Vec::new();
     while let Some(result) = stream.next().await {
@@ -100,13 +95,10 @@ async fn test_embed_mocked() {
         "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
     }"#;
 
-    server.expect(
-        mock()
-            .method(POST)
-            .path("/api/embeddings")
-            .return_status(200)
-            .return_body(response_body),
-    );
+    server.mock(|when, then| {
+        when.method(POST).path("/api/embeddings");
+        then.status(200).body(response_body);
+    });
 
     let backend = OllamaBackend::new(server.base_url());
     let embedding = backend
@@ -128,13 +120,10 @@ async fn test_chat_stream_empty_content() {
     let chunk2 = r#"{"message":{"role":"assistant","content":"token"},"done":true}"#;
     let response_body = format!("{}\n{}\n", chunk1, chunk2);
 
-    server.expect(
-        mock()
-            .method(POST)
-            .path("/api/chat")
-            .return_status(200)
-            .return_body(response_body),
-    );
+    server.mock(|when, then| {
+        when.method(POST).path("/api/chat");
+        then.status(200).body(response_body);
+    });
 
     let backend = OllamaBackend::new(server.base_url());
     let msgs = vec![OllamaMessage {
@@ -142,7 +131,8 @@ async fn test_chat_stream_empty_content() {
         content: "test".into(),
     }];
 
-    let mut stream = backend.chat_stream("llama2", &msgs).await.unwrap();
+    // chat_stream returns an `impl Stream` that is not Unpin; pin it for `.next()`.
+    let mut stream = Box::pin(backend.chat_stream("llama2", &msgs).await.unwrap());
     let mut tokens = Vec::new();
     while let Some(result) = stream.next().await {
         tokens.push(result.unwrap());

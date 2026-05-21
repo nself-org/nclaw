@@ -5,6 +5,10 @@
 /// Taps deep-link via claw://topic/{id}.
 package io.nself.claw
 
+// R and MainActivity live under the app namespace (com.nself.claw), not this
+// file's package (io.nself.claw), so import them explicitly.
+import com.nself.claw.R
+import com.nself.claw.MainActivity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences

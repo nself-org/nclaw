@@ -1,7 +1,10 @@
 //! Versioned migrations runner. Applies SQL migrations in order, tracks version
 //! in `migrations` table, idempotent.
 
-use crate::error::{CoreError, DbError};
+use crate::error::CoreError;
+// DbError is only constructed by the mock runner in the test module.
+#[cfg(test)]
+use crate::error::DbError;
 
 /// Trait that concrete DB runners (Postgres, SQLite) implement to apply migrations.
 pub trait MigrationRunner {
@@ -155,7 +158,7 @@ mod tests {
     fn sqlite_engine_uses_sqlite_sql() {
         let mut runner = MockRunner::new(0);
         let _ = run(&mut runner, Engine::Sqlite).unwrap();
-        assert!(runner.sqls_applied.len() > 0);
+        assert!(!runner.sqls_applied.is_empty());
         // First SQL should be the SQLite variant of 0001_initial_schema.sql
         // It will have PRAGMA or SQLite-specific syntax
         assert!(

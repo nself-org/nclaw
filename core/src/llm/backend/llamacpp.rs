@@ -57,7 +57,7 @@ fn available_memory_bytes() -> Option<u64> {
         let s = std::fs::read_to_string("/proc/meminfo").ok()?;
         for line in s.lines() {
             if let Some(rest) = line.strip_prefix("MemAvailable:") {
-                let kb: u64 = rest.trim().split_whitespace().next()?.parse().ok()?;
+                let kb: u64 = rest.split_whitespace().next()?.parse().ok()?;
                 return Some(kb.saturating_mul(1024));
             }
         }
@@ -198,11 +198,12 @@ mod ffi_impl {
             self.model = None;
 
             let model_params = LlamaModelParams::default().with_n_gpu_layers(self.n_gpu_layers);
-            let model = LlamaModel::load_from_file(&self.backend, path, &model_params).map_err(
-                |e| LlmError::ModelLoadFailed {
-                    reason: format!("load_from_file: {e}"),
-                },
-            )?;
+            let model =
+                LlamaModel::load_from_file(&self.backend, path, &model_params).map_err(|e| {
+                    LlmError::ModelLoadFailed {
+                        reason: format!("load_from_file: {e}"),
+                    }
+                })?;
             self.model = Some(model);
             Ok(())
         }
@@ -291,8 +292,11 @@ mod ffi_impl {
 
             let mut produced = 0usize;
             let mut so_far = String::new();
+            // KV-cache position counter, offset by the prompt length already in
+            // the batch — not a plain 0-based loop index, so enumerate doesn't fit.
             let mut n_cur = batch.n_tokens();
 
+            #[allow(clippy::explicit_counter_loop)]
             for _ in 0..opts.max_tokens {
                 // Sample at the position of the last decoded token.
                 // `sample()` also accepts the token internally (updates sampler state).
@@ -302,6 +306,12 @@ mod ffi_impl {
                     break;
                 }
 
+                // token_to_str is deprecated in favor of token_to_piece, but the
+                // replacement requires an encoding_rs::Decoder and changes the
+                // UTF-8 boundary handling. Detokenization is correctness-critical
+                // for streamed output, so the migration is tracked separately;
+                // the deprecated call is functionally correct here.
+                #[allow(deprecated)]
                 let piece = model
                     .token_to_str(new_token, llama_cpp_2::model::Special::Tokenize)
                     .map_err(|e| LlmError::InternalError(format!("token_to_str: {e}")))?;
@@ -349,9 +359,8 @@ mod ffi_impl {
                 };
                 let res = self.decode_with(&prompt, &opts, |piece| {
                     // If the receiver was dropped, abort the decode loop.
-                    tx.blocking_send(Ok(piece)).map_err(|_| {
-                        LlmError::InternalError("stream receiver dropped".into())
-                    })
+                    tx.blocking_send(Ok(piece))
+                        .map_err(|_| LlmError::InternalError("stream receiver dropped".into()))
                 });
                 if let Err(e) = res {
                     send_err(e);
@@ -392,7 +401,9 @@ mod ffi_impl {
 
             let ctx_params = LlamaContextParams::default()
                 // SAFETY: 512 is a compile-time non-zero constant.
-                .with_n_ctx(Some(std::num::NonZeroU32::new(512).expect("512 is non-zero")))
+                .with_n_ctx(Some(
+                    std::num::NonZeroU32::new(512).expect("512 is non-zero"),
+                ))
                 .with_embeddings(true);
             let mut ctx = model
                 .new_context(&self.backend, ctx_params)

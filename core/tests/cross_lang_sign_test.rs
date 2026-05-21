@@ -75,8 +75,12 @@ fn fixture_envelope(fixture: &Value) -> (EventEnvelope, uuid::Uuid) {
 #[test]
 fn cross_lang_signing_material_matches_go_golden_bytes() {
     let fixture = load_fixture();
-    let expected_hex = fixture["expected_material_hex"].as_str().expect("expected_material_hex");
-    let expected_len = fixture["expected_length"].as_u64().expect("expected_length") as usize;
+    let expected_hex = fixture["expected_material_hex"]
+        .as_str()
+        .expect("expected_material_hex");
+    let expected_len = fixture["expected_length"]
+        .as_u64()
+        .expect("expected_length") as usize;
     let expected_bytes = hex_decode(expected_hex);
 
     let (env, user_id) = fixture_envelope(&fixture);
@@ -105,14 +109,17 @@ fn cross_lang_payload_tail_is_canonical_json() {
     let material = signing_material(&env, user_id);
 
     let tail = &material[material.len() - canon_bytes.len()..];
-    assert_eq!(tail, canon_bytes.as_slice(),
-        "payload tail must be RFC-8785 canonical JSON, byte-identical to Go's canonicalJSON output");
+    assert_eq!(
+        tail,
+        canon_bytes.as_slice(),
+        "payload tail must be RFC-8785 canonical JSON, byte-identical to Go's canonicalJSON output"
+    );
 }
 
 /// Decode a contiguous hex string (no whitespace, no `0x` prefix) into bytes.
 /// Lower- and upper-case hex digits are both accepted.
 fn hex_decode(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string length must be even");
+    assert!(s.len().is_multiple_of(2), "hex string length must be even");
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     let mut i = 0;

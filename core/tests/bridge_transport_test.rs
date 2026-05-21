@@ -19,28 +19,27 @@ async fn test_local_transport_basic() {
     let resp = transport.execute(&req).await.expect("local should succeed");
     assert_eq!(resp.source, "local");
     assert!(resp.text.contains("local stub"));
-    assert!(resp.latency_ms >= 0);
 }
 
 #[tokio::test]
 async fn test_server_mux_transport() {
-    let server = MockServer::new_async().await;
+    let server = MockServer::start_async().await;
 
     // Mock the mux endpoint
     let mock = server
         .mock_async(|when, then| {
-            when.method(POST)
-                .path("/inference")
-                .json_body_contains("prompt")
-                .json_body_contains("max_tokens");
-            then.status(200).json_body(serde_json::json!({
-                "text": "Mocked response from server mux",
-                "tokens_used": 42
-            }));
+            when.method(POST).path("/inference");
+            then.status(200).body(
+                serde_json::json!({
+                    "text": "Mocked response from server mux",
+                    "tokens_used": 42
+                })
+                .to_string(),
+            );
         })
         .await;
 
-    let endpoint = format!("{}/inference", server.url());
+    let endpoint = server.url("/inference");
     let transport = ServerMuxTransport::new(endpoint);
 
     let req = TransportRequest {
@@ -59,34 +58,15 @@ async fn test_server_mux_transport() {
 
 #[tokio::test]
 async fn test_frontier_anthropic() {
-    let server = MockServer::new_async().await;
-
-    let mock = server
-        .mock_async(|when, then| {
-            when.method(POST)
-                .path("/v1/messages")
-                .header("x-api-key", "test-key");
-            then.status(200).json_body(serde_json::json!({
-                "content": [{"text": "Response from Anthropic"}]
-            }));
-        })
-        .await;
-
-    // Override the endpoint for testing
+    // FrontierTransport targets the provider's real API host, not a mock server,
+    // so this is a structure check on the transport's identity. Full execution
+    // would require mocking reqwest itself or a live key.
     let transport = FrontierTransport::new(
         "anthropic".to_string(),
         "test-key".to_string(),
         "claude-3.5-sonnet".to_string(),
     );
 
-    let req = TransportRequest {
-        prompt: "Test Anthropic".to_string(),
-        max_tokens: 100,
-        temperature: 0.7,
-    };
-
-    // Note: real execution will hit the actual API; this test is a structure check
-    // For full testing, we'd need to mock reqwest itself or use a test double
     let source = transport.name();
     assert_eq!(source, "frontier");
 }

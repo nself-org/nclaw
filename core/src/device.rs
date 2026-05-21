@@ -5,9 +5,12 @@
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use std::sync::atomic::AtomicBool;
 
-use crate::error::{CoreError, LlmError};
+use crate::error::CoreError;
+// LlmError is only referenced inside platform-specific probe functions
+// (macos / ios / android); gate the import so non-mobile targets don't warn.
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
+use crate::error::LlmError;
 
 /// Hardware fingerprint of the current device.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,7 +111,7 @@ pub fn probe_macos() -> Result<DeviceProbe, CoreError> {
 #[cfg(target_os = "macos")]
 fn run_sysctl(key: &str) -> Result<String, CoreError> {
     let output = Command::new("sysctl")
-        .args(&["-n", key])
+        .args(["-n", key])
         .output()
         .map_err(|e| {
             CoreError::Llm(LlmError::InternalError(format!(
@@ -179,7 +182,7 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
     let physical_cores = if !physical_cores_set.is_empty() {
         physical_cores_set.len() as u32
     } else if logical_cores > 0 {
-        (logical_cores + 1) / 2 // conservative estimate: logical / 2
+        logical_cores.div_ceil(2) // conservative estimate: logical / 2
     } else {
         1
     };
@@ -199,7 +202,7 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
     }
 
     // Attempt lspci for GPU detection (non-fatal if missing or parse fails)
-    if let Ok(output) = Command::new("lspci").args(&["-mm"]).output() {
+    if let Ok(output) = Command::new("lspci").args(["-mm"]).output() {
         if output.status.success() {
             if let Ok(lspci_out) = String::from_utf8(output.stdout) {
                 for line in lspci_out.lines() {
@@ -468,14 +471,18 @@ mod tests_windows {
 
 /// Low-power mode flag set by Flutter via FFI (iOS).
 /// Default: false. Use `ios_set_low_power(true)` from Flutter layer.
-static IOS_LOW_POWER_MODE: AtomicBool = AtomicBool::new(false);
+/// Only referenced by the iOS probe path, so it is gated to avoid an unused
+/// static on other targets.
+#[cfg(target_os = "ios")]
+static IOS_LOW_POWER_MODE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 
 /// Set the low-power mode flag (callable from Flutter FFI).
 /// iOS does not expose `UIDevice.isLowPowerModeEnabled` via C API, so the Flutter
 /// layer must check at runtime and call this to persist the flag in the Rust core.
 #[cfg(target_os = "ios")]
 pub fn ios_set_low_power(flag: bool) {
-    IOS_LOW_POWER_MODE.store(flag, Ordering::Relaxed);
+    IOS_LOW_POWER_MODE.store(flag, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// Probe the current iOS device and return hardware fingerprint.
@@ -613,7 +620,7 @@ pub fn probe_ios() -> Result<DeviceProbe, CoreError> {
     let arm64 = sysctl_u32("hw.optional.arm64").unwrap_or(1) == 1;
 
     // Read low-power mode flag (set via ios_set_low_power)
-    let low_power_mode = IOS_LOW_POWER_MODE.load(Ordering::Relaxed);
+    let low_power_mode = IOS_LOW_POWER_MODE.load(std::sync::atomic::Ordering::Relaxed);
 
     Ok(DeviceProbe {
         os: "ios".into(),
@@ -770,25 +777,27 @@ mod tests_android {
 
 /// Auto-dispatch probe() to the correct platform function.
 pub fn probe() -> Result<DeviceProbe, CoreError> {
+    // Exactly one cfg block compiles per target, so each is the function's tail
+    // expression — no `return` needed (and clippy::needless_return forbids it).
     #[cfg(target_os = "macos")]
     {
-        return probe_macos();
+        probe_macos()
     }
     #[cfg(target_os = "linux")]
     {
-        return probe_linux();
+        probe_linux()
     }
     #[cfg(target_os = "windows")]
     {
-        return probe_windows();
+        probe_windows()
     }
     #[cfg(target_os = "ios")]
     {
-        return probe_ios();
+        probe_ios()
     }
     #[cfg(target_os = "android")]
     {
-        return probe_android();
+        probe_android()
     }
     #[cfg(not(any(
         target_os = "macos",
@@ -798,8 +807,8 @@ pub fn probe() -> Result<DeviceProbe, CoreError> {
         target_os = "android"
     )))]
     {
-        return Err(CoreError::Llm(LlmError::InternalError(
+        Err(CoreError::Llm(LlmError::InternalError(
             "unsupported platform".into(),
-        )));
+        )))
     }
 }

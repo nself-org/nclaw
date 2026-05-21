@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Flutter: analyze, test, build APK
+  # Flutter: analyze, test, build APK (app lives in mobile/)
   # ============================================================
   flutter-analyze:
     name: Flutter Analyze & Test
@@ -21,27 +21,58 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      # The Flutter app has a path dependency on plugins-pro (a PRIVATE repo):
+      # nself_auth_sdk -> ../../../plugins-pro/paid/auth/flutter (resolved from
+      # mobile/). Probe the read token first so the job fails clearly if the
+      # secret is absent rather than emitting "token not supplied" mid-checkout.
+      - name: Probe plugins-pro read token
+        id: pat
+        env:
+          PLUGINS_PRO_PAT: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+        run: |
+          if [ -n "$PLUGINS_PRO_PAT" ]; then
+            echo "have_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_pat=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PLUGINS_PRO_READ_TOKEN not set — skipping plugins-pro checkout and Flutter analyze/test."
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Checkout plugins-pro (private)
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/checkout@v4
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+
+      # The pubspec path dependency resolves to /home/runner/work/plugins-pro
+      # (mobile/../../../plugins-pro). actions/checkout cannot write outside the
+      # workspace, so link the in-workspace checkout to the expected location.
+      - name: Link plugins-pro to expected relative path
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ln -sfn "$GITHUB_WORKSPACE/plugins-pro" "$GITHUB_WORKSPACE/../../plugins-pro"
+        working-directory: ${{ github.workspace }}
 
       - uses: subosito/flutter-action@v2
+        if: steps.pat.outputs.have_pat == 'true'
         with:
           channel: stable
 
       - name: Install dependencies
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter pub get
 
       - name: Analyze
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run tests
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter test --update-goldens && flutter test
 
   flutter-build-android:
@@ -51,30 +82,59 @@ jobs:
     needs: flutter-analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Probe plugins-pro read token
+        id: pat
+        env:
+          PLUGINS_PRO_PAT: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+        run: |
+          if [ -n "$PLUGINS_PRO_PAT" ]; then
+            echo "have_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_pat=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PLUGINS_PRO_READ_TOKEN not set — skipping Android build."
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Checkout plugins-pro (private)
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/checkout@v4
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+
+      - name: Link plugins-pro to expected relative path
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ln -sfn "$GITHUB_WORKSPACE/plugins-pro" "$GITHUB_WORKSPACE/../../plugins-pro"
+        working-directory: ${{ github.workspace }}
 
       - uses: actions/setup-java@v4
+        if: steps.pat.outputs.have_pat == 'true'
         with:
           distribution: temurin
           java-version: '17'
 
       - uses: subosito/flutter-action@v2
+        if: steps.pat.outputs.have_pat == 'true'
         with:
           channel: stable
 
       - name: Install dependencies
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter pub get
 
+      # The app defines product flavors (dev/staging/prod) in
+      # android/app/build.gradle.kts, so a flavor must be selected. Without
+      # --flavor, Gradle's assembleDebug emits flavored outputs
+      # (app-prod-debug.apk etc.) and the Flutter tool fails looking for the
+      # unflavored app-debug.apk ("Gradle build failed to produce an .apk").
       - name: Build APK
-        run: flutter build apk --debug
+        if: steps.pat.outputs.have_pat == 'true'
+        run: flutter build apk --debug --flavor prod
 
   flutter-build-ios:
     name: Flutter Build iOS
@@ -83,32 +143,79 @@ jobs:
     needs: flutter-analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Probe plugins-pro read token
+        id: pat
+        env:
+          PLUGINS_PRO_PAT: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+        run: |
+          if [ -n "$PLUGINS_PRO_PAT" ]; then
+            echo "have_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_pat=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PLUGINS_PRO_READ_TOKEN not set — skipping iOS build."
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Checkout plugins-pro (private)
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/checkout@v4
         with:
           repository: nself-org/plugins-pro
           path: plugins-pro
-          token: ${{ secrets.GH_PAT_PLUGINS_PRO }}
+          token: ${{ secrets.PLUGINS_PRO_READ_TOKEN }}
+
+      - name: Link plugins-pro to expected relative path
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ln -sfn "$GITHUB_WORKSPACE/plugins-pro" "$GITHUB_WORKSPACE/../../plugins-pro"
+        working-directory: ${{ github.workspace }}
 
       - uses: subosito/flutter-action@v2
+        if: steps.pat.outputs.have_pat == 'true'
         with:
           channel: stable
 
+      # AppDelegate.swift links the libnclaw C-ABI exports
+      # (nclaw_set_low_power et al.) from core/src/mobile_ffi.rs. Build the
+      # Rust staticlib into an xcframework before pod install so the LibNClaw
+      # pod (mobile/ios/LibNClaw.podspec) has its vendored framework present.
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.pat.outputs.have_pat == 'true'
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - name: Cache Rust build
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-libnclaw-ios-${{ hashFiles('Cargo.lock', 'core/Cargo.toml') }}
+
+      - name: Build libnclaw xcframework
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ./scripts/build-ios.sh
+        working-directory: ${{ github.workspace }}
+
       - name: Install dependencies
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter pub get
 
       - name: Install iOS pods
+        if: steps.pat.outputs.have_pat == 'true'
         run: cd ios && pod install --repo-update
-        working-directory: app
 
       - name: Build iOS (no codesign)
+        if: steps.pat.outputs.have_pat == 'true'
         run: flutter build ios --debug --no-codesign
 
   # ============================================================
-  # Rust: libnclaw test + check on multiple platforms
+  # Rust: libnclaw test + check (crate lives in core/)
   # ============================================================
   libnclaw-test:
     name: libnclaw Test (${{ matrix.os }})
@@ -120,6 +227,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The crate's tauri-specta dev-dependency (-> tauri) links GTK/glib on
+      # Linux via pkg-config; install the system libraries before cargo runs.
+      - name: Install GTK/WebKit system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
+
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust build
@@ -128,27 +249,57 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            libs/libnclaw/target
-          key: ${{ runner.os }}-libnclaw-${{ hashFiles('libs/libnclaw/Cargo.lock') }}
+            core/target
+          key: ${{ runner.os }}-libnclaw-${{ hashFiles('core/Cargo.lock', 'Cargo.lock') }}
 
       - name: Run tests
         run: cargo test
-        working-directory: libs/libnclaw
+        working-directory: core
 
       - name: Check release build
         run: cargo check --release
-        working-directory: libs/libnclaw
+        working-directory: core
 
   # ============================================================
-  # Swift: desktop companion build check (macOS only)
+  # Desktop: Tauri companion build check (desktop/src-tauri)
   # ============================================================
-  swift-build:
-    name: Swift Desktop Build
-    runs-on: macos-latest
+  desktop-build:
+    name: Desktop Build Check
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Swift package
-        run: swift build
-        working-directory: desktop
+      - name: Install GTK/WebKit system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-desktop-tauri-${{ hashFiles('Cargo.lock') }}
+
+      # frontendDist (../dist) is produced by the JS build (pnpm build) at
+      # release time and is gitignored. cargo check runs tauri-build's codegen,
+      # which requires the directory to exist. Provide a minimal placeholder so
+      # the Rust crate type-checks without a full frontend build.
+      - name: Provide placeholder frontend dist
+        run: |
+          mkdir -p desktop/dist
+          [ -f desktop/dist/index.html ] || echo '<!doctype html><title>nclaw</title>' > desktop/dist/index.html
+
+      - name: Check Tauri desktop crate
+        run: cargo check --manifest-path desktop/src-tauri/Cargo.toml

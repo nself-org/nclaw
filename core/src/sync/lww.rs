@@ -131,7 +131,7 @@ pub fn resolve(events: &[EventEnvelope]) -> Option<EventEnvelope> {
 
     // Sort by HLC (timestamp ordering: wall → lamport → device_id).
     let mut sorted = events.to_vec();
-    sorted.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    sorted.sort_by_key(|e| e.timestamp);
 
     // Once a Delete arrives, tombstone wins for all events older than the delete.
     // Iterate; skip events older than any seen Delete.
@@ -232,7 +232,7 @@ mod tests {
             dev,
             Some(serde_json::json!({"name": "Alice"})),
         );
-        let result = resolve(&[ev.clone()]);
+        let result = resolve(std::slice::from_ref(&ev));
         assert!(result.is_some());
         assert_eq!(result.unwrap().event_id, ev.event_id);
     }

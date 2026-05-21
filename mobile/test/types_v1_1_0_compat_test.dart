@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nclaw/src/rust/api/types.dart';
+import 'package:nself_claw/src/rust/api/types.dart';
 
 void main() {
   group('Message v1.1.0 compatibility', () {
@@ -19,7 +19,11 @@ void main() {
       expect(roundTripped['conversation_id'], equals(fixture['conversation_id']));
       expect(roundTripped['role'], equals(fixture['role']));
       expect(roundTripped['content'], equals(fixture['content']));
-      expect(roundTripped['created_at'], equals(fixture['created_at']));
+      // toIso8601String() emits milliseconds; compare as instants, not strings.
+      expect(
+        DateTime.parse(roundTripped['created_at'] as String),
+        equals(DateTime.parse(fixture['created_at'] as String)),
+      );
     });
   });
 

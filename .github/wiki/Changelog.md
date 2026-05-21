@@ -13,6 +13,14 @@ All notable changes to nClaw clients are documented here.
 - **Bundle pricing UI**: in-app upgrade prompt shows ɳClaw bundle at $0.99/mo / $9.99/yr.
 - ɳClaw bundle expanded from 12 to 14 plugins (added mcp, knowledge-base).
 
+### Fixed
+
+- CI restored to green after the P101 monorepo restructure: corrected stale
+  `package:nclaw/` imports to `package:nself_claw/`, removed phantom pub
+  dependencies (`flutter_rust_bridge_codegen`, `nclaw_sdk`) that broke
+  `flutter pub get`, regenerated the per-locale localization files, and repaired
+  Rust workspace lint/test/CI configuration (MSRV, cargo-deny, security audit).
+
 ---
 
 ## v1.1.2 — 2026-05-15
