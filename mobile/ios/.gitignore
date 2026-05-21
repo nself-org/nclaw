@@ -27,6 +27,10 @@ Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
 
+# Rust libnclaw C-ABI core — built by scripts/build-ios.sh, vendored via
+# LibNClaw.podspec. Build artifact, not committed.
+libnclaw.xcframework/
+
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3

@@ -30,6 +30,11 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
 
+  # Vendored Rust libnclaw C-ABI core (xcframework). Provides the implementation
+  # of the FFI exports (nclaw_set_low_power et al.) that AppDelegate.swift links
+  # via Runner-Bridging-Header.h. Built by scripts/build-ios.sh before pod install.
+  pod 'LibNClaw', :path => '.'
+
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
     inherit! :search_paths

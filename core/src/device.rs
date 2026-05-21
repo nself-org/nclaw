@@ -482,7 +482,7 @@ static IOS_LOW_POWER_MODE: std::sync::atomic::AtomicBool =
 /// layer must check at runtime and call this to persist the flag in the Rust core.
 #[cfg(target_os = "ios")]
 pub fn ios_set_low_power(flag: bool) {
-    IOS_LOW_POWER_MODE.store(flag, Ordering::Relaxed);
+    IOS_LOW_POWER_MODE.store(flag, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// Probe the current iOS device and return hardware fingerprint.
@@ -620,7 +620,7 @@ pub fn probe_ios() -> Result<DeviceProbe, CoreError> {
     let arm64 = sysctl_u32("hw.optional.arm64").unwrap_or(1) == 1;
 
     // Read low-power mode flag (set via ios_set_low_power)
-    let low_power_mode = IOS_LOW_POWER_MODE.load(Ordering::Relaxed);
+    let low_power_mode = IOS_LOW_POWER_MODE.load(std::sync::atomic::Ordering::Relaxed);
 
     Ok(DeviceProbe {
         os: "ios".into(),

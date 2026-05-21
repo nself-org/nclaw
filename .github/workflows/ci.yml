@@ -178,6 +178,30 @@ jobs:
         with:
           channel: stable
 
+      # AppDelegate.swift links the libnclaw C-ABI exports
+      # (nclaw_set_low_power et al.) from core/src/mobile_ffi.rs. Build the
+      # Rust staticlib into an xcframework before pod install so the LibNClaw
+      # pod (mobile/ios/LibNClaw.podspec) has its vendored framework present.
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.pat.outputs.have_pat == 'true'
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - name: Cache Rust build
+        if: steps.pat.outputs.have_pat == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-libnclaw-ios-${{ hashFiles('Cargo.lock', 'core/Cargo.toml') }}
+
+      - name: Build libnclaw xcframework
+        if: steps.pat.outputs.have_pat == 'true'
+        run: ./scripts/build-ios.sh
+        working-directory: ${{ github.workspace }}
+
       - name: Install dependencies
         if: steps.pat.outputs.have_pat == 'true'
         run: flutter pub get
