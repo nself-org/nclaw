@@ -73,6 +73,17 @@ if ! grep -q "nclaw_set_low_power" "$nm_dump"; then
   exit 1
 fi
 
+# cargo names the staticlib liblibnclaw.a (crate "libnclaw" + cargo's "lib"
+# prefix). CocoaPods derives the linker flag from the xcframework's library
+# name by stripping the leading "lib", so liblibnclaw.a would yield -llibnclaw
+# while the generated OTHER_LDFLAGS expects -lnclaw. Stage each slice as
+# libnclaw.a so the xcframework LibraryPath is libnclaw.a and the flag matches.
+STAGE="$(mktemp -d)"
+trap 'rm -f "$nm_dump"; rm -rf "$STAGE"' EXIT
+mkdir -p "$STAGE/device" "$STAGE/sim"
+cp "$DEVICE_LIB" "$STAGE/device/libnclaw.a"
+cp "$SIM_LIB" "$STAGE/sim/libnclaw.a"
+
 # Remove stale xcframework before recreating — xcodebuild will fail otherwise.
 if [ -d "$OUTPUT" ]; then
   echo "[build-ios] Removing stale xcframework at $OUTPUT"
@@ -81,9 +92,9 @@ fi
 
 echo "[build-ios] Creating .xcframework..."
 xcodebuild -create-xcframework \
-  -library "$DEVICE_LIB" \
+  -library "$STAGE/device/libnclaw.a" \
   -headers "$INCLUDE_DIR" \
-  -library "$SIM_LIB" \
+  -library "$STAGE/sim/libnclaw.a" \
   -headers "$INCLUDE_DIR" \
   -output "$OUTPUT"
 
