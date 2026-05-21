@@ -127,9 +127,14 @@ jobs:
         if: steps.pat.outputs.have_pat == 'true'
         run: flutter pub get
 
+      # The app defines product flavors (dev/staging/prod) in
+      # android/app/build.gradle.kts, so a flavor must be selected. Without
+      # --flavor, Gradle's assembleDebug emits flavored outputs
+      # (app-prod-debug.apk etc.) and the Flutter tool fails looking for the
+      # unflavored app-debug.apk ("Gradle build failed to produce an .apk").
       - name: Build APK
         if: steps.pat.outputs.have_pat == 'true'
-        run: flutter build apk --debug
+        run: flutter build apk --debug --flavor prod
 
   flutter-build-ios:
     name: Flutter Build iOS
