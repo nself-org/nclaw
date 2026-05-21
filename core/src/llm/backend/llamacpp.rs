@@ -57,7 +57,7 @@ fn available_memory_bytes() -> Option<u64> {
         let s = std::fs::read_to_string("/proc/meminfo").ok()?;
         for line in s.lines() {
             if let Some(rest) = line.strip_prefix("MemAvailable:") {
-                let kb: u64 = rest.trim().split_whitespace().next()?.parse().ok()?;
+                let kb: u64 = rest.split_whitespace().next()?.parse().ok()?;
                 return Some(kb.saturating_mul(1024));
             }
         }
@@ -292,8 +292,11 @@ mod ffi_impl {
 
             let mut produced = 0usize;
             let mut so_far = String::new();
+            // KV-cache position counter, offset by the prompt length already in
+            // the batch — not a plain 0-based loop index, so enumerate doesn't fit.
             let mut n_cur = batch.n_tokens();
 
+            #[allow(clippy::explicit_counter_loop)]
             for _ in 0..opts.max_tokens {
                 // Sample at the position of the last decoded token.
                 // `sample()` also accepts the token internally (updates sampler state).

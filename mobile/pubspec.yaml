@@ -110,7 +110,8 @@ dev_dependencies:
   build_runner: ^2.4.0
   custom_lint: ^0.7.0
   riverpod_lint: ^2.6.0
-  flutter_rust_bridge_codegen: ^2.5.0
+  # flutter_rust_bridge_codegen is a cargo-installed CLI, not a pub.dev package —
+  # it must not be a Dart dependency (breaks `flutter pub get`).
 
 flutter_launcher_icons:
   ios: true
