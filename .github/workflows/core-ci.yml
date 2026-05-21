@@ -135,6 +135,12 @@ jobs:
   audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    # checks:write lets rustsec/audit-check post its check-run annotation;
+    # without it the action exits non-zero with "Resource not accessible by
+    # integration" even when no vulnerability is found.
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -146,9 +152,10 @@ jobs:
       - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Unmaintained advisories only — transitive, no vulnerability, no
-          # upgrade path. Kept in sync with core/deny.toml's ignore list.
-          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0384,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0436,RUSTSEC-2025-0052,RUSTSEC-2025-0075,RUSTSEC-2025-0080,RUSTSEC-2025-0081,RUSTSEC-2025-0098,RUSTSEC-2025-0100
+          # Unmaintained / unsound advisories only — transitive, no
+          # vulnerability, no upgrade path. Kept in sync with core/deny.toml's
+          # ignore list.
+          ignore: RUSTSEC-2024-0370,RUSTSEC-2024-0384,RUSTSEC-2024-0411,RUSTSEC-2024-0412,RUSTSEC-2024-0413,RUSTSEC-2024-0414,RUSTSEC-2024-0415,RUSTSEC-2024-0416,RUSTSEC-2024-0417,RUSTSEC-2024-0418,RUSTSEC-2024-0419,RUSTSEC-2024-0420,RUSTSEC-2024-0429,RUSTSEC-2024-0436,RUSTSEC-2025-0052,RUSTSEC-2025-0075,RUSTSEC-2025-0080,RUSTSEC-2025-0081,RUSTSEC-2025-0098,RUSTSEC-2025-0100
 
   deny:
     name: License Check

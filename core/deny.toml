@@ -50,21 +50,27 @@ wildcards = "allow"
 
 [advisories]
 # Security vulnerabilities and yanked crates remain hard failures.
-# The ignore list holds only "unmaintained" advisories (not vulnerabilities):
-# each is transitive through the Tauri GTK3/Linux backend (gtk-rs family,
-# async-std, instant, paste, unic-*, proc-macro-error) or the embedded-pg /
-# image stacks. None has a vulnerability or an available upgrade path; they
-# resolve only when the upstream crates update their own dependencies.
+# The ignore list holds only "unmaintained"/"unsound" advisories (not
+# vulnerabilities): each is transitive through the Tauri GTK3/Linux backend
+# (gtk-rs family, glib, async-std, instant, paste, unic-*, proc-macro-error) or
+# the embedded-pg / image stacks. None has a vulnerability or an available
+# upgrade path on the GTK3 toolchain (the glib unsound fix lands in 0.20, which
+# requires a gtk4 migration); they resolve only when the upstream crates update
+# their own dependencies. Kept in sync with .github/workflows/core-ci.yml.
 ignore = [
     "RUSTSEC-2024-0370", # proc-macro-error unmaintained
     "RUSTSEC-2024-0384", # instant unmaintained
+    "RUSTSEC-2024-0411", # gdkwayland-sys gtk3 binding unmaintained
     "RUSTSEC-2024-0412", # gtk-rs gtk3 binding unmaintained
     "RUSTSEC-2024-0413", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0414", # gdkx11-sys gtk3 binding unmaintained
     "RUSTSEC-2024-0415", # gtk-rs gtk3 binding unmaintained
     "RUSTSEC-2024-0416", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0417", # gdkx11 gtk3 binding unmaintained
     "RUSTSEC-2024-0418", # gtk-rs gtk3 binding unmaintained
     "RUSTSEC-2024-0419", # gtk-rs gtk3 binding unmaintained
     "RUSTSEC-2024-0420", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0429", # glib <0.20 VariantStrIter unsound (transitive via tauri gtk3)
     "RUSTSEC-2024-0436", # paste unmaintained
     "RUSTSEC-2025-0052", # async-std discontinued
     "RUSTSEC-2025-0075", # unic-char-range unmaintained
