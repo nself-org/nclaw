@@ -81,11 +81,11 @@ void main() {
   group('Semantics — Headers and Text', () {
     testWidgets('heading text is marked as header', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: Semantics(
               header: true,
-              child: Text('ɳClaw Settings'),
+              child: const Text('ɳClaw Settings'),
             ),
           ),
         ),
@@ -192,11 +192,11 @@ void main() {
   group('Semantics — Live regions and hints', () {
     testWidgets('live region flag set on status text', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: Semantics(
               liveRegion: true,
-              child: Text('Connection restored'),
+              child: const Text('Connection restored'),
             ),
           ),
         ),
@@ -242,7 +242,8 @@ void main() {
         ),
       );
 
-      final node = tester.getSemantics(find.byType(TextField));
+      // The text-field semantics flags live on the inner EditableText node.
+      final node = tester.getSemantics(find.byType(EditableText));
       expect(node.hasFlag(SemanticsFlag.isTextField), isTrue);
     });
 
@@ -258,7 +259,8 @@ void main() {
         ),
       );
 
-      final node = tester.getSemantics(find.byType(TextField));
+      // The text-field semantics flags live on the inner EditableText node.
+      final node = tester.getSemantics(find.byType(EditableText));
       expect(node.hasFlag(SemanticsFlag.isTextField), isTrue);
       expect(node.hasFlag(SemanticsFlag.isObscured), isTrue);
     });

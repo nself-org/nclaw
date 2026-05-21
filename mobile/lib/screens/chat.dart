@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nclaw/src/rust/api/types.dart';
-import 'package:nclaw/services/sync_service.dart';
-import 'package:nclaw/services/db_service.dart';
+import 'package:nself_claw/src/rust/api/types.dart';
+import 'package:nself_claw/services/sync_service.dart';
+import 'package:nself_claw/services/db_service.dart';
 
 /// ChatScreen — minimal chat UI using FRB Rust-backed types.
 class ChatScreen extends StatefulWidget {
@@ -40,9 +40,9 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
     final msg = Message(
       id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
+      conversationId: widget.topic,
       content: text,
-      topic: widget.topic,
-      timestamp: DateTime.now(),
+      createdAt: DateTime.now(),
       role: 'user',
     );
     await _dbService.storeMessage(msg);
@@ -66,7 +66,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       return ListTile(
                         title: Text(msg.content),
                         subtitle: Text(msg.role),
-                        trailing: Text(msg.timestamp.toString().split('.')[0]),
+                        trailing: Text(msg.createdAt.toString().split('.')[0]),
                       );
                     },
                   ),

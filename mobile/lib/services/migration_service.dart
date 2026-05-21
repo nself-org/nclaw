@@ -1,4 +1,4 @@
-import 'package:nclaw/src/rust/api/types.dart';
+import 'package:nself_claw/src/rust/api/types.dart';
 import 'db_service.dart';
 
 /// MigrationService — S20.T11 v1.1.0 → v1.1.1 mobile data migration.

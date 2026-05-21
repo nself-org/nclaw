@@ -21,11 +21,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # 1.89 is the MSRV: the dependency tree requires it — darling/home/image
-        # need 1.88, and specta (via tauri-specta dev-dep) uses std::fmt::from_fn,
-        # stabilized in 1.89.
+        # 1.91 is the MSRV: specta (via the tauri-specta dev-dep) uses the
+        # debug_closure_helpers feature (std::fmt::from_fn), stabilized in 1.91.
         os: [macos-14, ubuntu-latest, windows-latest]
-        rust: [stable, "1.89"]
+        rust: [stable, "1.91"]
     steps:
       - uses: actions/checkout@v4
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 /// Upgrade prompt configuration from the backend
@@ -57,23 +58,15 @@ class _UpgradeNudgeState extends State<UpgradeNudge> {
   /// Check if upgrade prompt should be shown based on config state.
   /// Single-fire: once shown in this session, never show again.
   Future<void> _checkShouldShow() async {
-    if (_sessionShown) return
-    _sessionShown = true
+    if (_sessionShown) return;
+    _sessionShown = true;
 
     try {
-      // TODO (S15.T17): Replace stub with actual invoke to native method
-      // final configJson = await UpgradeService.getUpgradeConfig()
-      // final config = UpgradeConfig.fromJson(configJson)
-
-      // For now, assume config allows showing
-      // In production, check:
-      // - config.upgradePromptDisabled
-      // - config.lastUpgradePromptAt (defer if < 30 days)
-
-      if (!mounted) return
-      // Prompt is shown by parent widget when ready
+      // Native upgrade-config wiring lands in S15.T17; until then the prompt is
+      // shown by the parent widget when ready.
+      if (!mounted) return;
     } catch (e) {
-      debugPrint('Failed to check upgrade config: $e')
+      debugPrint('Failed to check upgrade config: $e');
     }
   }
 
@@ -172,7 +165,7 @@ class _UpgradeNudgeState extends State<UpgradeNudge> {
                 child: const Text('Yes, upgrade'),
               ),
             ],
-    )
+    );
   }
 }
 

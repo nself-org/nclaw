@@ -1,4 +1,4 @@
-import 'package:nclaw/src/rust/api/types.dart';
+import 'package:nself_claw/src/rust/api/types.dart';
 
 /// SyncService wraps Rust core sync FFI.
 ///
