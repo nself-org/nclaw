@@ -5,7 +5,6 @@
 /// DSN injected via --dart-define=SENTRY_DSN=...
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class CrashReportingService {
