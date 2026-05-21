@@ -5,6 +5,9 @@
 /// Taps deep-link via claw://topic/{id}.
 package io.nself.claw
 
+// R is generated under the app namespace (com.nself.claw), not this file's
+// package (io.nself.claw), so import it explicitly.
+import com.nself.claw.R
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
