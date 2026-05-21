@@ -75,11 +75,23 @@ impl KdfProfile {
     fn params(self) -> ProfileParams {
         match self {
             // OWASP minimum is 19456 KiB; MobileLow uses 32768 KiB (32 MiB) — 1.7× headroom.
-            KdfProfile::MobileLow => ProfileParams { m_cost_kib: 32 * 1024, t_cost: 2, p_cost: 1 },
+            KdfProfile::MobileLow => ProfileParams {
+                m_cost_kib: 32 * 1024,
+                t_cost: 2,
+                p_cost: 1,
+            },
             // RFC 9106 recommended minimum is 65536 KiB (64 MiB); MobileStd meets it exactly.
-            KdfProfile::MobileStd => ProfileParams { m_cost_kib: 64 * 1024, t_cost: 3, p_cost: 1 },
+            KdfProfile::MobileStd => ProfileParams {
+                m_cost_kib: 64 * 1024,
+                t_cost: 3,
+                p_cost: 1,
+            },
             // Desktop has headroom; 128 MiB + 4 lanes makes GPU cracking impractical.
-            KdfProfile::Desktop => ProfileParams { m_cost_kib: 128 * 1024, t_cost: 3, p_cost: 4 },
+            KdfProfile::Desktop => ProfileParams {
+                m_cost_kib: 128 * 1024,
+                t_cost: 3,
+                p_cost: 4,
+            },
         }
     }
 }
@@ -154,16 +166,18 @@ impl KdfSidecar {
         let sidecar_path = Self::path_for(db_path);
         let toml_str = toml::to_string_pretty(self)
             .map_err(|e| CoreError::Other(format!("kdf sidecar serialize: {e}")))?;
-        std::fs::write(&sidecar_path, toml_str)
-            .map_err(|e| CoreError::Other(format!("kdf sidecar write {}: {e}", sidecar_path.display())))?;
+        std::fs::write(&sidecar_path, toml_str).map_err(|e| {
+            CoreError::Other(format!("kdf sidecar write {}: {e}", sidecar_path.display()))
+        })?;
         Ok(())
     }
 
     /// Load sidecar from disk.
     pub fn load(db_path: &Path) -> Result<Self, CoreError> {
         let sidecar_path = Self::path_for(db_path);
-        let toml_str = std::fs::read_to_string(&sidecar_path)
-            .map_err(|e| CoreError::Other(format!("kdf sidecar read {}: {e}", sidecar_path.display())))?;
+        let toml_str = std::fs::read_to_string(&sidecar_path).map_err(|e| {
+            CoreError::Other(format!("kdf sidecar read {}: {e}", sidecar_path.display()))
+        })?;
         let sidecar: KdfSidecar = toml::from_str(&toml_str)
             .map_err(|e| CoreError::Other(format!("kdf sidecar parse: {e}")))?;
         if sidecar.version != 1 {
@@ -311,7 +325,10 @@ mod tests {
     fn test_derive_key_is_deterministic() {
         let key1 = derive_key(b"password", SALT, KdfProfile::MobileStd).expect("first");
         let key2 = derive_key(b"password", SALT, KdfProfile::MobileStd).expect("second");
-        assert_eq!(key1, key2, "Argon2id must be deterministic for the same inputs");
+        assert_eq!(
+            key1, key2,
+            "Argon2id must be deterministic for the same inputs"
+        );
     }
 
     #[test]
@@ -326,7 +343,10 @@ mod tests {
     fn test_derive_key_differs_on_passphrase() {
         let key1 = derive_key(b"password1", SALT, KdfProfile::MobileStd).expect("key1");
         let key2 = derive_key(b"password2", SALT, KdfProfile::MobileStd).expect("key2");
-        assert_ne!(key1, key2, "Different passphrases must produce different keys");
+        assert_ne!(
+            key1, key2,
+            "Different passphrases must produce different keys"
+        );
     }
 
     #[test]
@@ -338,7 +358,11 @@ mod tests {
     #[test]
     fn test_derive_key_all_profiles_succeed() {
         // All three profiles must succeed — exercises profile.params() for each branch.
-        for profile in [KdfProfile::MobileLow, KdfProfile::MobileStd, KdfProfile::Desktop] {
+        for profile in [
+            KdfProfile::MobileLow,
+            KdfProfile::MobileStd,
+            KdfProfile::Desktop,
+        ] {
             let key = derive_key(b"password", SALT, profile)
                 .unwrap_or_else(|e| panic!("derive_key failed for {profile:?}: {e}"));
             assert_eq!(key.len(), 32);
@@ -436,10 +460,10 @@ p_cost = 1
             .save(&db_path)
             .expect("save");
 
-        let key_direct = derive_key(b"passphrase", SALT, KdfProfile::MobileStd)
-            .expect("direct derive");
-        let key_sidecar = derive_key_from_sidecar(b"passphrase", SALT, &db_path)
-            .expect("sidecar derive");
+        let key_direct =
+            derive_key(b"passphrase", SALT, KdfProfile::MobileStd).expect("direct derive");
+        let key_sidecar =
+            derive_key_from_sidecar(b"passphrase", SALT, &db_path).expect("sidecar derive");
 
         // In test mode both paths use test_params, so they must match.
         assert_eq!(

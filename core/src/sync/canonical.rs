@@ -276,8 +276,7 @@ mod tests {
         let c2 = canonical_json(&v2);
         assert_eq!(c1, c2);
         // Verify exact expected canonical form.
-        let expected =
-            r#"{"a_field":{"deep":{"a":1,"b":2,"c":3}},"m_field":null,"z_field":[1,2,{"nested_a":"u","nested_b":"v"}]}"#;
+        let expected = r#"{"a_field":{"deep":{"a":1,"b":2,"c":3}},"m_field":null,"z_field":[1,2,{"nested_a":"u","nested_b":"v"}]}"#;
         assert_eq!(std::str::from_utf8(&c1).unwrap(), expected);
     }
 
@@ -302,7 +301,8 @@ mod tests {
     #[test]
     fn round_trip_via_serde_json_parse() {
         // canonical output must be valid JSON parsable back to identical Value.
-        let v = json!({"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "count": 2});
+        let v =
+            json!({"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "count": 2});
         let canon = canonical_json(&v);
         let reparsed: Value = serde_json::from_slice(&canon).unwrap();
         assert_eq!(reparsed, v);

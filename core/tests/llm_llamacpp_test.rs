@@ -38,7 +38,9 @@ fn opts(max_tokens: usize) -> GenOpts {
 
 /// Resolve the test model path or `None` to signal "skip".
 fn model_path() -> Option<PathBuf> {
-    std::env::var("NCLAW_TEST_GGUF_PATH").ok().map(PathBuf::from)
+    std::env::var("NCLAW_TEST_GGUF_PATH")
+        .ok()
+        .map(PathBuf::from)
 }
 
 // ---------------------------------------------------------------------------
@@ -130,9 +132,9 @@ fn memory_guard_rejects_oversized_model() {
                 "memory_guard_rejects_oversized_model: no memory probe; got ModelLoadFailed({reason})"
             );
         }
-        other => panic!(
-            "expected InsufficientMemory or ModelLoadFailed for 1EiB file, got {other:?}"
-        ),
+        other => {
+            panic!("expected InsufficientMemory or ModelLoadFailed for 1EiB file, got {other:?}")
+        }
     }
 }
 
@@ -234,7 +236,9 @@ async fn stop_sequence_truncates_generation() {
 #[tokio::test]
 async fn sampling_temperature_zero_is_deterministic() {
     let Some(path) = model_path() else {
-        eprintln!("skipping sampling_temperature_zero_is_deterministic: NCLAW_TEST_GGUF_PATH unset");
+        eprintln!(
+            "skipping sampling_temperature_zero_is_deterministic: NCLAW_TEST_GGUF_PATH unset"
+        );
         return;
     };
     let mut backend = LlamaCpp::new().expect("LlamaCpp::new");

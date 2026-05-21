@@ -198,11 +198,12 @@ mod ffi_impl {
             self.model = None;
 
             let model_params = LlamaModelParams::default().with_n_gpu_layers(self.n_gpu_layers);
-            let model = LlamaModel::load_from_file(&self.backend, path, &model_params).map_err(
-                |e| LlmError::ModelLoadFailed {
-                    reason: format!("load_from_file: {e}"),
-                },
-            )?;
+            let model =
+                LlamaModel::load_from_file(&self.backend, path, &model_params).map_err(|e| {
+                    LlmError::ModelLoadFailed {
+                        reason: format!("load_from_file: {e}"),
+                    }
+                })?;
             self.model = Some(model);
             Ok(())
         }
@@ -349,9 +350,8 @@ mod ffi_impl {
                 };
                 let res = self.decode_with(&prompt, &opts, |piece| {
                     // If the receiver was dropped, abort the decode loop.
-                    tx.blocking_send(Ok(piece)).map_err(|_| {
-                        LlmError::InternalError("stream receiver dropped".into())
-                    })
+                    tx.blocking_send(Ok(piece))
+                        .map_err(|_| LlmError::InternalError("stream receiver dropped".into()))
                 });
                 if let Err(e) = res {
                     send_err(e);
@@ -392,7 +392,9 @@ mod ffi_impl {
 
             let ctx_params = LlamaContextParams::default()
                 // SAFETY: 512 is a compile-time non-zero constant.
-                .with_n_ctx(Some(std::num::NonZeroU32::new(512).expect("512 is non-zero")))
+                .with_n_ctx(Some(
+                    std::num::NonZeroU32::new(512).expect("512 is non-zero"),
+                ))
                 .with_embeddings(true);
             let mut ctx = model
                 .new_context(&self.backend, ctx_params)

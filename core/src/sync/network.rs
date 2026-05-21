@@ -28,9 +28,7 @@
 
 use crate::error::{CoreError, SyncError, TransportError};
 use crate::sync::lww::EventEnvelope;
-use crate::sync::retry::{
-    is_retryable_status, parse_retry_after, RetryDecision, RetryPolicy,
-};
+use crate::sync::retry::{is_retryable_status, parse_retry_after, RetryDecision, RetryPolicy};
 use crate::sync::snapshot::{SnapshotRequest, SnapshotResponse};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -259,7 +257,9 @@ impl SyncNetwork {
             .json(req)
             .send()
             .await
-            .map_err(|e| CoreError::Transport(TransportError::Network(format!("push send: {e}"))))?;
+            .map_err(|e| {
+                CoreError::Transport(TransportError::Network(format!("push send: {e}")))
+            })?;
 
         let status = resp.status();
         if !status.is_success() {
@@ -283,7 +283,9 @@ impl SyncNetwork {
             .json(req)
             .send()
             .await
-            .map_err(|e| CoreError::Transport(TransportError::Network(format!("pull send: {e}"))))?;
+            .map_err(|e| {
+                CoreError::Transport(TransportError::Network(format!("pull send: {e}")))
+            })?;
         if !resp.status().is_success() {
             return Err(CoreError::Transport(TransportError::Network(format!(
                 "pull http {}",
@@ -296,10 +298,7 @@ impl SyncNetwork {
     }
 
     /// POST a snapshot request to `{server_url}/sync/snapshot`.
-    pub async fn snapshot(
-        &self,
-        req: &SnapshotRequest,
-    ) -> Result<SnapshotResponse, CoreError> {
+    pub async fn snapshot(&self, req: &SnapshotRequest) -> Result<SnapshotResponse, CoreError> {
         let url = format!("{}/sync/snapshot", self.server_url);
         let resp = self
             .client
@@ -309,16 +308,18 @@ impl SyncNetwork {
             .json(req)
             .send()
             .await
-            .map_err(|e| CoreError::Transport(TransportError::Network(format!("snapshot send: {e}"))))?;
+            .map_err(|e| {
+                CoreError::Transport(TransportError::Network(format!("snapshot send: {e}")))
+            })?;
         if !resp.status().is_success() {
             return Err(CoreError::Transport(TransportError::Network(format!(
                 "snapshot http {}",
                 resp.status().as_u16()
             ))));
         }
-        resp.json::<SnapshotResponse>()
-            .await
-            .map_err(|e| CoreError::Transport(TransportError::Network(format!("snapshot decode: {e}"))))
+        resp.json::<SnapshotResponse>().await.map_err(|e| {
+            CoreError::Transport(TransportError::Network(format!("snapshot decode: {e}")))
+        })
     }
 
     // (no helpers between methods — `map_push_status` lives at module scope below)
@@ -640,9 +641,7 @@ impl SyncNetwork {
             let code = status.as_u16();
             if status.is_success() {
                 return resp.json::<SnapshotResponse>().await.map_err(|e| {
-                    CoreError::Transport(TransportError::Network(format!(
-                        "snapshot decode: {e}"
-                    )))
+                    CoreError::Transport(TransportError::Network(format!("snapshot decode: {e}")))
                 });
             }
             if is_retryable_status(code) && policy.should_retry(attempt) == RetryDecision::Retry {
@@ -841,7 +840,10 @@ mod tests {
 
     #[test]
     fn map_push_status_403_is_sync_invalid_state() {
-        match map_push_status(403, r#"{"error":"device_id does not match token","status":403}"#) {
+        match map_push_status(
+            403,
+            r#"{"error":"device_id does not match token","status":403}"#,
+        ) {
             CoreError::Sync(SyncError::InvalidState(m)) => {
                 assert!(m.contains("403"));
                 assert!(m.contains("forbidden"));

@@ -7,9 +7,7 @@
 //!   `{"type":"auth","token":"<JWT>"}`
 
 use httpmock::prelude::*;
-use libnclaw::sync::network::{
-    AckRequest, AuthFrame, PullRequest, PushRequest, SyncNetwork,
-};
+use libnclaw::sync::network::{AckRequest, AuthFrame, PullRequest, PushRequest, SyncNetwork};
 use libnclaw::sync::snapshot::SnapshotRequest;
 
 const TEST_JWT: &str = "eyJhbGciOiJIUzI1NiJ9.test_payload.test_sig";
@@ -25,7 +23,8 @@ async fn push_sends_jwt_in_authorization_header_not_url() {
                 // V04-F04: the URL must not contain the token at all.
                 .matches(|req| {
                     let url_str = format!("{:?}", req);
-                    !url_str.contains("token=") && !url_str.contains(TEST_JWT.split('.').next().unwrap_or(""))
+                    !url_str.contains("token=")
+                        && !url_str.contains(TEST_JWT.split('.').next().unwrap_or(""))
                         || !req
                             .query_params
                             .as_ref()
@@ -168,10 +167,7 @@ fn auth_frame_is_first_frame_payload_for_websocket() {
     assert_eq!(frame.token, TEST_JWT);
     let json = frame.to_json();
     // Server-side expected wire format (must match nself-sync handleSubscribe decoder).
-    assert_eq!(
-        json,
-        format!(r#"{{"type":"auth","token":"{}"}}"#, TEST_JWT)
-    );
+    assert_eq!(json, format!(r#"{{"type":"auth","token":"{}"}}"#, TEST_JWT));
 }
 
 #[test]

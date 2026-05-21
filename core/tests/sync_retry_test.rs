@@ -19,12 +19,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 fn test_policy() -> RetryPolicy {
-    RetryPolicy::new(
-        Duration::from_millis(1),
-        2.0,
-        Duration::from_millis(4),
-        5,
-    )
+    RetryPolicy::new(Duration::from_millis(1), 2.0, Duration::from_millis(4), 5)
 }
 
 fn empty_push_req() -> PushRequest {
@@ -102,7 +97,9 @@ async fn push_with_retry_honors_retry_after_header() {
     let throttle_mock = server
         .mock_async(|when, then| {
             when.method(POST).path("/sync/push");
-            then.status(429).header("Retry-After", "0").body("throttled");
+            then.status(429)
+                .header("Retry-After", "0")
+                .body("throttled");
         })
         .await;
     let strict = RetryPolicy::new(
@@ -137,7 +134,8 @@ async fn push_with_retry_does_not_retry_on_non_retryable_4xx() {
     let mock = server
         .mock_async(|when, then| {
             when.method(POST).path("/sync/push");
-            then.status(400).body(r#"{"error":"bad request","status":400}"#);
+            then.status(400)
+                .body(r#"{"error":"bad request","status":400}"#);
         })
         .await;
     let client = SyncNetwork::new(server.url(""), "jwt");

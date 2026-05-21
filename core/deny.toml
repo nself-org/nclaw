@@ -1,0 +1,63 @@
+# cargo-deny configuration for nclaw-core.
+#
+# Purpose: gate the dependency graph on license, advisory, ban, and source policy.
+# Without this file cargo-deny falls back to built-in defaults that reject every
+# license (including MIT/Apache-2.0), which is why the License Check job failed.
+#
+# Policy: allow the standard permissive / public-domain licenses that the entire
+# dependency tree resolves to (verified via `cargo deny check licenses` against
+# Cargo.lock). All entries below are actually present in the graph; nothing is
+# added speculatively. Copyleft families (GPL/AGPL/SSPL) remain disallowed by
+# omission, matching nClaw's MIT distribution.
+
+[graph]
+all-features = true
+
+[licenses]
+# SPDX expressions that are acceptable for a permissively-licensed product.
+# Every license here is present in the resolved dependency graph.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-1-Clause",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "ISC",
+    "Zlib",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "CC0-1.0",
+    "MPL-2.0",
+    "LGPL-2.1-or-later",
+    # OSI-approved permissive license used by the optional embedded-pg feature
+    # (postgresql_embedded family). Functionally equivalent to BSD/MIT.
+    "PostgreSQL",
+]
+# Confidence threshold for detecting a license from a text file (0.0 - 1.0).
+# allo-isolate has no SPDX field in its manifest but ships an Apache-2.0 LICENSE
+# file; the detector resolves it from the file text above this threshold.
+confidence-threshold = 0.8
+
+[bans]
+# Duplicate versions of a crate are common and acceptable in a large async/crypto
+# tree; warn rather than fail so the License Check job stays focused on licensing.
+multiple-versions = "warn"
+wildcards = "allow"
+
+[advisories]
+# Security vulnerabilities and yanked crates remain hard failures (cargo-deny
+# defaults). "unmaintained = workspace" scopes the unmaintained check to crates
+# we depend on directly, so it stays actionable: transitive unmaintained notices
+# from the Tauri GTK3/Linux backend (gtk-rs family, async-std, instant, paste,
+# unic-*, proc-macro-error) do not fail CI because they have no upgrade path and
+# carry no vulnerability — they resolve only when Tauri updates its own tree.
+unmaintained = "workspace"
+ignore = []
+
+[sources]
+# Only allow crates.io as a registry source.
+unknown-registry = "deny"
+unknown-git = "deny"

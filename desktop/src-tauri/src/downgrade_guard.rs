@@ -31,10 +31,7 @@ impl std::error::Error for DowngradeError {}
 /// Returns `Err(DowngradeError)` when `offered_version <= current_version`.
 ///
 /// Both strings must be valid semver (e.g. "1.1.2", "2.0.0-beta.1").
-pub fn check_version(
-    current_version: &str,
-    offered_version: &str,
-) -> Result<(), DowngradeError> {
+pub fn check_version(current_version: &str, offered_version: &str) -> Result<(), DowngradeError> {
     let current = Version::parse(current_version).unwrap_or_else(|_| Version::new(0, 0, 0));
     let offered = Version::parse(offered_version).unwrap_or_else(|_| Version::new(0, 0, 0));
 
@@ -137,6 +134,9 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("1.1.1"), "offered missing from: {msg}");
         assert!(msg.contains("1.1.2"), "current missing from: {msg}");
-        assert!(msg.contains("downgrade rejected"), "prefix missing from: {msg}");
+        assert!(
+            msg.contains("downgrade rejected"),
+            "prefix missing from: {msg}"
+        );
     }
 }

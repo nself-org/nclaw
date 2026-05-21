@@ -21,10 +21,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # 1.85 is the MSRV: the dependency tree (idna_adapter and others) now
+        # requires the edition2024 Cargo feature, stabilized in Rust 1.85.
         os: [macos-14, ubuntu-latest, windows-latest]
-        rust: [stable, 1.80]
+        rust: [stable, "1.85"]
     steps:
       - uses: actions/checkout@v4
+
+      # Linux desktop dev-dependency (tauri-specta -> tauri) links GTK/glib via
+      # pkg-config; install the system libraries before any cargo build.
+      - name: Install GTK/WebKit system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
@@ -73,6 +89,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # --all-targets compiles test/bench targets that pull the tauri-specta
+      # dev-dependency (-> tauri -> glib-sys/gobject-sys), which links GTK via
+      # pkg-config. Install the system libraries first.
+      - name: Install GTK/WebKit system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev \
+            pkg-config
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -103,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rustsec/audit-check-action@v1
+      - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 

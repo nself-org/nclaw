@@ -65,8 +65,7 @@ const PROFILES: &[Profile] = &[
 ];
 
 fn measure(m_cost_kib: u32, t_cost: u32, p_cost: u32) -> Duration {
-    let params = Params::new(m_cost_kib, t_cost, p_cost, Some(32))
-        .expect("valid argon2 params");
+    let params = Params::new(m_cost_kib, t_cost, p_cost, Some(32)).expect("valid argon2 params");
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 
     let mut durations: Vec<Duration> = (0..RUNS)
@@ -115,13 +114,22 @@ fn main() {
             recommended = Some(profile.name);
         }
 
-        results.push((profile.name, profile.m_cost_kib, profile.t_cost, profile.p_cost, ms));
+        results.push((
+            profile.name,
+            profile.m_cost_kib,
+            profile.t_cost,
+            profile.p_cost,
+            ms,
+        ));
     }
 
     println!();
 
     let recommended_name = recommended.unwrap_or("mobile-low");
-    println!("Recommended profile for this hardware: {}", recommended_name);
+    println!(
+        "Recommended profile for this hardware: {}",
+        recommended_name
+    );
 
     // Find the winning profile's params
     let (_, m, t, p, ms) = results
@@ -169,13 +177,18 @@ p_cost = 4
 
     println!("{}", toml_output);
 
-    std::fs::write("argon2-calibration.toml", &toml_output)
-        .expect("write argon2-calibration.toml");
+    std::fs::write("argon2-calibration.toml", &toml_output).expect("write argon2-calibration.toml");
 
     println!("Written: argon2-calibration.toml");
     println!();
-    println!("Recommended profile `{}` derives in {} ms on this device.", recommended_name, ms);
-    println!("Use KdfProfile::{} in your nclaw mobile/desktop build.", profile_enum(recommended_name));
+    println!(
+        "Recommended profile `{}` derives in {} ms on this device.",
+        recommended_name, ms
+    );
+    println!(
+        "Use KdfProfile::{} in your nclaw mobile/desktop build.",
+        profile_enum(recommended_name)
+    );
 }
 
 fn profile_enum(name: &str) -> &str {

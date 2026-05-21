@@ -132,7 +132,9 @@ fn compute_expected_hex(passphrase: &[u8], salt: &[u8], m: u32, t: u32, p: u32) 
     let params = Params::new(m, t, p, Some(32)).expect("params");
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let mut out = [0u8; 32];
-    argon2.hash_password_into(passphrase, salt, &mut out).expect("golden hash");
+    argon2
+        .hash_password_into(passphrase, salt, &mut out)
+        .expect("golden hash");
     out.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
@@ -142,10 +144,17 @@ fn kat_determinism_across_profiles() {
     let p = b"stability_passphrase";
     let s = b"stability_salt16";
 
-    for profile in [KdfProfile::MobileLow, KdfProfile::MobileStd, KdfProfile::Desktop] {
+    for profile in [
+        KdfProfile::MobileLow,
+        KdfProfile::MobileStd,
+        KdfProfile::Desktop,
+    ] {
         let k1 = derive_key(p, s, profile).expect("first call");
         let k2 = derive_key(p, s, profile).expect("second call");
-        assert_eq!(k1, k2, "derive_key not deterministic for profile {profile:?}");
+        assert_eq!(
+            k1, k2,
+            "derive_key not deterministic for profile {profile:?}"
+        );
     }
 }
 
@@ -159,7 +168,16 @@ fn kat_profile_isolation() {
     let std = derive_key(p, s, KdfProfile::MobileStd).expect("std");
     let desk = derive_key(p, s, KdfProfile::Desktop).expect("desktop");
 
-    assert_ne!(low, std, "mobile-low and mobile-std must produce different keys");
-    assert_ne!(std, desk, "mobile-std and desktop must produce different keys");
-    assert_ne!(low, desk, "mobile-low and desktop must produce different keys");
+    assert_ne!(
+        low, std,
+        "mobile-low and mobile-std must produce different keys"
+    );
+    assert_ne!(
+        std, desk,
+        "mobile-std and desktop must produce different keys"
+    );
+    assert_ne!(
+        low, desk,
+        "mobile-low and desktop must produce different keys"
+    );
 }

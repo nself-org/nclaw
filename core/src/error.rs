@@ -75,7 +75,9 @@ pub enum LlmError {
     #[error("Internal error: {0}")]
     InternalError(String),
 
-    #[error("Insufficient memory to load model: required {required} bytes, available {available} bytes")]
+    #[error(
+        "Insufficient memory to load model: required {required} bytes, available {available} bytes"
+    )]
     InsufficientMemory { required: u64, available: u64 },
 
     #[error("Model load failed: {reason}")]
@@ -184,7 +186,9 @@ pub enum TransportError {
     /// is the most recent HTTP status code observed (or `0` for non-HTTP
     /// failures such as connect/timeout). `last_message` carries the trailing
     /// error string for diagnostics.
-    #[error("retry exhausted after {attempts} attempts (last_status={last_status}): {last_message}")]
+    #[error(
+        "retry exhausted after {attempts} attempts (last_status={last_status}): {last_message}"
+    )]
     RetryExhausted {
         attempts: u32,
         last_status: u16,
