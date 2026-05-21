@@ -303,6 +303,12 @@ mod ffi_impl {
                     break;
                 }
 
+                // token_to_str is deprecated in favor of token_to_piece, but the
+                // replacement requires an encoding_rs::Decoder and changes the
+                // UTF-8 boundary handling. Detokenization is correctness-critical
+                // for streamed output, so the migration is tracked separately;
+                // the deprecated call is functionally correct here.
+                #[allow(deprecated)]
                 let piece = model
                     .token_to_str(new_token, llama_cpp_2::model::Special::Tokenize)
                     .map_err(|e| LlmError::InternalError(format!("token_to_str: {e}")))?;

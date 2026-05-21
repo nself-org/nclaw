@@ -19,12 +19,11 @@ async fn test_local_transport_basic() {
     let resp = transport.execute(&req).await.expect("local should succeed");
     assert_eq!(resp.source, "local");
     assert!(resp.text.contains("local stub"));
-    assert!(resp.latency_ms >= 0);
 }
 
 #[tokio::test]
 async fn test_server_mux_transport() {
-    let server = MockServer::new_async().await;
+    let server = MockServer::start_async().await;
 
     // Mock the mux endpoint
     let mock = server
@@ -59,7 +58,7 @@ async fn test_server_mux_transport() {
 
 #[tokio::test]
 async fn test_frontier_anthropic() {
-    let server = MockServer::new_async().await;
+    let server = MockServer::start_async().await;
 
     let mock = server
         .mock_async(|when, then| {

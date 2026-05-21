@@ -42,15 +42,15 @@ impl Cursor {
     }
 }
 
-/// In-process cursor persistence API.
-///
-/// The DAL-backed (sqlite / postgres) implementation lands in ticket S17.T07;
-/// these symbols provide the stable interface that the rest of the sync state
-/// machine builds against. The current in-memory behavior is deliberate and
-/// covered by tests — it serializes the cursor (validating the serde shape)
-/// and returns `Ok(())` / `Ok(None)`. Tests asserting first-sync semantics
-/// (no cursor present for a fresh device) continue to pass once the DAL is
-/// wired up.
+// In-process cursor persistence API.
+//
+// The DAL-backed (sqlite / postgres) implementation lands in ticket S17.T07;
+// these symbols provide the stable interface that the rest of the sync state
+// machine builds against. The current in-memory behavior is deliberate and
+// covered by tests — it serializes the cursor (validating the serde shape)
+// and returns `Ok(())` / `Ok(None)`. Tests asserting first-sync semantics
+// (no cursor present for a fresh device) continue to pass once the DAL is
+// wired up.
 
 /// Save a cursor to local persistent storage.
 ///

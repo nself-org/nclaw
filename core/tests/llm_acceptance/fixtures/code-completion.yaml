@@ -11,6 +11,8 @@ prompt: "Complete this Rust function: fn add(a: i32, b: i32) -> i32 {"
 model: stub-v0
 max_tokens: 32
 temperature: 0.0
-min_output_chars: 5
+# The canonical completion body is `a + b\n}` — 4 non-whitespace chars
+# (a, +, b, }). min_output_chars counts non-whitespace, so the floor is 4.
+min_output_chars: 4
 expected_substrings:
   - a + b

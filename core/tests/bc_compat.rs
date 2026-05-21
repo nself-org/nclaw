@@ -7,7 +7,7 @@
 //
 // All fixtures are loaded from tests/fixtures/v1.1.0/. No network. No DB.
 
-use nclaw_core::sync::{check_compat, CompatStatus, EventEnvelope, Hlc, Op};
+use libnclaw::sync::{check_compat, CompatStatus, EventEnvelope, Hlc, Op};
 use uuid::Uuid;
 
 // Version constants — encode as (major=1, minor=1, patch=0/1).

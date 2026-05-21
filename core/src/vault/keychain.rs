@@ -49,7 +49,7 @@ pub fn fetch_secret(account: &str) -> Result<Vec<u8>, CoreError> {
     })?;
     STANDARD
         .decode(pw.as_bytes())
-        .map_err(|e| CoreError::Vault(VaultError::InvalidFormat))
+        .map_err(|_e| CoreError::Vault(VaultError::InvalidFormat))
 }
 
 /// Delete a secret from the OS keychain.

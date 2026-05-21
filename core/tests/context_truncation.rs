@@ -2,8 +2,8 @@ use chrono::Utc;
 /// Integration tests for context window truncation policies.
 ///
 /// Tests cover all truncation policies, boundary conditions, and system message preservation.
-use nclaw_core::llm::context::{ContextManager, TruncationPolicy};
-use nclaw_core::types::{Message, MessageContent, MessageMetadata, MessageRole};
+use libnclaw::llm::context::{ContextManager, TruncationPolicy};
+use libnclaw::types::{Message, MessageContent, MessageMetadata, MessageRole};
 use uuid::Uuid;
 
 /// Helper to create a message with given role and content.

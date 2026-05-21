@@ -4,13 +4,13 @@
 //! from cloud (ServerMux/Frontier) to local on network failure.
 
 use async_trait::async_trait;
-use nclaw_core::bridge::orchestrator::Orchestrator;
-use nclaw_core::bridge::router::{
+use libnclaw::bridge::orchestrator::Orchestrator;
+use libnclaw::bridge::router::{
     BridgeContext, ConnectionState, Privacy, PromptClass, PromptRequest, RouteOverride, UserPolicy,
 };
-use nclaw_core::bridge::transport::{Transport, TransportRequest, TransportResponse};
-use nclaw_core::error::CoreError;
-use nclaw_core::tier::Tier;
+use libnclaw::bridge::transport::{Transport, TransportRequest, TransportResponse};
+use libnclaw::error::CoreError;
+use libnclaw::tier::Tier;
 use std::sync::Arc;
 
 /// Mock transport for testing.

@@ -4,7 +4,7 @@
 //! Tests cover snapshot bootstrap, heartbeat keep-alive, idempotency, batching, cursor persistence,
 //! schema versioning, and telemetry collection.
 
-use nclaw_core::sync::{
+use libnclaw::sync::{
     check_compat, BatchPolicy, CompatStatus, Cursor, EventEnvelope, HeartbeatPing, HeartbeatTimer,
     Hlc, HlcGenerator, IdempotencyCache, SnapshotRequest, SnapshotResponse, SyncTelemetry,
 };
@@ -177,7 +177,7 @@ fn acceptance_telemetry_metrics() {
 
     // Verify snapshot serialization
     let json = serde_json::to_string(&snap).expect("serialize snapshot");
-    let restored: nclaw_core::sync::SyncTelemetrySnapshot =
+    let restored: libnclaw::sync::SyncTelemetrySnapshot =
         serde_json::from_str(&json).expect("deserialize snapshot");
     assert_eq!(restored.events_pushed, snap.events_pushed);
 }

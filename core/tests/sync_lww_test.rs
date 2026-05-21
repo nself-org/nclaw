@@ -145,11 +145,6 @@ fn lww_resolve_hlc_total_order() {
     // Test that events are ordered by HLC total order:
     // wall_ms → lamport → device_id (lexicographic)
     let dev_a = Uuid::new_v4();
-    let dev_b = if Uuid::new_v4() < dev_a {
-        Uuid::new_v4()
-    } else {
-        dev_a
-    };
     let id = Uuid::new_v4();
 
     // Same wall, different lamports

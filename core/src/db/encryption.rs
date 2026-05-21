@@ -255,6 +255,9 @@ pub fn derive_key_from_sidecar(
     salt: &[u8],
     db_path: &Path,
 ) -> Result<[u8; 32], CoreError> {
+    // Loaded unconditionally to validate the sidecar exists/parses; the params
+    // are only read from it in non-test builds (tests use fixed test_params).
+    #[cfg_attr(test, allow(unused_variables))]
     let sidecar = KdfSidecar::load(db_path)?;
 
     #[cfg(not(test))]

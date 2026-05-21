@@ -232,7 +232,7 @@ mod tests {
             dev,
             Some(serde_json::json!({"name": "Alice"})),
         );
-        let result = resolve(&[ev.clone()]);
+        let result = resolve(std::slice::from_ref(&ev));
         assert!(result.is_some());
         assert_eq!(result.unwrap().event_id, ev.event_id);
     }

@@ -163,7 +163,7 @@ where
     .await;
 
     let total_elapsed = measurement_start.elapsed();
-    let timed_out = run_start.elapsed() >= HARD_TIMEOUT || matches!(stream_result, Err(_)); // timeout variant
+    let timed_out = run_start.elapsed() >= HARD_TIMEOUT || stream_result.is_err(); // timeout variant
 
     let token_stream = match stream_result {
         Ok(Ok(ts)) => ts,
@@ -218,7 +218,7 @@ where
 
     // RAM: best-effort; in tests use a synthetic fixed value bounded by probe.
     // On device, probe.ram_total_mb already reflects peak RSS at probe time.
-    let ram_peak_mb = probe.ram_total_mb.min(100).max(64);
+    let ram_peak_mb = probe.ram_total_mb.clamp(64, 100);
 
     let result = BenchmarkResult {
         timestamp: Utc::now(),

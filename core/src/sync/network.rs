@@ -469,9 +469,8 @@ impl SyncNetwork {
                     .get(reqwest::header::RETRY_AFTER)
                     .and_then(|h| h.to_str().ok())
                     .and_then(parse_retry_after);
-                let body = resp.text().await.unwrap_or_default();
-                last_status = code;
-                last_message = body;
+                // Non-2xx retryable: the exhaustion branch below returns the
+                // current code/body directly, so no need to stash them here.
                 sleep_jittered(&policy, attempt, retry_after, &mut rng).await;
                 attempt += 1;
                 continue;
@@ -560,9 +559,8 @@ impl SyncNetwork {
                     .get(reqwest::header::RETRY_AFTER)
                     .and_then(|h| h.to_str().ok())
                     .and_then(parse_retry_after);
-                let body = resp.text().await.unwrap_or_default();
-                last_status = code;
-                last_message = body;
+                // Non-2xx retryable: the exhaustion branch below returns the
+                // current code/body directly, so no need to stash them here.
                 sleep_jittered(&policy, attempt, retry_after, &mut rng).await;
                 attempt += 1;
                 continue;
@@ -650,9 +648,8 @@ impl SyncNetwork {
                     .get(reqwest::header::RETRY_AFTER)
                     .and_then(|h| h.to_str().ok())
                     .and_then(parse_retry_after);
-                let body = resp.text().await.unwrap_or_default();
-                last_status = code;
-                last_message = body;
+                // Non-2xx retryable: the exhaustion branch below returns the
+                // current code/body directly, so no need to stash them here.
                 sleep_jittered(&policy, attempt, retry_after, &mut rng).await;
                 attempt += 1;
                 continue;

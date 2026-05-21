@@ -113,7 +113,7 @@ mod tests {
     fn budget_enforcer_reset() {
         let enforcer = BudgetEnforcer::new(5000, 2.0);
         enforcer.record_spend(100, 0.50);
-        assert!(!enforcer.within_budget() || true); // was within budget
+        assert!(enforcer.within_budget()); // 100ms / $0.50 is within 5000ms / $2.0
         enforcer.reset();
         let (ms, usd) = enforcer.current_spend();
         assert_eq!(ms, 0);

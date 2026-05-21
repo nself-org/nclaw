@@ -31,11 +31,12 @@ allow = [
     "Unlicense",
     "CC0-1.0",
     "MPL-2.0",
-    "LGPL-2.1-or-later",
     # OSI-approved permissive license used by the optional embedded-pg feature
     # (postgresql_embedded family). Functionally equivalent to BSD/MIT.
     "PostgreSQL",
 ]
+# r-efi is "MIT OR Apache-2.0 OR LGPL-2.1-or-later" — the MIT/Apache choices
+# above already satisfy it, so LGPL is intentionally not allow-listed.
 # Confidence threshold for detecting a license from a text file (0.0 - 1.0).
 # allo-isolate has no SPDX field in its manifest but ships an Apache-2.0 LICENSE
 # file; the detector resolves it from the file text above this threshold.
@@ -48,14 +49,30 @@ multiple-versions = "warn"
 wildcards = "allow"
 
 [advisories]
-# Security vulnerabilities and yanked crates remain hard failures (cargo-deny
-# defaults). "unmaintained = workspace" scopes the unmaintained check to crates
-# we depend on directly, so it stays actionable: transitive unmaintained notices
-# from the Tauri GTK3/Linux backend (gtk-rs family, async-std, instant, paste,
-# unic-*, proc-macro-error) do not fail CI because they have no upgrade path and
-# carry no vulnerability — they resolve only when Tauri updates its own tree.
-unmaintained = "workspace"
-ignore = []
+# Security vulnerabilities and yanked crates remain hard failures.
+# The ignore list holds only "unmaintained" advisories (not vulnerabilities):
+# each is transitive through the Tauri GTK3/Linux backend (gtk-rs family,
+# async-std, instant, paste, unic-*, proc-macro-error) or the embedded-pg /
+# image stacks. None has a vulnerability or an available upgrade path; they
+# resolve only when the upstream crates update their own dependencies.
+ignore = [
+    "RUSTSEC-2024-0370", # proc-macro-error unmaintained
+    "RUSTSEC-2024-0384", # instant unmaintained
+    "RUSTSEC-2024-0412", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0413", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0415", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0416", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0418", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0419", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0420", # gtk-rs gtk3 binding unmaintained
+    "RUSTSEC-2024-0436", # paste unmaintained
+    "RUSTSEC-2025-0052", # async-std discontinued
+    "RUSTSEC-2025-0075", # unic-char-range unmaintained
+    "RUSTSEC-2025-0080", # unic-common unmaintained
+    "RUSTSEC-2025-0081", # unic-char-property unmaintained
+    "RUSTSEC-2025-0098", # unic-ucd-version unmaintained
+    "RUSTSEC-2025-0100", # unic-ucd-ident unmaintained
+]
 
 [sources]
 # Only allow crates.io as a registry source.

@@ -9,6 +9,13 @@ pub mod frontier;
 pub mod local;
 pub mod server_mux;
 
+// Re-export the concrete transports at the module root so callers can use
+// `bridge::transport::{LocalTransport, ServerMuxTransport, FrontierTransport}`
+// alongside the Transport trait defined here.
+pub use frontier::FrontierTransport;
+pub use local::LocalTransport;
+pub use server_mux::ServerMuxTransport;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 

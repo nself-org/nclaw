@@ -132,7 +132,7 @@ fn main() {
     );
 
     // Find the winning profile's params
-    let (_, m, t, p, ms) = results
+    let (_, _m, _t, _p, ms) = results
         .iter()
         .find(|(name, ..)| *name == recommended_name)
         .copied()
