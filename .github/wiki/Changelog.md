@@ -23,6 +23,21 @@ All notable changes to nClaw clients are documented here.
 
 ---
 
+## v1.1.3 — 2026-05-21
+
+P103 patch release. Mobile app version bump and nclaw-core CI hardening.
+
+### Changed
+
+- Mobile app bumped to `1.1.3` (Android `versionName`/`versionCode` and iOS `CFBundleShortVersionString` derive from `mobile/pubspec.yaml`).
+
+### Fixed
+
+- **nclaw-core Security Audit job restored to green** after the monorepo restructure expanded the Tauri GTK3 dependency tree. Synced the `cargo audit` / `cargo deny` ignore lists with the new transitive `gtk-rs`/`glib` advisories (`gdkwayland-sys`, `gdkx11`, `gdkx11-sys`, `glib <0.20`) — all unmaintained or unsound notices with no vulnerability and no upgrade path on the GTK3 toolchain. `cargo audit` reports zero vulnerabilities.
+- Granted the Security Audit job `checks: write` so `rustsec/audit-check` can post its check-run annotation (cleared the prior "Resource not accessible by integration" failure).
+
+---
+
 ## v1.1.2 — 2026-05-15
 
 P101 nClaw groundwork patch. Cross-language signing fix, KEK envelope encryption, SQLCipher scope correction, and Tauri 2 desktop hardening.
