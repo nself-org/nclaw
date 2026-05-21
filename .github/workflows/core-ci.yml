@@ -74,7 +74,10 @@ jobs:
             ${{ runner.os }}-cargo-build-${{ matrix.rust }}-
 
       - name: Run tests
-        run: cargo test --workspace --manifest-path core/Cargo.toml
+        # Scope to the libnclaw package, not the whole workspace: the desktop
+        # tauri crate is built/validated by the Desktop Build Check job, and its
+        # Windows resource compile (icon.ico) is irrelevant to core tests.
+        run: cargo test -p libnclaw --manifest-path core/Cargo.toml
 
   fmt:
     name: Rustfmt
