@@ -3,11 +3,9 @@
   "entity_type": "message",
   "entity_id": "bbbbbbbb-0000-0000-0000-000000000001",
   "op": "insert",
-  "timestamp": {
-    "wall_ms": 1715644800000,
-    "lamport": 1,
-    "device_id": "cccccccc-0000-0000-0000-000000000001"
-  },
+  "hlc_wall_ms": 1715644800000,
+  "hlc_lamport": 1,
+  "hlc_device_id": "cccccccc-0000-0000-0000-000000000001",
   "user_id": "dddddddd-0000-0000-0000-000000000001",
   "device_id": "cccccccc-0000-0000-0000-000000000001",
   "tenant_id": null,

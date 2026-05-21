@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use libnclaw::bridge::orchestrator::Orchestrator;
 use libnclaw::bridge::router::{
-    BridgeContext, ConnectionState, Privacy, PromptClass, PromptRequest, RouteOverride, UserPolicy,
+    BridgeContext, ConnectionState, Privacy, PromptClass, PromptRequest, UserPolicy,
 };
 use libnclaw::bridge::transport::{Transport, TransportRequest, TransportResponse};
 use libnclaw::error::CoreError;
@@ -21,7 +21,7 @@ struct MockTransport {
 
 #[async_trait]
 impl Transport for MockTransport {
-    async fn execute(&self, req: &TransportRequest) -> Result<TransportResponse, CoreError> {
+    async fn execute(&self, _req: &TransportRequest) -> Result<TransportResponse, CoreError> {
         if self.should_fail {
             return Err(CoreError::Other(format!("mock failure from {}", self.name)));
         }
@@ -201,8 +201,10 @@ async fn test_orchestrator_frontier_unavailable_error() {
 
     let result = orch.run(&prompt, &ctx).await;
 
-    // Router will try frontier, dispatch will fail with "not configured"
-    assert!(result.is_err());
+    // Router selects frontier, but no frontier transport is configured, so the
+    // orchestrator fails over to the (healthy) local transport and succeeds.
+    let resp = result.expect("frontier-unavailable must fail over to local");
+    assert!(resp.source.contains("local"));
 }
 
 #[tokio::test]

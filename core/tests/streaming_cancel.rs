@@ -61,7 +61,13 @@ async fn test_stream_cancel_mid_generation() {
             .build(),
     );
 
-    let gen = StreamingGenerator::new();
+    // Capacity 1 forces the producer to block on backpressure after each token,
+    // so the consumer's cancel (after token 3) is observed before generation
+    // races to completion — making this cancellation test deterministic.
+    let gen = StreamingGenerator {
+        channel_capacity: 1,
+        ..StreamingGenerator::new()
+    };
     let cancel = CancellationToken::new();
     let mut rx = gen.spawn(
         llm,

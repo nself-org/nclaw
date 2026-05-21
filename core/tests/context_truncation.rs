@@ -78,7 +78,7 @@ fn test_fit_with_tight_budget() {
         fitted.len() < messages.len(),
         "Should drop messages to fit budget"
     );
-    assert!(fitted.len() > 0, "Should keep at least some messages");
+    assert!(!fitted.is_empty(), "Should keep at least some messages");
 }
 
 #[test]
@@ -112,7 +112,9 @@ fn test_summarize_middle_policy() {
         recent_keep: 8,
     };
 
-    let fitted = mgr.fit(&messages, 400);
+    // 20 body messages at ~14 tokens each (~280 total). A 150-token budget
+    // forces summarization down to system + placeholder + recent.
+    let fitted = mgr.fit(&messages, 150);
 
     // Should have system + placeholder + recent messages (max ~10 total)
     assert!(
@@ -136,7 +138,7 @@ fn test_summarize_middle_policy() {
         m.role == MessageRole::System
             && m.content
                 .as_text()
-                .map_or(false, |t| t.contains("earlier messages"))
+                .is_some_and(|t| t.contains("earlier messages"))
     });
     assert!(has_summary, "Should have summary placeholder");
 
@@ -153,7 +155,7 @@ fn test_keep_recent_policy() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..10 {
+    for _ in 0..10 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -166,7 +168,9 @@ fn test_keep_recent_policy() {
         recent_keep: 8,
     };
 
-    let fitted = mgr.fit(&messages, 300);
+    // Each message is ~14 tokens; 10 messages ~= 140 tokens. A 100-token budget
+    // forces the oldest to be dropped.
+    let fitted = mgr.fit(&messages, 100);
 
     // Should keep some recent messages, drop older ones
     assert!(fitted.len() < messages.len(), "Should drop older messages");
@@ -194,7 +198,7 @@ fn test_system_messages_always_preserved() {
     }
 
     // Add many body messages
-    for i in 0..20 {
+    for _ in 0..20 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -205,17 +209,21 @@ fn test_system_messages_always_preserved() {
     let mgr = ContextManager::default();
     let fitted = mgr.fit(&messages, 200);
 
-    // All 3 system messages should be present
+    // All 3 original system messages should be present. SummarizeMiddle may add
+    // a System-role summary placeholder, so the count is >= 3.
     let system_count = fitted
         .iter()
         .filter(|m| m.role == MessageRole::System)
         .count();
-    assert_eq!(system_count, 3, "All system messages should be preserved");
+    assert!(
+        system_count >= 3,
+        "All system messages should be preserved (got {system_count})"
+    );
 
     // First 3 should be system
-    for i in 0..3 {
+    for msg in fitted.iter().take(3) {
         assert_eq!(
-            fitted[i].role,
+            msg.role,
             MessageRole::System,
             "First 3 should all be system messages"
         );
@@ -227,7 +235,7 @@ fn test_truncate_oldest_equivalent_to_keep_recent() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..10 {
+    for _ in 0..10 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -274,7 +282,7 @@ fn test_very_tight_budget_preserves_system() {
     ));
 
     // Add many user messages
-    for i in 0..30 {
+    for _ in 0..30 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -303,7 +311,7 @@ fn test_recent_keep_count_respected() {
     let conv_id = Uuid::new_v4();
     let mut messages = vec![];
 
-    for i in 0..30 {
+    for _ in 0..30 {
         messages.push(make_message(
             conv_id,
             MessageRole::User,
@@ -317,7 +325,9 @@ fn test_recent_keep_count_respected() {
         recent_keep: 5,
     };
 
-    let fitted = mgr.fit(&messages, 500); // Loose budget
+    // 30 messages at ~9 tokens each (~270 total). A tight 80-token budget forces
+    // SummarizeMiddle to honor recent_keep instead of returning everything.
+    let fitted = mgr.fit(&messages, 80);
 
     // Count non-system messages (should respect recent_keep)
     let non_system_count = fitted
@@ -343,7 +353,7 @@ And this continues with more text that should be counted toward token estimation
 The token count should be significant.
 "#;
 
-    for i in 0..10 {
+    for _ in 0..10 {
         messages.push(make_message(conv_id, MessageRole::User, long_content));
     }
 

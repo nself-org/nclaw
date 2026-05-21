@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 // Version constants — encode as (major=1, minor=1, patch=0/1).
 // Format: major << 16 | minor << 8 | patch (per upgrade.rs decode_version).
-const VERSION_V110: u32 = (1u32 << 16) | (1u32 << 8) | 0u32;
+const VERSION_V110: u32 = (1u32 << 16) | (1u32 << 8);
 const VERSION_V111: u32 = (1u32 << 16) | (1u32 << 8) | 1u32;
 
 // --- compat negotiation tests ---
@@ -186,7 +186,9 @@ fn bc_event_envelope_v111_unknown_fields_ignored_by_v110_reader() {
         "entity_type": "message",
         "entity_id": "bbbbbbbb-0000-0000-0000-000000000002",
         "op": "update",
-        "timestamp": {"wall_ms": 1715644900000, "lamport": 5, "device_id": "cccccccc-0000-0000-0000-000000000001"},
+        "hlc_wall_ms": 1715644900000,
+        "hlc_lamport": 5,
+        "hlc_device_id": "cccccccc-0000-0000-0000-000000000001",
         "user_id": "dddddddd-0000-0000-0000-000000000001",
         "device_id": "cccccccc-0000-0000-0000-000000000001",
         "tenant_id": null,

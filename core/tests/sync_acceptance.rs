@@ -6,7 +6,7 @@
 
 use libnclaw::sync::{
     check_compat, BatchPolicy, CompatStatus, Cursor, EventEnvelope, HeartbeatPing, HeartbeatTimer,
-    Hlc, HlcGenerator, IdempotencyCache, SnapshotRequest, SnapshotResponse, SyncTelemetry,
+    Hlc, HlcGenerator, IdempotencyCache, Op, SnapshotRequest, SnapshotResponse, SyncTelemetry,
 };
 use uuid::Uuid;
 
@@ -46,7 +46,7 @@ fn acceptance_heartbeat_keep_alive() {
     assert_eq!(duration.as_millis(), 30000);
 
     // Verify ping payload generation
-    let ping = HeartbeatPing::ping_payload();
+    let ping = HeartbeatTimer::ping_payload();
     assert_eq!(ping.r#type, "ping");
     assert!(ping.ts > 0);
 
@@ -82,7 +82,7 @@ fn acceptance_idempotency_deduplication() {
     cache.check_and_insert(id6); // id1 evicted (FIFO)
 
     assert_eq!(cache.len(), 5);
-    assert!(!cache.cache.contains(&id1)); // Oldest was evicted
+    assert!(!cache.contains(&id1)); // Oldest was evicted
 }
 
 /// T12: Batching policy — verify flush decision on size/bytes/age.
@@ -193,18 +193,26 @@ fn acceptance_end_to_end_sync() {
     assert_eq!(hlc.device_id, device_id);
     assert!(hlc.wall_ms > 0 || hlc.lamport > 0);
 
-    // Create an envelope (stub — would contain signed data in real code)
+    // Create an envelope carrying the HLC timestamp and a payload.
     let envelope = EventEnvelope {
         event_id: Uuid::new_v4(),
-        hlc,
-        payload: serde_json::json!({"test": "data"}),
+        entity_type: "Note".to_string(),
+        entity_id: Uuid::new_v4(),
+        op: Op::Insert,
+        timestamp: hlc,
+        user_id: Uuid::new_v4(),
+        device_id,
+        tenant_id: None,
+        payload: Some(serde_json::json!({"test": "data"})),
+        schema_version: 1,
+        signature: Vec::new(),
     };
 
     // Verify envelope can be serialized
     let json = serde_json::to_string(&envelope).expect("serialize envelope");
     let restored: EventEnvelope = serde_json::from_str(&json).expect("deserialize");
     assert_eq!(restored.event_id, envelope.event_id);
-    assert_eq!(restored.hlc.device_id, device_id);
+    assert_eq!(restored.timestamp.device_id, device_id);
 }
 
 /// T16: All 8 modules compile and are used in acceptance.
@@ -221,6 +229,8 @@ fn acceptance_all_modules_compile() {
     // 7. telemetry::SyncTelemetry, SyncTelemetrySnapshot
     // 8. No TODO/FIXME in any module
 
-    // Dummy assertion to ensure test body runs
-    assert!(true);
+    // Reference HeartbeatPing directly so the import is exercised and the
+    // "all modules compile" guarantee covers the ping payload type too.
+    let ping: HeartbeatPing = HeartbeatTimer::ping_payload();
+    assert_eq!(ping.r#type, "ping");
 }

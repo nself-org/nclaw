@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn vault_repair_device_settings_returns_not_implemented() {
-        let result = settings::vault_repair_device().await;
+        let result = vault::vault_repair_device().await;
         assert_not_implemented(result, "S18-vault");
     }
 

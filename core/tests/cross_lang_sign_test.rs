@@ -119,7 +119,7 @@ fn cross_lang_payload_tail_is_canonical_json() {
 /// Decode a contiguous hex string (no whitespace, no `0x` prefix) into bytes.
 /// Lower- and upper-case hex digits are both accepted.
 fn hex_decode(s: &str) -> Vec<u8> {
-    assert!(s.len() % 2 == 0, "hex string length must be even");
+    assert!(s.len().is_multiple_of(2), "hex string length must be even");
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
     let mut i = 0;

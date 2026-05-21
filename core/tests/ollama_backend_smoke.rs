@@ -73,7 +73,8 @@ async fn test_chat_stream_mocked() {
         content: "Say hello".into(),
     }];
 
-    let mut stream = backend.chat_stream("llama2", &msgs).await.unwrap();
+    // chat_stream returns an `impl Stream` that is not Unpin; pin it for `.next()`.
+    let mut stream = Box::pin(backend.chat_stream("llama2", &msgs).await.unwrap());
 
     let mut tokens = Vec::new();
     while let Some(result) = stream.next().await {
@@ -130,7 +131,8 @@ async fn test_chat_stream_empty_content() {
         content: "test".into(),
     }];
 
-    let mut stream = backend.chat_stream("llama2", &msgs).await.unwrap();
+    // chat_stream returns an `impl Stream` that is not Unpin; pin it for `.next()`.
+    let mut stream = Box::pin(backend.chat_stream("llama2", &msgs).await.unwrap());
     let mut tokens = Vec::new();
     while let Some(result) = stream.next().await {
         tokens.push(result.unwrap());
