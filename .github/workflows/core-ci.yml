@@ -21,10 +21,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # 1.91 is the MSRV: specta (via the tauri-specta dev-dep) uses the
-        # debug_closure_helpers feature (std::fmt::from_fn), stabilized in 1.91.
+        # Only `stable` is tested: the dependency tree (specta-rc's edition2024 +
+        # debug_closure_helpers, darling 0.23, idna_adapter, image, keyring,
+        # serde_with) tracks the latest stable Rust, so a pinned older MSRV is
+        # not buildable. Reintroduce a pin if/when the deps support one.
         os: [macos-14, ubuntu-latest, windows-latest]
-        rust: [stable, "1.91"]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v4
 
