@@ -220,3 +220,7 @@ docker-compose.override.yml
 .windsurf/
 .gemini/
 .codeium/
+
+# OS junk (Mega P1 T-E3-03 hardening)
+.DS_Store
+Thumbs.db
