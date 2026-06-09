@@ -10,7 +10,10 @@ paths = [
   '''.*_test\.go''',
   '''.*_test\.rs''',
   '''.*\.test\.ts''',
+  '''.*\.test\.js''',
   '''.*\.spec\.ts''',
+  # Lockfiles — CocoaPods/npm checksums are content hashes, not secrets
+  '''Podfile\.lock$''',
   '''test/''',
   '''testdata/''',
   '''\.bats$''',
