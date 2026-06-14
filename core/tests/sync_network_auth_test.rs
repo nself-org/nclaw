@@ -26,10 +26,9 @@ async fn push_sends_jwt_in_authorization_header_not_url() {
                     !url_str.contains("token=")
                         && !url_str.contains(TEST_JWT.split('.').next().unwrap_or(""))
                         || !req
-                            .query_params
-                            .as_ref()
-                            .map(|p| p.iter().any(|(_, v)| v.contains(TEST_JWT)))
-                            .unwrap_or(false)
+                            .query_params()
+                            .iter()
+                            .any(|(_, v)| v.contains(TEST_JWT))
                 });
             then.status(200).json_body(serde_json::json!({"acks": []}));
         })

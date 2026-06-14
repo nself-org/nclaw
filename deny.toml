@@ -1,0 +1,96 @@
+# cargo-deny configuration for nclaw workspace.
+# Purpose: Enforce license compliance and document acknowledged security advisories.
+# Run: cargo deny check
+# CI: see .github/workflows/cargo-deny.yml
+
+[advisories]
+# Report unmaintained/unsound advisories for workspace crates only.
+# Transitive-only crates are acknowledged in the ignore list below.
+unmaintained = "workspace"
+unsound = "workspace"
+
+# Explicitly ignore advisories that are acknowledged with a ticket reference.
+ignore = [
+  # RUSTSEC-2024-0429 — glib v0.18.5 unsound Iterator impl (VariantStrIter).
+  # glib 0.18.x is a transitive dependency via Tauri 2.x → wry → webkit2gtk → gtk 0.18.x.
+  # gtk-rs GTK3 bindings require glib ^0.18; upgrading to 0.20+ would break the chain.
+  # nclaw does not call glib::VariantStrIter directly; the unsound API is not reachable.
+  # Resolution: GTK4 migration tracked as P2-E2 followup ticket.
+  { id = "RUSTSEC-2024-0429", reason = "Transitive via Tauri GTK3 deps; not reachable; GTK4 migration P2-E2 followup" },
+
+  # GTK3 bindings unmaintained — RUSTSEC-2024-0411 through 0420.
+  # All pulled in transitively by Tauri 2.x on Linux.
+  # Resolution: GTK4 migration in Tauri tracked as P2-E2 followup.
+  { id = "RUSTSEC-2024-0411", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0412", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0413", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0414", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0415", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0416", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0417", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0418", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0419", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+  { id = "RUSTSEC-2024-0420", reason = "Transitive Tauri GTK3; GTK4 migration P2-E2 followup" },
+
+  # RUSTSEC-2024-0384 — `instant` unmaintained (Linux/WASM target only).
+  { id = "RUSTSEC-2024-0384", reason = "Transitive dep; upstream crates yet to migrate" },
+
+  # RUSTSEC-2024-0436 — `paste` unmaintained.
+  { id = "RUSTSEC-2024-0436", reason = "Transitive dep; functionally stable macro crate" },
+
+  # RUSTSEC-2024-0370 — `proc-macro-error` unmaintained.
+  { id = "RUSTSEC-2024-0370", reason = "Transitive dep; upstream crates await proc-macro-error2 migration" },
+
+  # RUSTSEC-2025-0052 — async-std discontinued.
+  # Resolved in this ticket: httpmock upgraded from 0.7 (async-std) to 0.8 (tokio).
+  # Entry kept in case a future transitive dep re-introduces it; deny [bans] also guards this.
+  { id = "RUSTSEC-2025-0052", reason = "Resolved: httpmock upgraded to 0.8; ban rule prevents reintroduction" },
+
+  # RUSTSEC-2025-0075/0080/0081/0098/0100 — unic-* crates unmaintained.
+  # Unicode character property crates — transitive deps from cssparser/servo ecosystem.
+  # These are LOW severity; addressed in T13 (unicode crate audit).
+  { id = "RUSTSEC-2025-0075", reason = "unic-* transitive; addressed in T13" },
+  { id = "RUSTSEC-2025-0080", reason = "unic-* transitive; addressed in T13" },
+  { id = "RUSTSEC-2025-0081", reason = "unic-* transitive; addressed in T13" },
+  { id = "RUSTSEC-2025-0098", reason = "unic-* transitive; addressed in T13" },
+  { id = "RUSTSEC-2025-0100", reason = "unic-* transitive; addressed in T13" },
+]
+
+[licenses]
+# Allowed license expressions (SPDX).
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "Zlib",
+  "CC0-1.0",
+  "OpenSSL",
+  "LGPL-2.1",
+  # MPL-2.0: cssparser, cssparser-macros, dtoa-short, selectors (servo ecosystem — transitive via wry/webkit2gtk).
+  "MPL-2.0",
+  # CDLA-Permissive-2.0: webpki-root-certs (Mozilla root certificates data — permissive data license).
+  "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.8
+
+# Allow crates that don't specify a license field but are known-safe.
+exceptions = [
+  # allo-isolate: Flutter/Dart bridge helper (MIT in source, missing Cargo field).
+  { name = "allo-isolate", allow = ["MIT"] },
+]
+
+[bans]
+# Prevent re-introduction of async-std.
+deny = [
+  { name = "async-std", reason = "Replaced by tokio; httpmock 0.8 removed this dep; must not be reintroduced" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

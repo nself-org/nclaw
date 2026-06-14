@@ -83,7 +83,7 @@ cc = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
 ts-rs = "10"
 tauri-specta = "2.0.0-rc.25"
-httpmock = "0.7"
+httpmock = "0.8"
 tempfile = "3"
 
 [features]
