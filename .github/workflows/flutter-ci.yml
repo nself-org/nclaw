@@ -3,10 +3,10 @@ name: Flutter CI
 on:
   push:
     paths:
-      - 'app/**'
+      - 'mobile/**'
   pull_request:
     paths:
-      - 'app/**'
+      - 'mobile/**'
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +47,7 @@ jobs:
     needs: analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -78,7 +78,7 @@ jobs:
     needs: analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -97,7 +97,7 @@ jobs:
 
       - name: Install iOS pods
         run: cd ios && pod install --repo-update
-        working-directory: app
+        working-directory: mobile
 
       - name: Build iOS (no codesign)
         run: flutter build ios --debug --no-codesign

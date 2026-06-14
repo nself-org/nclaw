@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     env:
-      GOOGLE_PLAY_JSON_KEY_PATH: ${{ github.workspace }}/app/fastlane/play-store-key.json
+      GOOGLE_PLAY_JSON_KEY_PATH: ${{ github.workspace }}/mobile/fastlane/play-store-key.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,7 +80,7 @@ jobs:
         with:
           ruby-version: '3.2'
           bundler-cache: true
-          working-directory: app
+          working-directory: mobile
 
       - name: Install fastlane
         run: gem install fastlane
@@ -102,5 +102,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nclaw-android-${{ github.sha }}
-          path: app/build/app/outputs/bundle/*Release/*.aab
+          path: mobile/build/app/outputs/bundle/*Release/*.aab
           retention-days: 14

@@ -31,12 +31,12 @@ jobs:
           channel: stable
 
       - name: Install dependencies
-        run: cd app && flutter pub get
+        run: cd mobile && flutter pub get
 
       # iOS build + TestFlight
       - name: Build iOS
         run: |
-          cd app
+          cd mobile
           flutter build ipa --release \
             --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
             --export-options-plist=ios/ExportOptions.plist
@@ -45,21 +45,21 @@ jobs:
         run: |
           xcrun altool --upload-app \
             --type ios \
-            --file app/build/ios/ipa/nself_claw.ipa \
+            --file mobile/build/ios/ipa/nself_claw.ipa \
             --apiKey ${{ secrets.APP_STORE_API_KEY }} \
             --apiIssuer ${{ secrets.APP_STORE_ISSUER_ID }}
 
       # macOS build + DMG
       - name: Build macOS
         run: |
-          cd app
+          cd mobile
           flutter build macos --release \
             --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
       - name: Create DMG
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           hdiutil create -volname "nClaw" \
-            -srcfolder "app/build/macos/Build/Products/Release/nself_claw.app" \
+            -srcfolder "mobile/build/macos/Build/Products/Release/nself_claw.app" \
             -ov -format UDZO \
             "nClaw-${VERSION}-macos.dmg"
       - name: Notarize DMG
@@ -76,7 +76,7 @@ jobs:
           name: macos-artifacts
           path: |
             nClaw-*-macos.dmg
-            app/build/ios/ipa/*.ipa
+            mobile/build/ios/ipa/*.ipa
 
   # Linux + Android
   linux-android:
@@ -101,14 +101,14 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 
       - name: Install dependencies
-        run: cd app && flutter pub get
+        run: cd mobile && flutter pub get
 
       # Android build
       - name: Decode keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/android/app/upload-keystore.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > mobile/android/app/upload-keystore.jks
       - name: Write key.properties
         run: |
-          cat > app/android/key.properties << EOF
+          cat > mobile/android/key.properties << EOF
           storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
@@ -116,19 +116,19 @@ jobs:
           EOF
       - name: Build Android AAB
         run: |
-          cd app
+          cd mobile
           flutter build appbundle --release \
             --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
       - name: Upload to Play Internal Test
         if: success()
         run: |
           echo "Upload to Play Console via fastlane or API"
-          # fastlane supply --track internal --aab app/build/app/outputs/bundle/prodRelease/app-prod-release.aab
+          # fastlane supply --track internal --aab mobile/build/app/outputs/bundle/prodRelease/app-prod-release.aab
 
       # Linux builds
       - name: Build Linux
         run: |
-          cd app && flutter build linux --release \
+          cd mobile && flutter build linux --release \
             --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
       - name: Package AppImage
         run: |
@@ -148,7 +148,7 @@ jobs:
         with:
           name: linux-android-artifacts
           path: |
-            app/build/app/outputs/bundle/prodRelease/*.aab
+            mobile/build/app/outputs/bundle/prodRelease/*.aab
             nClaw-*-linux.*
 
   # Windows
@@ -169,16 +169,16 @@ jobs:
           channel: stable
 
       - name: Install dependencies
-        run: cd app && flutter pub get
+        run: cd mobile && flutter pub get
 
       - name: Build Windows
         run: |
-          cd app
+          cd mobile
           flutter build windows --release `
             --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
       - name: Create MSIX
         run: |
-          cd app && flutter pub run msix:create
+          cd mobile && flutter pub run msix:create
       - name: Sign MSIX
         run: |
           echo "Sign with signtool using certificate from secrets"
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
-          path: app/build/windows/x64/runner/Release/*.msix
+          path: mobile/build/windows/x64/runner/Release/*.msix
 
   # Post-build: update indexes and feeds, create GitHub release
   publish:

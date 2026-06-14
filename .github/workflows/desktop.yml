@@ -15,7 +15,7 @@ jobs:
     runs-on: macos-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +51,7 @@ jobs:
           rm cert.p12
 
           cd ..
-          bash scripts/codesign-macos.sh "app/build/macos/Build/Products/Release/Claw.app"
+          bash scripts/codesign-macos.sh "mobile/build/macos/Build/Products/Release/Claw.app"
 
       - name: Install create-dmg
         run: brew install create-dmg
@@ -70,20 +70,20 @@ jobs:
         run: |
           cd ..
           VERSION="${GITHUB_REF_NAME#v}"
-          bash scripts/notarize-macos.sh "app/build/macos/Claw-${VERSION}.dmg"
+          bash scripts/notarize-macos.sh "mobile/build/macos/Claw-${VERSION}.dmg"
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: app/build/macos/Claw-*.dmg
+          path: mobile/build/macos/Claw-*.dmg
 
   build-linux:
     name: Linux (x86_64)
     runs-on: ubuntu-22.04
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -131,17 +131,17 @@ jobs:
         with:
           name: linux-packages
           path: |
-            app/build/linux/Claw-*.AppImage
-            app/build/linux/Claw-*.AppImage.asc
-            app/build/linux/claw_*.deb
-            app/build/linux/claw-*.rpm
+            mobile/build/linux/Claw-*.AppImage
+            mobile/build/linux/Claw-*.AppImage.asc
+            mobile/build/linux/claw_*.deb
+            mobile/build/linux/claw-*.rpm
 
   build-windows:
     name: Windows (x64)
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -163,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix
-          path: app/build/windows/x64/runner/Release/*.msix
+          path: mobile/build/windows/x64/runner/Release/*.msix
 
   release:
     name: Create Release

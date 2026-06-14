@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     env:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
@@ -55,11 +55,11 @@ jobs:
         with:
           ruby-version: '3.2'
           bundler-cache: true
-          working-directory: app/ios
+          working-directory: mobile/ios
 
       - name: Install fastlane
         run: gem install fastlane
-        working-directory: app/ios
+        working-directory: mobile/ios
 
       - name: Determine lane
         id: lane
@@ -72,12 +72,12 @@ jobs:
 
       - name: Run fastlane
         run: fastlane ${{ steps.lane.outputs.name }}
-        working-directory: app/ios
+        working-directory: mobile/ios
 
       - name: Upload IPA artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nclaw-ios-${{ github.sha }}
-          path: app/ios/build/*.ipa
+          path: mobile/ios/build/*.ipa
           retention-days: 14

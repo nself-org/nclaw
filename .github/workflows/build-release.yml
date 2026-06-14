@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +44,7 @@ jobs:
     needs: analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: app/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
 
   build-macos:
     name: Build macOS Desktop
@@ -81,7 +81,7 @@ jobs:
     needs: analyze
     defaults:
       run:
-        working-directory: app
+        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -117,7 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: app/nClaw-macOS.dmg
+          path: mobile/nClaw-macOS.dmg
 
   release:
     name: Create GitHub Release

@@ -3,10 +3,10 @@ name: Build libnclaw FFI Bindings
 on:
   push:
     paths:
-      - 'libs/libnclaw/**'
+      - 'core/**'
   pull_request:
     paths:
-      - 'libs/libnclaw/**'
+      - 'core/**'
   workflow_dispatch:
 
 concurrency:
@@ -34,12 +34,12 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            libs/libnclaw/target
-          key: ${{ runner.os }}-libnclaw-${{ hashFiles('libs/libnclaw/Cargo.lock') }}
+            core/target
+          key: ${{ runner.os }}-libnclaw-${{ hashFiles('Cargo.lock', 'core/Cargo.toml') }}
 
       - name: Run tests
         run: cargo test
-        working-directory: libs/libnclaw
+        working-directory: core
 
   # ============================================================
   # Build xcframework for iOS/macOS (Swift FFI)
@@ -63,7 +63,7 @@ jobs:
         run: cargo install cargo-swift --quiet || true
 
       - name: Build iOS targets
-        working-directory: libs/libnclaw
+        working-directory: core
         run: |
           cargo build --release --target aarch64-apple-ios
           cargo build --release --target aarch64-apple-ios-sim
@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: libnclaw-xcframework
-          path: libs/libnclaw/target/**/release/liblibnclaw.a
+          path: core/target/**/release/liblibnclaw.a
           retention-days: 7
 
   # ============================================================
@@ -96,7 +96,7 @@ jobs:
         run: cargo install cargo-ndk --quiet
 
       - name: Build Android targets
-        working-directory: libs/libnclaw
+        working-directory: core
         run: |
           cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 build --release
 
@@ -104,5 +104,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: libnclaw-android
-          path: libs/libnclaw/target/*/release/liblibnclaw.so
+          path: core/target/*/release/liblibnclaw.so
           retention-days: 7
