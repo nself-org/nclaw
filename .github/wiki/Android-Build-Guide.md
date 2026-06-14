@@ -157,6 +157,23 @@ Expected: `jar verified.`
 **Cause:** `google-services.json` is missing or wrong package name.
 **Fix:** Re-download from Firebase console with the exact Bundle ID. Verify `app/android/app/google-services.json` exists. Rebuild with `flutter clean && flutter pub get && flutter build`.
 
+## CI: Android Debug Build Job
+
+The `android-build` job in `.github/workflows/ci.yml` runs on every push to `main`/`develop` and on pull requests.
+
+**Stack:** Flutter 3.x (stable channel) + Java 17 (Temurin).
+**No signing secrets required** — debug APK is self-signed by the Android toolchain.
+
+Steps:
+1. `actions/setup-java@v4` — Java 17 Temurin.
+2. `subosito/flutter-action@v2` — Flutter stable 3.x.
+3. `flutter pub get` — resolves all Dart dependencies.
+4. `flutter build apk --debug` — builds the debug APK.
+
+Working directory: `mobile/` (Flutter app).
+
+**Release signing / Play Store upload:** handled by `publish-mobile.yml` (requires signing secrets — separate from `ci.yml`).
+
 ## Next Steps
 
 - [[iOS-Build-Guide]] — build for iOS
