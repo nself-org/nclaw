@@ -140,7 +140,13 @@ vite.config.ts.timestamp-*
 
 # Rust
 target/
-Cargo.lock
+# The root Cargo.lock is intentionally tracked: this workspace contains binary
+# crates (desktop/src-tauri Tauri app + core libnclaw). Per Cargo best-practice,
+# binary workspaces commit the lockfile so CI gets reproducible builds.
+# Sub-workspace Cargo.lock files (core/, desktop/src-tauri/) are stale artifacts
+# from standalone cargo runs and are excluded — only the root lock is canonical.
+core/Cargo.lock
+desktop/src-tauri/Cargo.lock
 *.rlib
 
 # iOS / macOS (Xcode)
