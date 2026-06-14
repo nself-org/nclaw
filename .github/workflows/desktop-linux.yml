@@ -1,6 +1,7 @@
 name: Desktop Linux Build
 
 on:
+  workflow_call:
   workflow_dispatch:
     inputs:
       tag:
@@ -37,7 +38,7 @@ jobs:
         with: { version: '9' }
 
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/apps/desktop/pnpm-lock.yaml' }
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'desktop/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: ${{ matrix.target }} }
@@ -48,18 +49,18 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            nclaw/apps/desktop/src-tauri/target
-          key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('nclaw/apps/desktop/src-tauri/Cargo.lock') }}
+            desktop/src-tauri/target
+          key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: nclaw/apps/desktop
+        working-directory: desktop
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri (AppImage + deb + rpm)
-        working-directory: nclaw/apps/desktop
+        working-directory: desktop
         run: cargo tauri build --target ${{ matrix.target }} --bundles appimage,deb,rpm
 
       - name: Upload artifacts
@@ -67,7 +68,7 @@ jobs:
         with:
           name: desktop-linux-${{ matrix.arch }}
           path: |
-            nclaw/apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
-            nclaw/apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            nclaw/apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
           retention-days: 30

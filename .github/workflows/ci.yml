@@ -253,11 +253,11 @@ jobs:
           key: ${{ runner.os }}-libnclaw-${{ hashFiles('core/Cargo.lock', 'Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test
+        run: cargo test --locked
         working-directory: core
 
       - name: Check release build
-        run: cargo check --release
+        run: cargo check --locked --release
         working-directory: core
 
   # ============================================================
@@ -302,4 +302,4 @@ jobs:
           [ -f desktop/dist/index.html ] || echo '<!doctype html><title>nclaw</title>' > desktop/dist/index.html
 
       - name: Check Tauri desktop crate
-        run: cargo check --manifest-path desktop/src-tauri/Cargo.toml
+        run: cargo check --locked --manifest-path desktop/src-tauri/Cargo.toml
