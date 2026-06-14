@@ -24,11 +24,11 @@ jobs:
     secrets: inherit
 
   desktop-windows:
-    uses: ./.github/workflows/desktop-windows.yml
+    uses: ./.github/workflows/desktop-build-windows.yml
     secrets: inherit
 
   desktop-linux:
-    uses: ./.github/workflows/desktop-linux.yml
+    uses: ./.github/workflows/desktop-build-linux.yml
     secrets: inherit
 
   mobile-ios:
