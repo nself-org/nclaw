@@ -1,4 +1,7 @@
 name: Desktop Windows Build
+# Disabled via API (disabled_manually) — re-enable before running a release.
+# Triggered by release.yml via workflow_call on tag push (v*).
+# workflow_call trigger is required for release.yml to invoke this workflow.
 
 on:
   workflow_call:
