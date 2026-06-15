@@ -1,0 +1,74 @@
+// knowledge.proto — KnowledgeService gRPC definitions for nclaw intelligence server.
+//
+// Purpose: Define the two org knowledge RPCs: Ingest and Query.
+//          These match the public API in nclaw/intelligence/internal/knowledge/knowledge.go.
+//          KnowledgeIngest chunks the document internally; the caller sends raw text.
+// SPORT: nclaw-memory-architecture-spec.md §3 §5 — P2-E5-W4-S8-T08.
+
+syntax = "proto3";
+
+package nclaw.intelligence.v1;
+
+option go_package = "github.com/nself-org/nclaw/intelligence/gen/proto;nclaw_proto";
+option java_package = "org.nclaw.intelligence.v1";
+
+// KnowledgeService exposes org knowledge ingest and query over gRPC.
+service KnowledgeService {
+  // Ingest chunks and stores a raw document into the org knowledge layer.
+  rpc Ingest(KnowledgeIngestRequest) returns (KnowledgeIngestResponse);
+  // Query retrieves knowledge chunks relevant to a query via the RRF pipeline.
+  rpc Query(KnowledgeQueryRequest) returns (KnowledgeQueryResponse);
+}
+
+// ─── Ingest ───────────────────────────────────────────────────────────────────
+
+message KnowledgeIngestRequest {
+  // org_slug is the org namespace (e.g. "acme").
+  string org_slug = 1;
+  // source_account_id is the nSelf multi-app isolation value (e.g. "primary").
+  string source_account_id = 2;
+  // doc_type is the document classification (e.g. "runbook", "wiki", "sop").
+  string doc_type = 3;
+  // source_ref is the original document URI or key (empty string if unavailable).
+  string source_ref = 4;
+  // raw_text is the full document text; chunking (512 tokens / 200 overlap) is handled server-side.
+  string raw_text = 5;
+}
+
+message KnowledgeIngestResponse {
+  // chunks_ingested is the count of newly stored chunks (duplicates are not counted).
+  int32 chunks_ingested = 1;
+}
+
+// ─── Query ────────────────────────────────────────────────────────────────────
+
+message KnowledgeQueryRequest {
+  // query is the natural-language query.
+  string query = 1;
+  // org_slug scopes the search to a single org.
+  string org_slug = 2;
+  // source_account_id is the nSelf multi-app isolation value.
+  string source_account_id = 3;
+  // top_k is the number of results to return (default 5 if 0).
+  int32 top_k = 4;
+}
+
+message KnowledgeQueryResponse {
+  // results is the ordered list of matching knowledge chunks (most relevant first).
+  repeated KnowledgeResult results = 1;
+}
+
+message KnowledgeResult {
+  // id is the UUID of the nclaw_org_knowledge row.
+  string id = 1;
+  // content is the text of the knowledge chunk.
+  string content = 2;
+  // doc_type is the document classification.
+  string doc_type = 3;
+  // source_ref is the original document URI or key.
+  string source_ref = 4;
+  // org_slug is the org namespace this chunk belongs to.
+  string org_slug = 5;
+  // score is the RRF-reranked relevance score (higher = more relevant).
+  double score = 6;
+}

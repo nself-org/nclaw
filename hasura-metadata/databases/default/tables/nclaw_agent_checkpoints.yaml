@@ -1,0 +1,58 @@
+# Hasura metadata stub: nclaw_agent_checkpoints
+# Ticket: P2-E5-W4-S7-T07
+# Isolation: SYSTEM TABLE — admin role only. No user-role permissions.
+# RLS: NONE — accessed by service account only (per spec §5 + migration 0091 comment)
+# No source_account_id isolation — checkpoints are global system state.
+
+table:
+  schema: public
+  name: nclaw_agent_checkpoints
+
+# admin role only — no user-role select/insert/update/delete
+select_permissions:
+  - role: admin
+    permission:
+      columns:
+        - id
+        - thread_id
+        - checkpoint_id
+        - agent_role
+        - graph_state
+        - status
+        - initiated_by_user_id
+        - approval_channel
+        - created_at
+        - updated_at
+      filter: {}
+      allow_aggregations: true
+
+insert_permissions:
+  - role: admin
+    permission:
+      columns:
+        - thread_id
+        - checkpoint_id
+        - agent_role
+        - graph_state
+        - status
+        - initiated_by_user_id
+        - approval_channel
+      check: {}
+
+update_permissions:
+  - role: admin
+    permission:
+      columns:
+        - graph_state
+        - status
+        - updated_at
+      filter: {}
+      check: {}
+
+delete_permissions:
+  - role: admin
+    permission:
+      filter: {}
+
+# IMPORTANT: No user-role permissions. Any user-role query to this table
+# must be rejected. Service account accesses via admin role only.

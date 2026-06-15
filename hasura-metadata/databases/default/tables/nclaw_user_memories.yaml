@@ -1,0 +1,70 @@
+# Hasura metadata stub: nclaw_user_memories
+# Ticket: P2-E5-W4-S7-T07
+# Isolation: source_account_id = X-Hasura-Source-Account-Id (consumer multi-app pattern)
+# RLS: nclaw_user_memories_isolation (migration 0090)
+
+table:
+  schema: public
+  name: nclaw_user_memories
+
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - source_account_id
+        - user_id
+        - content
+        - memory_type
+        - namespace
+        - valid_from
+        - valid_until
+        - metadata
+        - created_at
+        - updated_at
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      allow_aggregations: false
+
+insert_permissions:
+  - role: user
+    permission:
+      columns:
+        - user_id
+        - content
+        - memory_type
+        - namespace
+        - valid_from
+        - valid_until
+        - metadata
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      set:
+        source_account_id: X-Hasura-Source-Account-Id
+
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - content
+        - memory_type
+        - namespace
+        - valid_from
+        - valid_until
+        - metadata
+        - updated_at
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id

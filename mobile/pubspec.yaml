@@ -70,6 +70,10 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_tts: ^4.2.0
 
+  # gRPC client (nclaw intelligence service — P2-E5-W4-S8-T08)
+  grpc: ^4.0.1
+  protobuf: ^3.1.0
+
   # Rust FFI bindings
   flutter_rust_bridge: ^2.5.0
 

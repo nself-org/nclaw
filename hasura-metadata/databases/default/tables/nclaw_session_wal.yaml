@@ -1,0 +1,43 @@
+# Hasura metadata stub: nclaw_session_wal
+# Ticket: P2-E5-W4-S7-T07
+# Isolation: source_account_id = X-Hasura-Source-Account-Id (consumer multi-app pattern)
+# RLS: nclaw_session_wal_isolation (migration 0090)
+# Note: user-scoped WAL buffer; compacted column is read-only via service account.
+
+table:
+  schema: public
+  name: nclaw_session_wal
+
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - source_account_id
+        - user_id
+        - session_id
+        - role
+        - content
+        - compacted
+        - created_at
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      allow_aggregations: false
+
+insert_permissions:
+  - role: user
+    permission:
+      columns:
+        - user_id
+        - session_id
+        - role
+        - content
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      set:
+        source_account_id: X-Hasura-Source-Account-Id
+
+# update + delete intentionally omitted for user role:
+# WAL rows are immutable once written; compaction is a service-account operation.

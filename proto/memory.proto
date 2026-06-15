@@ -1,0 +1,103 @@
+// memory.proto — MemoryService gRPC definitions for nclaw intelligence server.
+//
+// Purpose: Define the three LLM-callable memory tool RPCs: Search, Insert, Replace.
+//          These match the spec §7 public API in nclaw/intelligence/internal/memory/memory.go
+//          exactly. The authorize_token field is present on all mutation requests for
+//          future Tier 3 gating (stubbed in P2; wired in E2).
+// SPORT: nclaw-memory-architecture-spec.md §7 §9 — P2-E5-W4-S8-T08.
+
+syntax = "proto3";
+
+package nclaw.intelligence.v1;
+
+option go_package = "github.com/nself-org/nclaw/intelligence/gen/proto;nclaw_proto";
+option java_package = "org.nclaw.intelligence.v1";
+
+// MemoryService exposes the three memory agent tools over gRPC.
+service MemoryService {
+  // Search retrieves memory facts relevant to a user query via BM25 + BGE-M3 + RRF.
+  rpc Search(MemorySearchRequest) returns (MemorySearchResponse);
+  // Insert stores a new memory fact for the user.
+  rpc Insert(MemoryInsertRequest) returns (MemoryInsertResponse);
+  // Replace replaces an existing memory fact, preserving temporal history.
+  rpc Replace(MemoryReplaceRequest) returns (MemoryReplaceResponse);
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+
+message MemorySearchRequest {
+  // query is the natural-language search query.
+  string query = 1;
+  // user_id is the UUID of the user whose memories are searched.
+  string user_id = 2;
+  // source_account_id is the nSelf multi-app isolation value (e.g. "primary").
+  string source_account_id = 3;
+  // top_k is the number of results to return (default 5 if 0).
+  int32 top_k = 4;
+}
+
+message MemorySearchResponse {
+  // results is the ordered list of matching memory records (most relevant first).
+  repeated MemoryResult results = 1;
+}
+
+message MemoryResult {
+  // id is the UUID of the nclaw_user_memories primary key.
+  string id = 1;
+  // content is the raw text of the memory.
+  string content = 2;
+  // memory_type is the classification: "fact" | "preference" | "decision" | "audit".
+  string memory_type = 3;
+  // namespace is the scoped namespace (e.g. "personal/nclaw_{userID}").
+  string namespace = 4;
+  // valid_from is the RFC3339 timestamp when this memory was first stored.
+  string valid_from = 5;
+  // valid_until is the RFC3339 expiry timestamp; empty string means the record is active.
+  string valid_until = 6;
+  // score is the RRF-reranked relevance score (higher = more relevant).
+  double score = 7;
+}
+
+// ─── Insert ──────────────────────────────────────────────────────────────────
+
+message MemoryInsertRequest {
+  // user_id is the UUID of the user who owns this memory.
+  string user_id = 1;
+  // source_account_id is the nSelf multi-app isolation value.
+  string source_account_id = 2;
+  // content is the raw text to store as a memory fact.
+  string content = 3;
+  // namespace scopes the memory (e.g. "personal/nclaw_{userID}").
+  string namespace = 4;
+  // memory_type is the classification: "fact" | "preference" | "decision" | "audit".
+  // Defaults to "fact" if empty.
+  string memory_type = 5;
+}
+
+message MemoryInsertResponse {
+  // id is the UUID of the newly inserted nclaw_user_memories row.
+  string id = 1;
+}
+
+// ─── Replace ─────────────────────────────────────────────────────────────────
+
+message MemoryReplaceRequest {
+  // user_id is the UUID of the user who owns this memory.
+  string user_id = 1;
+  // source_account_id is the nSelf multi-app isolation value.
+  string source_account_id = 2;
+  // old_fact_id is the UUID of the existing nclaw_user_memories row to supersede.
+  string old_fact_id = 3;
+  // new_content is the replacement text.
+  string new_content = 4;
+  // namespace scopes the replacement memory.
+  string namespace = 5;
+  // authorize_token is the Tier 3 AUTHORIZE token (required in production; stubbed in dev).
+  // TODO(E2): validate authorize_token against JWT claims before executing replace.
+  string authorize_token = 6;
+}
+
+message MemoryReplaceResponse {
+  // new_id is the UUID of the newly inserted replacement nclaw_user_memories row.
+  string new_id = 1;
+}

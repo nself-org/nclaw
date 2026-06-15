@@ -1,0 +1,70 @@
+# Hasura metadata stub: nclaw_org_facts
+# Ticket: P2-E5-W4-S7-T07
+# Isolation: source_account_id = X-Hasura-Source-Account-Id (consumer multi-app pattern)
+# RLS: nclaw_org_facts_isolation (migration 0092 — renamed from _source_isolation)
+
+table:
+  schema: public
+  name: nclaw_org_facts
+
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - knowledge_id
+        - source_account_id
+        - org_slug
+        - subject
+        - predicate
+        - object
+        - confidence
+        - valid_from
+        - valid_until
+        - created_at
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      allow_aggregations: false
+
+insert_permissions:
+  - role: user
+    permission:
+      columns:
+        - knowledge_id
+        - org_slug
+        - subject
+        - predicate
+        - object
+        - confidence
+        - valid_from
+        - valid_until
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      set:
+        source_account_id: X-Hasura-Source-Account-Id
+
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - subject
+        - predicate
+        - object
+        - confidence
+        - valid_from
+        - valid_until
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
