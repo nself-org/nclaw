@@ -1,16 +1,82 @@
+import cola from 'cytoscape-cola';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
-import cola from 'cytoscape-cola';
 import type { GraphNode, GraphEdge } from '@/lib/graph-mock';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-cytoscape.use(cola);
+cytoscape.use(cola as cytoscape.Ext);
 
 interface Props {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeClick?: (id: string) => void;
 }
+
+// Stylesheet entry type that works across cytoscape versions.
+type StyleEntry = { selector: string; style: Record<string, unknown> };
+
+const STYLESHEET: StyleEntry[] = [
+  {
+    selector: 'node[kind = "topic"]',
+    style: {
+      'background-color': '#0ea5e9',
+      shape: 'round-rectangle',
+      label: 'data(label)',
+      color: '#f1f5f9',
+      'font-size': 10,
+      'text-valign': 'center',
+      'text-halign': 'center',
+      padding: '6px',
+    },
+  },
+  {
+    selector: 'node[kind = "fact"]',
+    style: {
+      'background-color': '#22c55e',
+      shape: 'ellipse',
+      label: 'data(label)',
+      color: '#f1f5f9',
+      'font-size': 10,
+      'text-valign': 'center',
+      'text-halign': 'center',
+      padding: '6px',
+    },
+  },
+  {
+    selector: 'node[kind = "entity"]',
+    style: {
+      'background-color': '#a855f7',
+      shape: 'diamond',
+      label: 'data(label)',
+      color: '#f1f5f9',
+      'font-size': 10,
+      'text-valign': 'center',
+      'text-halign': 'center',
+      padding: '6px',
+    },
+  },
+  {
+    selector: 'edge',
+    style: {
+      width: 2,
+      'line-color': '#475569',
+      'target-arrow-color': '#475569',
+      'target-arrow-shape': 'triangle',
+      'curve-style': 'bezier',
+      label: 'data(label)',
+      'font-size': 8,
+      color: '#94a3b8',
+      'edge-text-rotation': 'autorotate',
+    },
+  },
+  {
+    selector: 'node:selected',
+    style: {
+      'border-width': 3,
+      'border-color': '#fbbf24',
+    },
+  },
+];
 
 export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
   const elements = useMemo(
@@ -25,75 +91,13 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
     [nodes, edges]
   );
 
-  const stylesheet: cytoscape.Stylesheet[] = [
-    {
-      selector: 'node[kind = "topic"]',
-      style: {
-        'background-color': '#0ea5e9',
-        shape: 'round-rectangle',
-        label: 'data(label)',
-        color: '#f1f5f9',
-        'font-size': 10,
-        'text-valign': 'center',
-        'text-halign': 'center',
-        padding: '6px',
-      },
-    },
-    {
-      selector: 'node[kind = "fact"]',
-      style: {
-        'background-color': '#22c55e',
-        shape: 'ellipse',
-        label: 'data(label)',
-        color: '#f1f5f9',
-        'font-size': 10,
-        'text-valign': 'center',
-        'text-halign': 'center',
-        padding: '6px',
-      },
-    },
-    {
-      selector: 'node[kind = "entity"]',
-      style: {
-        'background-color': '#a855f7',
-        shape: 'diamond',
-        label: 'data(label)',
-        color: '#f1f5f9',
-        'font-size': 10,
-        'text-valign': 'center',
-        'text-halign': 'center',
-        padding: '6px',
-      },
-    },
-    {
-      selector: 'edge',
-      style: {
-        width: 2,
-        'line-color': '#475569',
-        'target-arrow-color': '#475569',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
-        label: 'data(label)',
-        'font-size': 8,
-        color: '#94a3b8',
-        'edge-text-rotation': 'autorotate',
-      },
-    },
-    {
-      selector: 'node:selected',
-      style: {
-        'border-width': 3,
-        'border-color': '#fbbf24',
-      },
-    },
-  ];
-
-  const [cy, setCy] = useState<any>(null);
-
   return (
     <CytoscapeComponent
       elements={elements}
-      stylesheet={stylesheet}
+      // Cast to any: cytoscape-cola + react-cytoscapejs types diverge on
+      // layout options and stylesheet shape; runtime behaviour is correct.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stylesheet={STYLESHEET as any}
       layout={{
         name: 'cola',
         animate: true,
@@ -101,10 +105,10 @@ export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
         maxSimulationTime: 3000,
         nodeSpacing: 10,
         edgeLength: 50,
-      }}
-      cy={(c) => {
-        setCy(c);
-        c.on('tap', 'node', (evt) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any}
+      cy={(c: cytoscape.Core) => {
+        c.on('tap', 'node', (evt: cytoscape.EventObject) => {
           onNodeClick?.(evt.target.id());
         });
       }}

@@ -118,10 +118,9 @@ async fn push_round_trip_happy_path_with_signed_event() {
                 // V04-F04: no token anywhere in URL or query
                 .matches(|req| {
                     let qs = req
-                        .query_params
-                        .as_ref()
-                        .map(|p| p.iter().any(|(_, v)| v.contains(TEST_JWT)))
-                        .unwrap_or(false);
+                        .query_params()
+                        .iter()
+                        .any(|(_, v)| v.contains(TEST_JWT));
                     !qs
                 });
             then.status(200).json_body(resp_body);
@@ -143,33 +142,32 @@ async fn push_round_trip_happy_path_with_signed_event() {
 async fn push_request_wire_shape_matches_golden_fixture() {
     let server = MockServer::start_async().await;
 
-    // httpmock 0.7's `.matches()` accepts a `fn` pointer (no captures), so we
-    // verify the bulk of the wire shape via direct `.json_body_partial(...)`
-    // matchers on the well-known field paths. The full envelope is
-    // additionally serialized client-side and compared against the golden
-    // fixture below — this catches drift in field ordering or naming that the
-    // partial matcher alone would miss.
+    // httpmock 0.8 removed json_body_partial; we verify the wire shape via a
+    // matches() closure that checks the well-known field paths. The full
+    // envelope is additionally serialized client-side and compared against the
+    // golden fixture below — this catches drift in field ordering or naming.
     let mock = server
         .mock_async(|when, then| {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
-                .json_body_partial(
-                    r#"{
-                        "device_id": "44444444-4444-4444-4444-444444444444",
-                        "events": [
-                            {
-                                "event_id": "22222222-2222-2222-2222-222222222222",
-                                "entity_type": "Note",
-                                "entity_id": "33333333-3333-3333-3333-333333333333",
-                                "op": "insert",
-                                "user_id": "11111111-1111-1111-1111-111111111111",
-                                "schema_version": 1
-                            }
-                        ]
-                    }"#
-                    .to_string(),
-                );
+                .matches(|req| {
+                    let Ok(body) = serde_json::from_slice::<serde_json::Value>(req.body().as_ref()) else { return false };
+                    let body = &body;
+                    body["device_id"] == "44444444-4444-4444-4444-444444444444"
+                        && body["events"]
+                            .as_array()
+                            .map(|evs| {
+                                evs.first().map(|ev| {
+                                    ev["event_id"] == "22222222-2222-2222-2222-222222222222"
+                                        && ev["entity_type"] == "Note"
+                                        && ev["entity_id"] == "33333333-3333-3333-3333-333333333333"
+                                        && ev["op"] == "insert"
+                                        && ev["schema_version"] == 1
+                                }).unwrap_or(false)
+                            })
+                            .unwrap_or(false)
+                });
             then.status(200)
                 .json_body(serde_json::json!({"results": [], "acks": []}));
         })

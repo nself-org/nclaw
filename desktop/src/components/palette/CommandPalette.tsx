@@ -1,6 +1,6 @@
 // ɳClaw Desktop — Command Palette (Cmd-K)
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Command } from 'cmdk';
 import {
   PaletteResult,

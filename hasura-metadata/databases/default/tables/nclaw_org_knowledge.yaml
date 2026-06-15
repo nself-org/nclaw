@@ -1,0 +1,75 @@
+# Hasura metadata stub: nclaw_org_knowledge
+# Ticket: P2-E5-W4-S7-T07
+# Isolation: source_account_id = X-Hasura-Source-Account-Id (consumer multi-app pattern)
+#   + org_slug for intra-app namespace partitioning
+# RLS: nclaw_org_knowledge_isolation (migration 0092 — renamed from _source_isolation)
+
+table:
+  schema: public
+  name: nclaw_org_knowledge
+
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - source_account_id
+        - org_slug
+        - content
+        - doc_type
+        - source_ref
+        - chunk_index
+        - content_hash
+        - valid_from
+        - valid_until
+        - metadata
+        - created_at
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      allow_aggregations: false
+
+insert_permissions:
+  - role: user
+    permission:
+      columns:
+        - org_slug
+        - content
+        - doc_type
+        - source_ref
+        - chunk_index
+        - content_hash
+        - valid_from
+        - valid_until
+        - metadata
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      set:
+        source_account_id: X-Hasura-Source-Account-Id
+
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - content
+        - doc_type
+        - source_ref
+        - chunk_index
+        - content_hash
+        - valid_from
+        - valid_until
+        - metadata
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+      check:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id
+
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        source_account_id:
+          _eq: X-Hasura-Source-Account-Id

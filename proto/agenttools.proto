@@ -1,0 +1,49 @@
+// agenttools.proto — AgentToolsService gRPC definitions for nclaw intelligence server.
+//
+// Purpose: Define the single Invoke RPC that dispatches any of the 15 nSelf backend
+//          agent tools by name. params_json carries the tool-specific parameters as
+//          a JSON string so this proto does not need updating as new tools are added.
+//          authorize_token enables Tier 3 tool dispatch (see spec §9).
+// SPORT: nclaw-memory-architecture-spec.md §9 — P2-E5-W4-S8-T08.
+
+syntax = "proto3";
+
+package nclaw.intelligence.v1;
+
+option go_package = "github.com/nself-org/nclaw/intelligence/gen/proto;nclaw_proto";
+option java_package = "org.nclaw.intelligence.v1";
+
+// AgentToolsService exposes the nSelf backend agent tool dispatcher over gRPC.
+service AgentToolsService {
+  // Invoke dispatches a named nSelf backend agent tool with JSON-encoded parameters.
+  rpc Invoke(AgentToolInvokeRequest) returns (AgentToolInvokeResponse);
+}
+
+// AgentToolInvokeRequest carries all fields required by the three-tier tool model.
+message AgentToolInvokeRequest {
+  // tool_name is one of the 15 registered tool names (e.g. "NselfDbQuery").
+  string tool_name = 1;
+  // params_json is a JSON object string containing tool-specific parameters.
+  // The server deserializes this into map[string]any before dispatch.
+  string params_json = 2;
+  // user_id is the UUID of the user invoking the tool (used in audit records).
+  string user_id = 3;
+  // confirmed is the Tier 2 write confirmation bool. Must be true for write tools.
+  bool confirmed = 4;
+  // authorize_token is the Tier 3 AUTHORIZE token for destructive operations.
+  // Required for Tier 3 tools; ignored for Tier 1 and Tier 2 tools.
+  // TODO(E2): validate against JWT claims before executing Tier 3 dispatch.
+  string authorize_token = 5;
+  // source_account_id is the nSelf multi-app isolation value for audit records.
+  string source_account_id = 6;
+}
+
+// AgentToolInvokeResponse carries the result or rejection reason from the tool.
+message AgentToolInvokeResponse {
+  // result_json is a JSON string containing the tool's return value on success.
+  string result_json = 1;
+  // error is a human-readable error message on failure; empty string on success.
+  string error = 2;
+  // tool_name echoes the invoked tool name for client correlation.
+  string tool_name = 3;
+}

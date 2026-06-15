@@ -303,3 +303,34 @@ jobs:
 
       - name: Check Tauri desktop crate
         run: cargo check --locked --manifest-path desktop/src-tauri/Cargo.toml
+
+  # ─── Android debug build (Flutter) ──────────────────────────────
+  # Flutter mobile app in mobile/. Debug APK only — no signing secrets.
+  # Release signing / Play Store upload is handled by publish-mobile.yml.
+  android-build:
+    name: Android · debug APK (Flutter)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
