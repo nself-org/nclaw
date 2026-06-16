@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "i18n/**/*.ts",
+    "nativewind-env.d.ts",
+    "expo-env.d.ts"
+  ]
+}

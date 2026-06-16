@@ -1,0 +1,60 @@
+{
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "serverUrl": "Server URL",
+    "pairingCode": "Pairing code",
+    "scanQr": "Scan QR",
+    "enterCode": "Enter Code"
+  },
+  "chat": {
+    "newConversation": "New conversation",
+    "typeMessage": "Message...",
+    "noMessages": "Start a conversation",
+    "voiceInput": "Voice input",
+    "attachFile": "Attach file"
+  },
+  "memory": {
+    "title": "Memories",
+    "searchMemories": "Search memories...",
+    "noMemories": "No memories yet. Start a conversation.",
+    "deleteMemory": "Delete memory"
+  },
+  "topics": {
+    "title": "Topics",
+    "noTopics": "No topics yet.",
+    "newTopic": "New topic"
+  },
+  "history": {
+    "title": "History",
+    "noHistory": "No conversation history yet",
+    "clearHistory": "Clear history"
+  },
+  "servers": {
+    "title": "Servers",
+    "addServer": "Add Server",
+    "noServers": "No servers connected",
+    "serverName": "Server name (optional)"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "dataExport": "Export data",
+    "biometric": "Biometric lock",
+    "manageApiKeys": "Manage API keys",
+    "signOut": "Sign out"
+  },
+  "onboarding": {
+    "welcome": "Welcome to ɳClaw",
+    "connectServer": "Connect to your server",
+    "getStarted": "Get Started"
+  },
+  "search": {
+    "placeholder": "Search conversations and memories...",
+    "noResults": "No results found"
+  }
+}

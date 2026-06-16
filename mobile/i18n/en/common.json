@@ -1,0 +1,15 @@
+{
+  "loading": "Loading...",
+  "error": "Something went wrong",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "save": "Save",
+  "done": "Done",
+  "delete": "Delete",
+  "back": "Back",
+  "confirm": "Confirm",
+  "close": "Close",
+  "send": "Send",
+  "search": "Search",
+  "settings": "Settings"
+}

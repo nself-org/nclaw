@@ -1,0 +1,60 @@
+{
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "serverUrl": "عنوان URL للخادم",
+    "pairingCode": "رمز الاقتران",
+    "scanQr": "مسح رمز QR",
+    "enterCode": "إدخال الرمز"
+  },
+  "chat": {
+    "newConversation": "محادثة جديدة",
+    "typeMessage": "رسالة...",
+    "noMessages": "ابدأ محادثة",
+    "voiceInput": "الإدخال الصوتي",
+    "attachFile": "إرفاق ملف"
+  },
+  "memory": {
+    "title": "الذكريات",
+    "searchMemories": "البحث في الذكريات...",
+    "noMemories": "لا توجد ذكريات بعد. ابدأ محادثة.",
+    "deleteMemory": "حذف الذكرى"
+  },
+  "topics": {
+    "title": "المواضيع",
+    "noTopics": "لا توجد مواضيع بعد.",
+    "newTopic": "موضوع جديد"
+  },
+  "history": {
+    "title": "السجل",
+    "noHistory": "لا يوجد سجل محادثات بعد",
+    "clearHistory": "مسح السجل"
+  },
+  "servers": {
+    "title": "الخوادم",
+    "addServer": "إضافة خادم",
+    "noServers": "لا توجد خوادم متصلة",
+    "serverName": "اسم الخادم (اختياري)"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "theme": "المظهر",
+    "notifications": "الإشعارات",
+    "dataExport": "تصدير البيانات",
+    "biometric": "القفل البيومتري",
+    "manageApiKeys": "إدارة مفاتيح API",
+    "signOut": "تسجيل الخروج"
+  },
+  "onboarding": {
+    "welcome": "مرحباً بك في ɳClaw",
+    "connectServer": "الاتصال بخادمك",
+    "getStarted": "ابدأ الآن"
+  },
+  "search": {
+    "placeholder": "البحث في المحادثات والذكريات...",
+    "noResults": "لا توجد نتائج"
+  }
+}

@@ -38,7 +38,9 @@ import {
   configureNotificationHandler,
   ensureCanonicalTopicChannels,
 } from '../services/notificationGroupingService';
-import { initializeI18n } from '../i18n';
+import { NselfI18nProvider } from '@nself/i18n';
+import type { Locale } from '@nself/i18n';
+import { initializeI18n, getDeviceLocale } from '../i18n';
 
 // ─── i18n init (module level — before first render) ──────────────────────────
 // Detects device locale via expo-localization and initializes react-i18next.
@@ -179,12 +181,19 @@ function RootLayoutInner() {
  *   Both index.tsx and auth/_layout.tsx call useAuth() — they are children of this
  *   Stack. The provider MUST be an ancestor of the Stack to satisfy the hook
  *   invariant on first render.
+ *
+ * WHY NselfI18nProvider wraps NselfAuthProvider:
+ *   i18n context is required by all screens including auth screens. Wrapping at the
+ *   outermost level ensures expo-localization-detected locale propagates everywhere.
  */
 export default function RootLayout() {
+  const locale = getDeviceLocale() as Locale;
   return (
-    <NselfAuthProvider strategy={authStrategy}>
-      <RootLayoutInner />
-    </NselfAuthProvider>
+    <NselfI18nProvider locale={locale}>
+      <NselfAuthProvider strategy={authStrategy}>
+        <RootLayoutInner />
+      </NselfAuthProvider>
+    </NselfI18nProvider>
   );
 }
 

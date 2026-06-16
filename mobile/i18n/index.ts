@@ -54,4 +54,3 @@ export const initializeI18n = (overrideLocale?: string): void => {
   }
 }
 
-export { getDeviceLocale }
