@@ -282,9 +282,10 @@ export function Sidebar() {
   } = useQuery({
     queryKey: ['topics-tree'],
     queryFn: async () => {
-      const data = await api.getTopicTree();
-      setTopics(data);
-      return data;
+      const r = await api.getTopicTree();
+      if (!r.ok) throw new Error(r.error.message);
+      setTopics(r.value);
+      return r.value;
     },
     staleTime: 60_000,
   });
@@ -296,9 +297,10 @@ export function Sidebar() {
   } = useQuery({
     queryKey: ['conversations', currentConversationId],
     queryFn: async () => {
-      const page = await api.listConversations(1, 100);
-      setConversations(page.data);
-      return page.data;
+      const r = await api.listConversations(1, 100);
+      if (!r.ok) throw new Error(r.error.message);
+      setConversations(r.value.data);
+      return r.value.data;
     },
     staleTime: 30_000,
   });
@@ -313,13 +315,10 @@ export function Sidebar() {
 
   // New conversation
   const handleNewConversation = useCallback(async () => {
-    try {
-      const conv = await api.createConversation();
-      setCurrentConversationId(conv.id);
-      router.push(`/chat/${conv.id}`);
-    } catch {
-      // silently ignore — user can retry
-    }
+    const r = await api.createConversation();
+    if (!r.ok) return; // silently ignore — user can retry
+    setCurrentConversationId(r.value.id);
+    router.push(`/chat/${r.value.id}`);
   }, [router, setCurrentConversationId]);
 
   const handleSelectConversation = useCallback(
@@ -331,12 +330,9 @@ export function Sidebar() {
   );
 
   const handleSignOut = useCallback(async () => {
-    try {
-      await api.signOut();
-    } finally {
-      signOut();
-      router.push('/signin');
-    }
+    await api.signOut(); // Result — ignore failure, always sign out locally
+    signOut();
+    router.push('/signin');
   }, [router, signOut]);
 
   // Search filtering

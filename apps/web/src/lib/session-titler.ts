@@ -46,14 +46,18 @@ export async function backfillUntitledSessions(
   }
 
   // Attempt server-side backfill first.
-  try {
-    const result = await api.backfillUntitledTitles();
-    return { updated: result.updated, skipped: result.skipped, fallbackApplied: 0 };
-  } catch {
-    // Server backfill failed — apply local date-based fallback titles.
-    for (const conv of untitled) {
-      updateConversation(conv.id, { title: fallbackTitle(conv) });
-    }
-    return { updated: 0, skipped: 0, fallbackApplied: untitled.length };
+  const backfillResult = await api.backfillUntitledTitles();
+  if (backfillResult.ok) {
+    return {
+      updated: backfillResult.value.updated,
+      skipped: backfillResult.value.skipped,
+      fallbackApplied: 0,
+    };
   }
+
+  // Server backfill failed — apply local date-based fallback titles.
+  for (const conv of untitled) {
+    updateConversation(conv.id, { title: fallbackTitle(conv) });
+  }
+  return { updated: 0, skipped: 0, fallbackApplied: untitled.length };
 }

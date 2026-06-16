@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/store/app-store';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const W_SIDEBAR_SLIDE = 280;
 
@@ -82,7 +83,9 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
         aria-label="Main content"
       >
         <TopBar />
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </div>
       </main>
     </div>
   );

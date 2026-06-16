@@ -293,18 +293,18 @@ function OauthStep({ state, setState, onNext }: StepProps): React.ReactElement {
 
   const handleConnect = useCallback(async (provider: PoolAccount['provider']) => {
     setConnecting(provider);
-    try {
-      const { oauthUrl } = await api.addPoolAccount(provider);
-      window.open(oauthUrl, '_blank', 'noopener,noreferrer,width=600,height=700');
+    const addResult = await api.addPoolAccount(provider);
+    if (addResult.ok) {
+      window.open(addResult.value.oauthUrl, '_blank', 'noopener,noreferrer,width=600,height=700');
       // Poll for new accounts after a short delay
       await new Promise<void>((r) => setTimeout(r, 2000));
-      const accounts = await api.listPoolAccounts();
-      setState((s) => ({ ...s, connectedAccounts: accounts }));
-    } catch {
-      // Silent — user can retry
-    } finally {
-      setConnecting(null);
+      const accountsResult = await api.listPoolAccounts();
+      if (accountsResult.ok) {
+        setState((s) => ({ ...s, connectedAccounts: accountsResult.value }));
+      }
     }
+    // Silent on error — user can retry
+    setConnecting(null);
   }, [setState]);
 
   const isConnected = useCallback(
@@ -938,10 +938,9 @@ export function OnboardingWizard(): React.ReactElement {
   // Fetch models when reaching model step
   useEffect(() => {
     if (currentStepId === 'model' && wizardState.serverValid) {
-      api
-        .listModels()
-        .then((models) => setWizardState((s) => ({ ...s, models })))
-        .catch(() => undefined);
+      void api.listModels().then((r) => {
+        if (r.ok) setWizardState((s) => ({ ...s, models: r.value }));
+      });
     }
   }, [currentStepId, wizardState.serverValid]);
 
@@ -965,14 +964,11 @@ export function OnboardingWizard(): React.ReactElement {
 
       // Persist display name + bio
       if (wizardState.displayName.trim()) {
-        try {
-          await api.updateMe({
-            displayName: wizardState.displayName.trim(),
-            bio: wizardState.bio.trim() || null,
-          });
-        } catch {
-          // Non-fatal — user can update in Settings
-        }
+        // Non-fatal — user can update in Settings
+        await api.updateMe({
+          displayName: wizardState.displayName.trim(),
+          bio: wizardState.bio.trim() || null,
+        });
       }
 
       // Persist settings

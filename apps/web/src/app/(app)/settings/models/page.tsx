@@ -4,10 +4,13 @@ import React, { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ModelPicker } from '@/components/models/ModelPicker';
 import { useAppStore } from '@/store/app-store';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import api from '@/lib/api';
 import type { ModelSelection } from '@/types';
 
 export default function ModelSettingsPage(): React.ReactElement {
+  const { isOnline } = useNetworkStatus();
   const storeSelection = useAppStore((s) => s.settings?.modelSelection);
   const updateModelSelection = useAppStore((s) => s.updateModelSelection);
   const setSettings = useAppStore((s) => s.setSettings);
@@ -19,7 +22,11 @@ export default function ModelSettingsPage(): React.ReactElement {
   // Hydrate model selection from server on mount
   const { data: serverSelection } = useQuery<ModelSelection, Error>({
     queryKey: ['model-selection'],
-    queryFn: () => api.getModelSelection(),
+    queryFn: async () => {
+      const r = await api.getModelSelection();
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     staleTime: 30_000,
   });
 
@@ -60,6 +67,7 @@ export default function ModelSettingsPage(): React.ReactElement {
 
   return (
     <main className="mx-auto max-w-xl w-full px-4 py-10 flex flex-col gap-8">
+      <OfflineBanner isOnline={isOnline} />
       <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
         <div>
           <h1

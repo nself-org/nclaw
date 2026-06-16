@@ -520,7 +520,11 @@ export function ModelPicker(): React.ReactElement {
     refetch: refetchModels,
   } = useQuery<OllamaModel[], Error>({
     queryKey: ['models'],
-    queryFn: () => api.listModels(),
+    queryFn: async () => {
+      const r = await api.listModels();
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
   });
 
   const {
@@ -529,11 +533,19 @@ export function ModelPicker(): React.ReactElement {
     isError: sysError,
   } = useQuery<SystemInfo, Error>({
     queryKey: ['system-info'],
-    queryFn: () => api.getSystemInfo(),
+    queryFn: async () => {
+      const r = await api.getSystemInfo();
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
   });
 
   const selectionMutation = useMutation<ModelSelection, Error, ModelSelection>({
-    mutationFn: (sel) => api.setModelSelection(sel),
+    mutationFn: async (sel) => {
+      const r = await api.setModelSelection(sel);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onSuccess: (saved) => {
       updateModelSelection(saved);
       setLocalSelection(saved);
@@ -541,7 +553,11 @@ export function ModelPicker(): React.ReactElement {
   });
 
   const pullMutation = useMutation<{ taskId: string }, Error, string>({
-    mutationFn: (modelId) => api.pullModel(modelId),
+    mutationFn: async (modelId) => {
+      const r = await api.pullModel(modelId);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onMutate: (modelId) => {
       setPullingIds((prev) => new Set(prev).add(modelId));
     },

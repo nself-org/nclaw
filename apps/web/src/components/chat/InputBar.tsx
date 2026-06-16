@@ -322,18 +322,18 @@ export function InputBar({
 
     // Create conversation if none exists
     if (!convId) {
-      try {
-        const conv = await api.createConversation(topicId ?? undefined);
-        convId = conv.id;
-        activeConvIdRef.current = conv.id;
-        addConversation(conv);
-        setCurrentConversationId(conv.id);
-        onConversationCreated?.(conv.id);
-      } catch {
+      const convResult = await api.createConversation(topicId ?? undefined);
+      if (!convResult.ok) {
         setStreamError('Could not start conversation. Check your connection.');
         setText(content);
         return;
       }
+      const conv = convResult.value;
+      convId = conv.id;
+      activeConvIdRef.current = conv.id;
+      addConversation(conv);
+      setCurrentConversationId(conv.id);
+      onConversationCreated?.(conv.id);
     }
 
     // Append user message optimistically
@@ -372,8 +372,11 @@ export function InputBar({
     abortRef.current = abort;
 
     try {
-      const stream = await api.sendMessageRaw(req);
-      const reader = stream.getReader();
+      const streamResult = await api.sendMessageRaw(req);
+      if (!streamResult.ok) {
+        throw new Error(streamResult.error.message);
+      }
+      const reader = streamResult.value.getReader();
 
       while (true) {
         if (abort.signal.aborted) break;

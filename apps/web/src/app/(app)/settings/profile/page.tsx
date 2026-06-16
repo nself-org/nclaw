@@ -4,6 +4,8 @@ import React, { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { BioAvatar } from '@/components/profile/BioAvatar';
 import { useAppStore } from '@/store/app-store';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import api from '@/lib/api';
 import type { SettingsData, User } from '@/types';
 
@@ -26,6 +28,7 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 export default function ProfileSettingsPage(): React.ReactElement {
+  const { isOnline } = useNetworkStatus();
   const user = useAppStore((s) => s.user);
   const settings = useAppStore((s) => s.settings);
   const setUser = useAppStore((s) => s.setUser);
@@ -39,7 +42,11 @@ export default function ProfileSettingsPage(): React.ReactElement {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ type: 'idle', message: null });
 
   const mutation = useMutation<User, Error, SavePayload>({
-    mutationFn: (payload) => api.updateMe(payload),
+    mutationFn: async (payload) => {
+      const r = await api.updateMe(payload);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onSuccess: (updated) => {
       setUser(updated);
       if (settings) {
@@ -73,6 +80,7 @@ export default function ProfileSettingsPage(): React.ReactElement {
 
   return (
     <div className="mx-auto max-w-xl w-full px-4 py-10 flex flex-col gap-8">
+      <OfflineBanner isOnline={isOnline} />
       <header>
         <h1
           className="text-2xl font-semibold"

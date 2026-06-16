@@ -30,22 +30,26 @@ export default function LoginPage(): React.ReactElement {
     }
 
     setLoading(true);
-    try {
-      const tokens = await api.signIn(email.trim(), password);
-      setTokens(tokens);
-      api.setToken(tokens.accessToken);
-
-      const user = await api.getMe();
-      setUser(user);
-
-      router.replace(onboardingComplete ? '/' : '/onboarding');
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Sign in failed. Please check your credentials.';
-      setError(message);
-    } finally {
+    const tokensResult = await api.signIn(email.trim(), password);
+    if (!tokensResult.ok) {
+      setError(tokensResult.error.message ?? 'Sign in failed. Please check your credentials.');
       setLoading(false);
+      return;
     }
+    const tokens = tokensResult.value;
+    setTokens(tokens);
+    api.setToken(tokens.accessToken);
+
+    const userResult = await api.getMe();
+    if (!userResult.ok) {
+      setError(userResult.error.message ?? 'Failed to load profile.');
+      setLoading(false);
+      return;
+    }
+    setUser(userResult.value);
+
+    setLoading(false);
+    router.replace(onboardingComplete ? '/' : '/onboarding');
   };
 
   return (

@@ -8,10 +8,15 @@
     "start": "next start -p 3020",
     "type-check": "tsc --noEmit",
     "lint": "next lint",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
     "@nself/claw-web": "link:../../../plugins-pro/paid/claw-web/web",
+    "@sentry/react": "^8.0.0",
+    "@sentry/tracing": "^8.0.0",
     "@tanstack/react-query": "^5.51.21",
     "framer-motion": "^11.3.19",
     "lucide-react": "^0.414.0",
@@ -19,15 +24,21 @@
     "next-intl": "^3.17.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^4.5.4"
+    "react-hook-form": "^7.52.0",
+    "zustand": "^4.5.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",
+    "@sentry/types": "^8.0.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@testing-library/react": "^15.0.6",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@vitest/ui": "^1.6.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^1.6.0"
   }
 }

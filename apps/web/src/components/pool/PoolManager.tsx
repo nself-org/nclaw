@@ -211,14 +211,21 @@ function AccountCard({ account, onRemoved }: AccountCardProps): React.ReactEleme
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const removeMutation = useMutation<void, Error>({
-    mutationFn: () => api.removePoolAccount(account.id),
+    mutationFn: async () => {
+      const r = await api.removePoolAccount(account.id);
+      if (!r.ok) throw new Error(r.error.message);
+    },
     onSuccess: () => {
       onRemoved();
     },
   });
 
   const refreshMutation = useMutation<PoolAccount, Error>({
-    mutationFn: () => api.refreshPoolAccount(account.id),
+    mutationFn: async () => {
+      const r = await api.refreshPoolAccount(account.id);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onSuccess: () => {
       setRefreshSuccess(true);
       setRefreshError(null);
@@ -442,19 +449,23 @@ function AddAccountModal({ onClose, onAdded }: AddAccountModalProps): React.Reac
   }, []);
 
   const addMutation = useMutation<{ oauthUrl: string }, Error, Provider>({
-    mutationFn: (provider) => api.addPoolAccount(provider),
+    mutationFn: async (provider) => {
+      const r = await api.addPoolAccount(provider);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onSuccess: ({ oauthUrl }) => {
       window.open(oauthUrl, '_blank', 'noopener,noreferrer');
       setPhase('waiting');
 
-      // poll for new account
-        // capture initial accounts count by querying now
+      // poll for new account — capture initial count first
       void api.listPoolAccounts().then((initial) => {
-        const initialCount = initial.length;
+        if (!initial.ok) return;
+        const initialCount = initial.value.length;
 
         pollTimerRef.current = setInterval(() => {
           void api.listPoolAccounts().then((current) => {
-            if (current.length > initialCount) {
+            if (current.ok && current.value.length > initialCount) {
               stopPolling();
               onAdded();
             }
@@ -625,7 +636,11 @@ export function PoolManager(): React.ReactElement {
     refetch,
   } = useQuery<PoolAccount[], Error>({
     queryKey: ['pool-accounts'],
-    queryFn: () => api.listPoolAccounts(),
+    queryFn: async () => {
+      const r = await api.listPoolAccounts();
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
   });
 
   useEffect(() => {

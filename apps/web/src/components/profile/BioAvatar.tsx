@@ -47,7 +47,11 @@ export function BioAvatar(): React.ReactElement {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
 
   const mutation = useMutation<User, Error, SavePayload>({
-    mutationFn: (payload) => api.updateMe(payload),
+    mutationFn: async (payload) => {
+      const r = await api.updateMe(payload);
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value;
+    },
     onSuccess: (updated) => {
       setUser(updated);
       if (settings) {
