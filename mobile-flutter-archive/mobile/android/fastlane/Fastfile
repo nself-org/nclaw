@@ -1,0 +1,41 @@
+default_platform(:android)
+
+platform :android do
+  desc "Upload AAB to Google Play internal track"
+  lane :internal do
+    upload_to_play_store(
+      track: "internal",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      skip_upload_apk: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON']
+    )
+  end
+
+  desc "Promote internal to production (staged rollout)"
+  lane :production do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      rollout: "0.05",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON']
+    )
+  end
+
+  desc "Sync metadata only (listing text, screenshots)"
+  lane :metadata do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: false,
+      json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON']
+    )
+  end
+end

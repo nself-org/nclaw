@@ -1,0 +1,12 @@
+Package: claw
+Version: 1.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: libgtk-3-0, libblkid1, liblzma5, libappindicator3-1
+Maintainer: nSelf, Inc. <support@nself.org>
+Homepage: https://claw.nself.org
+Description: ɳClaw - Personal AI assistant with infinite memory
+ ɳClaw is a self-hosted AI personal assistant that auto-detects topics,
+ branches conversations, extracts facts and decisions, and builds a
+ knowledge graph that compounds over time.

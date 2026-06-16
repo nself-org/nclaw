@@ -1,0 +1,126 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "ɳClaw",
+  "@appTitle": { "description": "The name of the application" },
+
+  "loading": "Loading...",
+  "@loading": { "description": "Generic loading indicator text" },
+
+  "error": "Something went wrong",
+  "@error": { "description": "Generic error message" },
+
+  "retry": "Retry",
+  "@retry": { "description": "Retry button label" },
+
+  "cancel": "Cancel",
+  "@cancel": { "description": "Cancel button label" },
+
+  "save": "Save",
+  "@save": { "description": "Save button label" },
+
+  "done": "Done",
+  "@done": { "description": "Done button label" },
+
+  "delete": "Delete",
+  "@delete": { "description": "Delete button label" },
+
+  "signIn": "Sign In",
+  "@signIn": { "description": "Sign in button label" },
+
+  "signOut": "Sign Out",
+  "@signOut": { "description": "Sign out button label" },
+
+  "email": "Email",
+  "@email": { "description": "Email field label" },
+
+  "password": "Password",
+  "@password": { "description": "Password field label" },
+
+  "serverUrl": "Server URL",
+  "@serverUrl": { "description": "Server URL field label" },
+
+  "connectToServer": "Connect to your server",
+  "@connectToServer": { "description": "Pairing screen headline" },
+
+  "scanQr": "Scan QR",
+  "@scanQr": { "description": "QR scan tab label" },
+
+  "enterCode": "Enter Code",
+  "@enterCode": { "description": "Code entry tab label" },
+
+  "directUrl": "Direct URL",
+  "@directUrl": { "description": "Direct URL tab label" },
+
+  "pointCameraAtQr": "Point your camera at the QR code shown by nclaw.",
+  "@pointCameraAtQr": { "description": "QR scan instruction" },
+
+  "codeScanned": "Code scanned",
+  "@codeScanned": { "description": "Success message after QR scan" },
+
+  "connectionFailed": "Connection failed. Check the server URL.",
+  "@connectionFailed": { "description": "Connection error message" },
+
+  "signInFailed": "Sign-in failed. Check your email and password.",
+  "@signInFailed": { "description": "Sign-in error message" },
+
+  "enterServerCredentials": "Enter your server URL and account credentials.",
+  "@enterServerCredentials": { "description": "Direct URL tab description" },
+
+  "serverName": "Server name (optional)",
+  "@serverName": { "description": "Server name field label" },
+
+  "serverNameHint": "My Server",
+  "@serverNameHint": { "description": "Server name field hint" },
+
+  "pairingCode": "Pairing code",
+  "@pairingCode": { "description": "Pairing code field label" },
+
+  "enterPairingCode": "Enter the code shown by nclaw or sent via your Telegram bot.",
+  "@enterPairingCode": { "description": "Pairing code tab description" },
+
+  "codeVerified": "Code verified! Enter your password to complete sign-in.",
+  "@codeVerified": { "description": "Code verification success message" },
+
+  "topics": "Topics",
+  "@topics": { "description": "Topics navigation label" },
+
+  "memories": "Memories",
+  "@memories": { "description": "Memories navigation label" },
+
+  "chat": "Chat",
+  "@chat": { "description": "Chat navigation label" },
+
+  "settings": "Settings",
+  "@settings": { "description": "Settings navigation label" },
+
+  "newConversation": "New conversation",
+  "@newConversation": { "description": "Button to start a new conversation" },
+
+  "searchMemories": "Search memories...",
+  "@searchMemories": { "description": "Search field hint in memories screen" },
+
+  "noMemories": "No memories yet. Start a conversation.",
+  "@noMemories": { "description": "Empty state for memories screen" },
+
+  "noTopics": "No topics yet.",
+  "@noTopics": { "description": "Empty state for topics screen" },
+
+  "addServer": "Add Server",
+  "@addServer": { "description": "Add server button label" },
+
+  "manageApiKeys": "Manage API keys",
+  "@manageApiKeys": { "description": "API keys screen title" },
+
+  "voiceConversation": "Voice conversation",
+  "@voiceConversation": { "description": "Voice conversation screen title" },
+
+  "quickCapture": "Quick capture",
+  "@quickCapture": { "description": "Quick capture screen title" },
+
+  "feedback": "Feedback",
+  "@feedback": { "description": "Feedback screen title" },
+
+  "usage": "Usage",
+  "@usage": { "description": "Usage screen title" }
+}

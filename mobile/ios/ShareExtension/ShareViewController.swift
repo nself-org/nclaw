@@ -1,76 +1,118 @@
-/// E-26-05a: iOS Share Extension.
-///
-/// Accepts shared content from other apps and bridges to Flutter
-/// via App Groups shared UserDefaults. The Flutter app reads the
-/// shared data on launch/resume and opens the ShareComposerScreen.
-import UIKit
+/**
+ * iOS Share Extension — Receives shared content from system share sheet.
+ *
+ * Purpose: Handle NSExtensionContext input items (text, URL, image),
+ * extract data, and write to App Group UserDefaults for main app to consume.
+ *
+ * Constraints: Extension runs in separate process; must use App Groups to share data.
+ */
+
+import Foundation
 import Social
-import MobileCoreServices
-import UniformTypeIdentifiers
+import UIKit
 
 class ShareViewController: SLComposeServiceViewController {
 
-    private let appGroupId = "group.com.nself.claw"
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        self.navigationController?.navigationBar.tintColor = UIColor(red: 0.106, green: 0.106, blue: 0.180, alpha: 1.0) // #1a1a2e
+    }
 
     override func isContentValid() -> Bool {
-        return true
+        return !self.contentText.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     override func didSelectPost() {
-        guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
-              let attachments = extensionItem.attachments else {
-            extensionContext?.completeRequest(returningItems: nil)
-            return
-        }
+        // Extract shared content
+        var sharedText = self.contentText ?? ""
+        var sharedTitle: String?
+        var sharedUrl: String?
+        var sharedImage: String?
+        var sharedMimeType: String?
 
-        let group = DispatchGroup()
+        // Check NSExtensionContext for attached items
+        if let extensionContext = self.extensionContext {
+            for item in extensionContext.inputItems {
+                if let itemProvider = item as? NSExtensionItem {
+                    // Extract text/URL
+                    if let typeIdentifier = kUTTypeURL as String? {
+                        if itemProvider.hasItemConformingToTypeIdentifier(typeIdentifier) {
+                            itemProvider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { (item, error) in
+                                if let url = item as? NSURL {
+                                    sharedUrl = url.absoluteString
+                                }
+                            }
+                        }
+                    }
 
-        for attachment in attachments {
-            if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-                group.enter()
-                attachment.loadItem(forTypeIdentifier: UTType.url.identifier) { [weak self] data, _ in
-                    if let url = data as? URL {
-                        self?.saveSharedContent(
-                            content: url.absoluteString,
-                            title: self?.contentText,
-                            mimeType: "text/uri-list"
-                        )
+                    // Extract plain text
+                    if let typeIdentifier = kUTTypePlainText as String? {
+                        if itemProvider.hasItemConformingToTypeIdentifier(typeIdentifier) {
+                            itemProvider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { (item, error) in
+                                if let text = item as? String, !text.isEmpty {
+                                    sharedText = text
+                                }
+                            }
+                        }
                     }
-                    group.leave()
-                }
-            } else if attachment.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
-                group.enter()
-                attachment.loadItem(forTypeIdentifier: UTType.text.identifier) { [weak self] data, _ in
-                    if let text = data as? String {
-                        self?.saveSharedContent(
-                            content: text,
-                            title: self?.contentText,
-                            mimeType: "text/plain"
-                        )
+
+                    // Extract image
+                    if let typeIdentifier = kUTTypeImage as String? {
+                        if itemProvider.hasItemConformingToTypeIdentifier(typeIdentifier) {
+                            itemProvider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { (item, error) in
+                                if let image = item as? UIImage {
+                                    if let imageData = image.jpegData(compressionQuality: 0.8) {
+                                        let filename = "shared_\(Date().timeIntervalSince1970).jpg"
+                                        if let groupContainer = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.org.nself.nclaw.share") {
+                                            let fileUrl = groupContainer.appendingPathComponent(filename)
+                                            try? imageData.write(to: fileUrl)
+                                            sharedImage = fileUrl.absoluteString
+                                            sharedMimeType = "image/jpeg"
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                    group.leave()
                 }
             }
         }
 
-        group.notify(queue: .main) { [weak self] in
-            self?.extensionContext?.completeRequest(returningItems: nil)
-        }
-    }
+        // Write shared content to App Group UserDefaults
+        if let userDefaults = UserDefaults(suiteName: "group.org.nself.nclaw.share") {
+            let payload: [String: Any] = [
+                "type": sharedImage != nil ? "image" : (sharedUrl != nil ? "url" : "text"),
+                "text": sharedText,
+                "url": sharedUrl ?? "",
+                "title": sharedTitle ?? "",
+                "imageUri": sharedImage ?? "",
+                "mimeType": sharedMimeType ?? ""
+            ]
 
-    private func saveSharedContent(content: String, title: String?, mimeType: String) {
-        let defaults = UserDefaults(suiteName: appGroupId)
-        let payload: [String: Any] = [
-            "content": content,
-            "title": title ?? "",
-            "mime_type": mimeType,
-            "timestamp": ISO8601DateFormatter().string(from: Date())
-        ]
-        defaults?.set(payload, forKey: "nclaw_shared_content")
-        defaults?.synchronize()
+            if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                userDefaults.set(jsonString, forKey: "NCLAW_SHARED_CONTENT")
+                userDefaults.synchronize()
+            }
+        }
+
+        // Open main app with deep link
+        let deepLinkUrl = URL(string: "nclaw://share")!
+        var responder: UIResponder? = self
+        while responder != nil {
+            if let application = responder as? UIApplication {
+                application.open(deepLinkUrl, options: [:], completionHandler: nil)
+                break
+            }
+            responder = responder?.next
+        }
+
+        self.extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
     }
 
     override func configurationItems() -> [Any]! {
+        // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
         return []
     }
 }

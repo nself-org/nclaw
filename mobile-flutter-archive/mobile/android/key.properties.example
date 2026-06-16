@@ -1,0 +1,16 @@
+# Android release signing configuration.
+# Copy this to key.properties and fill in your values.
+# NEVER commit key.properties to git.
+#
+# Generate a keystore:
+#   keytool -genkey -v -keystore claw-release.jks \
+#     -keyalg RSA -keysize 4096 -validity 25000 -alias claw
+#
+# CI: GitHub Actions writes this file from secrets:
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+
+storePassword=
+keyPassword=
+keyAlias=claw
+storeFile=claw-release.jks

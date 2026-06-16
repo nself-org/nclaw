@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- S22-T04: APNs + Universal Links.
+	     `aps-environment` must be `development` in debug builds and
+	     `production` in release; Xcode flips automatically based on
+	     the entitlements file matched to the build configuration.
+	     For a single-file setup we declare `development` here and
+	     let ExportOptions.plist / App Store Connect upload remap
+	     to `production` on release archives. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Associated Domains: serves https://claw.nself.org/.well-known/apple-app-site-association
+	     See docs/SIGNING.md for the AASA file contents and hosting steps. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:claw.nself.org</string>
+		<string>applinks:nself.org</string>
+	</array>
+</dict>
+</plist>

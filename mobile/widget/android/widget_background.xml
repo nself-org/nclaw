@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  nclaw/mobile — Widget Background Drawable
+
+  Purpose: Gradient background for Android home screen widget.
+  Installation: Place in android/app/src/main/res/drawable/
+  SPORT: F08-SERVICE-INVENTORY.md (nclaw-mobile-rn android-widget-drawables)
+-->
+
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+  android:shape="rectangle">
+
+  <gradient
+    android:type="linear"
+    android:angle="45"
+    android:startColor="#1a1a2e"
+    android:endColor="#0f0f1b" />
+
+  <corners android:radius="12dp" />
+
+</shape>

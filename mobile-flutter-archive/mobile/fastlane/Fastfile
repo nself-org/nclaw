@@ -1,0 +1,84 @@
+# E-26-12: Fastlane configuration for nClaw mobile builds.
+#
+# Lanes:
+# - beta: Build and upload to TestFlight (iOS) / Internal track (Android)
+# - release: Build and upload to App Store / Production track
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    build_app(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      output_directory: "build/ios",
+      output_name: "nclaw.ipa"
+    )
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build and upload to App Store"
+  lane :release do
+    build_app(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      output_directory: "build/ios",
+      output_name: "nclaw.ipa"
+    )
+    upload_to_app_store(
+      force: true,
+      skip_metadata: false,
+      skip_screenshots: true
+    )
+  end
+end
+
+platform :android do
+  desc "Build release AAB only (no upload)"
+  lane :build_only do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      flavor: "prod",
+      project_dir: "android"
+    )
+  end
+
+  desc "Build and upload to Internal track"
+  lane :beta do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      flavor: "prod",
+      project_dir: "android"
+    )
+    upload_to_play_store(
+      track: "internal",
+      aab: "build/app/outputs/bundle/prodRelease/app-prod-release.aab",
+      skip_upload_apk: true,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"] || "fastlane/play-store-key.json"
+    )
+  end
+
+  desc "Build and upload to Production (draft)"
+  lane :release do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      flavor: "prod",
+      project_dir: "android"
+    )
+    upload_to_play_store(
+      track: "production",
+      aab: "build/app/outputs/bundle/prodRelease/app-prod-release.aab",
+      skip_upload_apk: true,
+      release_status: "draft",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"] || "fastlane/play-store-key.json"
+    )
+  end
+end

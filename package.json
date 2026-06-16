@@ -1,0 +1,18 @@
+{
+  "name": "nclaw",
+  "version": "1.1.1",
+  "private": true,
+  "description": "ɳClaw — AI assistant monorepo (Tauri 2 desktop + React Native mobile + Rust core)",
+  "scripts": {
+    "mobile": "pnpm --filter @nclaw/mobile start",
+    "mobile:ios": "pnpm --filter @nclaw/mobile ios",
+    "mobile:android": "pnpm --filter @nclaw/mobile android",
+    "desktop": "pnpm --filter nclaw-desktop dev",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

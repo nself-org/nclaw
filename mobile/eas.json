@@ -1,0 +1,61 @@
+{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "development"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "ios": {
+        "bundleIdentifier": "org.nself.nclaw.staging"
+      },
+      "android": {
+        "package": "org.nself.nclaw.staging",
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "staging",
+        "NSELF_API_URL": "https://167.235.233.65"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "bundleIdentifier": "org.nself.nclaw"
+      },
+      "android": {
+        "package": "org.nself.nclaw",
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "NSELF_API_URL": "https://5.75.235.42"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "alisalaah@gmail.com",
+        "ascAppId": "FILL_ME_IN",
+        "appleTeamId": "FILL_ME_IN"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-services-account.json",
+        "track": "production"
+      }
+    }
+  }
+}

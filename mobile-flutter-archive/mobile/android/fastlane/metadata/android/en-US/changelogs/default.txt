@@ -1,0 +1,9 @@
+Version 1.1.1
+
+- Full feature parity with the web client
+- Push notifications (FCM) with rich channels per category
+- Android App Links: tap any claw.nself.org link to open in-app
+- Encrypted local database (SQLCipher) for at-rest protection
+- Offline-first sync with automatic reconciliation
+- Deep links to topics and memories: claw://topics/:id, claw://memories/:id
+- Performance and stability fixes throughout

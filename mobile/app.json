@@ -1,0 +1,114 @@
+{
+  "expo": {
+    "name": "ɳClaw",
+    "slug": "nclaw",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.nself.nclaw",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "appGroups": [
+        "group.org.nself.nclaw.widget",
+        "group.org.nself.nclaw.share"
+      ],
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.org.nself.nclaw.widget",
+          "group.org.nself.nclaw.share"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "org.nself.nclaw",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.SEND",
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "text/plain"
+            },
+            {
+              "mimeType": "text/x-uri"
+            },
+            {
+              "mimeType": "image/*"
+            }
+          ]
+        },
+        {
+          "action": "android.intent.action.SEND_MULTIPLE",
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "image/*"
+            }
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.22"
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "extraPodspecArgs": ["OP_SQLITE_USE_SQLCIPHER=1"]
+          }
+        }
+      ],
+      [
+        "@op-engineering/op-sqlite",
+        {
+          "sqlcipher": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "ɳClaw uses your approximate location to add real-world context to AI responses. No location data is stored or transmitted.",
+          "locationWhenInUsePermission": "ɳClaw uses your approximate location to add real-world context to AI responses. No location data is stored or transmitted.",
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      "expo-battery",
+      [
+        "react-native-share-extension/expo",
+        {
+          "appleTeamId": "YOUR_APPLE_TEAM_ID",
+          "appGroups": ["group.org.nself.nclaw.share"]
+        }
+      ]
+    ],
+    "scheme": "nclaw",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

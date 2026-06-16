@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=ɳClaw
+Comment=Personal AI assistant with infinite memory
+Exec=claw %U
+Icon=claw
+Type=Application
+Categories=Office;Utility;
+MimeType=x-scheme-handler/claw;
+StartupWMClass=nself-claw
+Terminal=false

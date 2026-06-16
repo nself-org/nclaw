@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  nclaw/mobile — Android Widget Provider Metadata
+
+  Purpose: Declares widget properties to Android system (min/max size, refresh interval, preview).
+  Installation: Place in android/app/src/main/res/xml/ (or equivalent Expo resource directory).
+  SPORT: F08-SERVICE-INVENTORY.md (nclaw-mobile-rn android-widget-metadata)
+-->
+
+<appwidget-provider
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:minWidth="110dp"
+  android:minHeight="110dp"
+  android:updatePeriodMillis="1800000"
+  android:initialLayout="@layout/nclaw_widget"
+  android:resizeMode="horizontal|vertical"
+  android:previewImage="@drawable/nclaw_widget_preview"
+  android:widgetCategory="home_screen"
+  android:widgetFeatures="reconfigurable">
+
+  <!-- Min/Max dimensions for home screen widget -->
+  <!-- updatePeriodMillis = 30 minutes (1800000 ms); can be lowered for active use -->
+
+</appwidget-provider>
