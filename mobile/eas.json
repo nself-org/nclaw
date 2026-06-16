@@ -27,7 +27,8 @@
       },
       "env": {
         "APP_ENV": "staging",
-        "NSELF_API_URL": "https://167.235.233.65"
+        "EXPO_PUBLIC_NSELF_API_URL": "https://api.staging.nself.org",
+        "EXPO_PUBLIC_NCLAW_API_URL": "https://api.staging.nself.org"
       }
     },
     "production": {
@@ -41,7 +42,8 @@
       },
       "env": {
         "APP_ENV": "production",
-        "NSELF_API_URL": "https://5.75.235.42"
+        "EXPO_PUBLIC_NSELF_API_URL": "https://api.nself.org",
+        "EXPO_PUBLIC_NCLAW_API_URL": "https://api.nself.org"
       }
     }
   },

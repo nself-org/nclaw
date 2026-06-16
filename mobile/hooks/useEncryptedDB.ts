@@ -108,8 +108,27 @@ function notReady<T>(): Promise<Result<T, AppError>> {
 /**
  * useEncryptedDB — React hook for the nclaw SQLCipher local database.
  *
+ * IMPORTANT — `secureStore` MUST be referentially stable across renders.
+ * The hook's useEffect lists `secureStore` as a dependency: if a new instance
+ * is passed on every parent render (e.g. `new ExpoSecureStore()` inline), the
+ * effect will re-run and attempt to re-open the DB on each render.
+ * EncryptedDB.open() is idempotent (singleton guard), so no duplicate file
+ * handle is created, but the `cancelled` flag race window grows unnecessarily.
+ *
+ * Correct usage patterns:
+ *   // Option A — module-level singleton (preferred for app root):
+ *   const SECURE_STORE = new ExpoSecureStore();
+ *   function App() { const db = useEncryptedDB({ secureStore: SECURE_STORE }); ... }
+ *
+ *   // Option B — useMemo if the store must be created inside a component:
+ *   const secureStore = useMemo(() => new ExpoSecureStore(), []);
+ *   const db = useEncryptedDB({ secureStore });
+ *
+ *   // Option C — Context Provider (recommended for large apps):
+ *   // Wrap at app root with <EncryptedDBProvider store={SECURE_STORE}>.
+ *
  * Usage (at app root / context provider):
- *   const db = useEncryptedDB({ secureStore: new ExpoSecureStore() });
+ *   const db = useEncryptedDB({ secureStore: SECURE_STORE });
  *   if (!db.isReady) return <SplashScreen />;
  *   // Now use db.insertMessage(), db.saveDraft(), etc.
  */

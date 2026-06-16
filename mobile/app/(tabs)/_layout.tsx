@@ -86,6 +86,18 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t('tabs.servers', 'Servers'),
         }}
       />
+      {/*
+       * history.tsx is a pushed screen (stack navigation into chat history),
+       * NOT a standalone tab — hidden from the tab bar per feature-spec §5.
+       * Expo Router auto-registers all files in a tabs group, so we must
+       * explicitly exclude it via href: null.
+       */}
+      <Tabs.Screen
+        name="history"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

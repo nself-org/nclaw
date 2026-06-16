@@ -123,7 +123,17 @@ async function deriveDBKey(
   }
 
   // No key found — generate a new one.
-  const newKey = generateHexKey(32);
+  // generateHexKey throws if crypto.getRandomValues is unavailable (fail-closed).
+  let newKey: string;
+  try {
+    newKey = generateHexKey(32);
+  } catch (cause) {
+    return err({
+      code: 'internal',
+      message: `EncryptedDB: ${String(cause)}`,
+      status: 500,
+    });
+  }
   const setResult = await secureStore.setItem(DB_KEY_SECURE_STORE_KEY, newKey);
   if (!isOk(setResult)) {
     return err({
@@ -139,24 +149,27 @@ async function deriveDBKey(
 /**
  * Generate a cryptographically random hex string of `byteLength` bytes.
  *
- * Uses React Native's `crypto.getRandomValues` (available in Hermes >= 0.12 /
- * React Native >= 0.73). Falls back to a Uint8Array loop for older versions.
+ * Requires React Native's `crypto.getRandomValues` (available in Hermes >= 0.12 /
+ * React Native >= 0.73 — the project minimum). Throws if the CSPRNG is unavailable
+ * so the caller (deriveDBKey) propagates an error and the DB remains CLOSED.
+ * A Math.random fallback is deliberately absent: weak key material is more
+ * dangerous than a hard startup failure.
+ *
+ * @throws {Error} if `crypto.getRandomValues` is not available.
  */
 function generateHexKey(byteLength: number): string {
-  const bytes = new Uint8Array(byteLength);
-  if (typeof globalThis.crypto?.getRandomValues === 'function') {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    // Fallback: Math.random is NOT cryptographically secure, but this path
-    // should only be hit in very old RN versions. Warn loudly.
-    console.warn(
-      'EncryptedDB: crypto.getRandomValues unavailable; using Math.random fallback. ' +
-      'Upgrade React Native to >= 0.73 for secure key generation.',
+  if (typeof globalThis.crypto?.getRandomValues !== 'function') {
+    // Fail CLOSED — do not fall back to Math.random or any non-CSPRNG source.
+    // If this throws, deriveDBKey returns Err and EncryptedDB.open() returns Err,
+    // preventing the DB from opening with a weak or predictable key.
+    throw new Error(
+      'EncryptedDB: crypto.getRandomValues is unavailable. ' +
+      'React Native >= 0.73 (Hermes) is required for secure DB key generation. ' +
+      'Refusing to generate a DB key with a non-cryptographic source.',
     );
-    for (let i = 0; i < byteLength; i++) {
-      bytes[i] = Math.floor(Math.random() * 256);
-    }
   }
+  const bytes = new Uint8Array(byteLength);
+  globalThis.crypto.getRandomValues(bytes);
   return Array.from(bytes)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');

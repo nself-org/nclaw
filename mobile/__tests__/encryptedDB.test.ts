@@ -272,3 +272,63 @@ describe('draft CRUD', () => {
     expect(isOk(result)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Key generation — fail-closed CSPRNG check
+// ---------------------------------------------------------------------------
+
+describe('key generation — fail-closed on missing CSPRNG', () => {
+  let originalCrypto: typeof globalThis.crypto;
+
+  beforeEach(() => {
+    originalCrypto = globalThis.crypto;
+  });
+
+  afterEach(() => {
+    // Restore globalThis.crypto unconditionally.
+    Object.defineProperty(globalThis, 'crypto', {
+      value: originalCrypto,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('returns Err (does not open DB) when crypto.getRandomValues is unavailable', async () => {
+    // Remove crypto from globalThis to simulate a runtime without CSPRNG.
+    Object.defineProperty(globalThis, 'crypto', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+
+    // SecureStore returns null (no existing key) — forces generateHexKey to run.
+    const secureStore = makeSecureStore({
+      getItem: jest.fn().mockResolvedValue(ok(null)),
+    });
+
+    const result = await EncryptedDB.open(secureStore);
+
+    expect(isOk(result)).toBe(false);
+    // op-sqlite open must NOT be called — DB stays closed.
+    const opsqlite = require('@op-engineering/op-sqlite') as { open: jest.Mock };
+    expect(opsqlite.open).not.toHaveBeenCalled();
+  });
+
+  it('returns Err when crypto exists but getRandomValues is not a function', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      value: { getRandomValues: null },
+      writable: true,
+      configurable: true,
+    });
+
+    const secureStore = makeSecureStore({
+      getItem: jest.fn().mockResolvedValue(ok(null)),
+    });
+
+    const result = await EncryptedDB.open(secureStore);
+
+    expect(isOk(result)).toBe(false);
+    const opsqlite = require('@op-engineering/op-sqlite') as { open: jest.Mock };
+    expect(opsqlite.open).not.toHaveBeenCalled();
+  });
+});

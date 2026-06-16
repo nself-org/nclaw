@@ -17,7 +17,7 @@
  * SPORT: None — SPORT updated in T09.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,15 +28,8 @@ import { useTranslation } from 'react-i18next';
 
 import { AsyncScreen, type ScreenStatus } from '../../components/AsyncScreen';
 import { useDirection } from '../../lib/useDirection';
+import { useNotifications } from '../../hooks/useNotifications';
 import type { NotificationPreferences } from '../../types/chat';
-
-// ─── Default prefs ────────────────────────────────────────────────────────────
-
-const DEFAULT_PREFS: NotificationPreferences = {
-  digestEnabled: true,
-  mentionEnabled: true,
-  syncEnabled: false,
-};
 
 // ─── Toggle row ────────────────────────────────────────────────────────────────
 
@@ -86,15 +79,17 @@ function ToggleRow({ label, description, value, onValueChange }: ToggleRowProps)
 
 export default function NotificationsSettingsScreen() {
   const { t } = useTranslation();
-  const [status] = useState<ScreenStatus>('data');
-  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFS);
+  const { prefs, isLoading, updatePref } = useNotifications();
+
+  // Derive screen status from loading state
+  const status: ScreenStatus = isLoading ? 'loading' : 'data';
 
   const toggle = useCallback(
     (key: keyof NotificationPreferences) => (value: boolean) => {
-      setPrefs((prev) => ({ ...prev, [key]: value }));
-      // Persist to secure store — wired in T06
+      // Persists to SecureStore via useNotifications — survives app restart.
+      updatePref(key, value);
     },
-    [],
+    [updatePref],
   );
 
   return (

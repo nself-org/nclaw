@@ -12,21 +12,24 @@
  *   - usePushNavigation() wires tap-to-navigate (foreground + cold-start / killed app).
  *   - initPushNotificationService() starts FCM token registration + token refresh subscription.
  *   - ensureCanonicalTopicChannels() pre-creates Android channels for all known auto-topic tags.
+ *   - NselfAuthProvider MUST wrap the root Stack so useAuth()/useAuthStrategy() work in all screens.
+ *   - authStrategy singleton is initialised here and never re-created (stable reference for provider).
  * SPORT: F08-SERVICE-INVENTORY — nclaw-mobile-layout
  */
-import { useEffect } from 'react';
-import { View, StyleSheet, useAppState } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, StyleSheet, AppState, type AppStateStatus } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SentryRN from '@sentry/react-native';
 import { initObservability } from '@nself/observability';
+import { NselfAuthProvider } from '@nself/auth-core';
 
+import { authStrategy } from '../lib/auth';
 import { useBiometricAuth } from '../hooks/useBiometricAuth';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { BiometricLockScreen } from '../components/BiometricLockScreen';
 import { registerMemoryCompactionTask } from '../tasks/memoryCompaction';
-import { getSharedContent, clearSharedContent, buildShareDeepLink } from '../services/shareTargetService';
-import { biometricLockService } from '../services/biometricLockService';
+import { getSharedContent, buildShareDeepLink } from '../services/shareTargetService';
 import {
   initPushNotificationService,
   type PushNotificationServiceHandle,
@@ -63,10 +66,10 @@ SplashScreen.preventAutoHideAsync();
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const { isAuthenticated, prefEnabled, authenticate } = useBiometricAuth();
   const router = useRouter();
-  const appState = useAppState();
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   // ── Tap-to-navigate (push notification → correct screen) ─────────────────
   // Handles both foreground taps and cold-start (killed app) initial notification.
@@ -121,11 +124,15 @@ export default function RootLayout() {
   // Clear shared content when app returns to foreground
   // (ensures stale shares don't re-appear)
   useEffect(() => {
-    if (appState.match(/active|foreground/)) {
-      // App is in foreground; shared content should be consumed
-      // If still present, it means it wasn't saved; safe to keep for retry
-    }
-  }, [appState]);
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (/active|foreground/.test(nextState) && /background|inactive/.test(appStateRef.current)) {
+        // App just returned to foreground; shared content should be consumed.
+        // If still present, it means it wasn't saved; safe to keep for retry.
+      }
+      appStateRef.current = nextState;
+    });
+    return () => subscription.remove();
+  }, []);
 
   return (
     <View style={styles.rootContainer}>
@@ -140,6 +147,9 @@ export default function RootLayout() {
       <Stack>
         {/* Onboarding — requests notification permission */}
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+
+        {/* Auth screens — unauthenticated surface */}
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
 
         {/* Main tabs */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -158,6 +168,23 @@ export default function RootLayout() {
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </View>
+  );
+}
+
+/**
+ * RootLayout — Expo Router root layout entry point.
+ *
+ * WHY NselfAuthProvider is here and not in RootLayoutInner:
+ *   useAuth() and useAuthStrategy() throw if called outside <NselfAuthProvider>.
+ *   Both index.tsx and auth/_layout.tsx call useAuth() — they are children of this
+ *   Stack. The provider MUST be an ancestor of the Stack to satisfy the hook
+ *   invariant on first render.
+ */
+export default function RootLayout() {
+  return (
+    <NselfAuthProvider strategy={authStrategy}>
+      <RootLayoutInner />
+    </NselfAuthProvider>
   );
 }
 

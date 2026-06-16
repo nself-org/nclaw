@@ -20,13 +20,13 @@ import {
 
 /** expo-secure-store adapter implementing SecureStoreInterface */
 const expoSecureStore: SecureStoreInterface = {
-  getItem: async (key: string): Promise<string | null> => {
+  get: async (key: string): Promise<string | null> => {
     return ExpoSecureStore.getItemAsync(key);
   },
-  setItem: async (key: string, value: string): Promise<void> => {
+  set: async (key: string, value: string): Promise<void> => {
     await ExpoSecureStore.setItemAsync(key, value);
   },
-  removeItem: async (key: string): Promise<void> => {
+  delete: async (key: string): Promise<void> => {
     await ExpoSecureStore.deleteItemAsync(key);
   },
 };
