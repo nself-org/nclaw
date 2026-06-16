@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNselfTranslation } from '@nself/i18n';
 import { useTopics, SearchResult } from '../../lib/topic-store';
 
 interface SearchBarProps {
@@ -6,6 +7,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onResult }: SearchBarProps) {
+  const { t } = useNselfTranslation();
   const [query, setQuery] = useState('');
   const search = useTopics((s) => s.search);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,14 +37,14 @@ export function SearchBar({ onResult }: SearchBarProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search topics..."
-          aria-label="Search topics"
+          placeholder={t('desktop.nclaw.searchTopics')}
+          aria-label={t('desktop.nclaw.searchTopics')}
           className="w-full bg-transparent text-sm text-gray-200 placeholder-gray-500 outline-none"
         />
         {query && (
           <button
             onClick={() => setQuery('')}
-            aria-label="Clear search"
+            aria-label={t('desktop.nclaw.clearSearch')}
             className="text-gray-500 hover:text-gray-300"
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

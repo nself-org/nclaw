@@ -1,11 +1,13 @@
 // ɳClaw Desktop — Sync Settings section
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useNselfTranslation } from "@nself/i18n";
 import { useSettings, maskKey } from "../../lib/settings-store";
 
 type TestState = "idle" | "testing" | "ok" | "fail";
 
 export function SyncSettings(): React.ReactElement {
+  const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();
   const current = settings.sync;
 
@@ -49,7 +51,7 @@ export function SyncSettings(): React.ReactElement {
         key: draft.license_key_raw || "",
       });
       setTestState(ok ? "ok" : "fail");
-      setTestMessage(ok ? "Connection successful." : "Connection failed. Check URL and key.");
+      setTestMessage(ok ? t('desktop.nclaw.connectionSuccessful') : t('desktop.nclaw.connectionFailed'));
     } catch (e) {
       setTestState("fail");
       setTestMessage(String(e));
@@ -59,13 +61,13 @@ export function SyncSettings(): React.ReactElement {
   return (
     <section aria-labelledby="sync-heading">
       <h2 id="sync-heading" className="text-lg font-semibold text-slate-100 mb-4">
-        Sync &amp; License
+        {t('desktop.nclaw.syncLicense')}
       </h2>
 
       {/* Server URL */}
       <div className="mb-4">
         <label htmlFor="sync-server-url" className="block text-sm font-medium text-slate-300 mb-1">
-          nSelf server URL
+          {t('desktop.nclaw.nSelfServerUrl')}
         </label>
         <input
           id="sync-server-url"
@@ -74,7 +76,7 @@ export function SyncSettings(): React.ReactElement {
           onChange={(e) => setDraft((d) => ({ ...d, server_url: e.target.value }))}
           placeholder="https://your-nself-server.example.com"
           className="w-full rounded-md bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder:text-slate-600"
-          aria-label="nSelf server URL"
+          aria-label={t('desktop.nclaw.nSelfServerUrl')}
         />
       </div>
 
@@ -108,7 +110,7 @@ export function SyncSettings(): React.ReactElement {
           className="rounded-md bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
           aria-label="Test sync connection"
         >
-          {testState === "testing" ? "Testing…" : "Test connection"}
+          {testState === "testing" ? t('desktop.nclaw.loading') : t('desktop.nclaw.testConnection')}
         </button>
         {testState !== "idle" && testState !== "testing" && (
           <span
@@ -131,7 +133,7 @@ export function SyncSettings(): React.ReactElement {
         className="rounded-md bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
         aria-label="Save sync settings"
       >
-        {saved ? "Saved" : "Save"}
+        {saved ? t('desktop.nclaw.saved') : t('save')}
       </button>
     </section>
   );

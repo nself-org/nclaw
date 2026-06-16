@@ -1,5 +1,6 @@
 // ɳClaw Desktop — Advanced Settings section
 import React, { useEffect, useState } from "react";
+import { useNselfTranslation } from "@nself/i18n";
 import { useSettings } from "../../lib/settings-store";
 
 const LOG_LEVELS = ["error", "warn", "info", "debug", "trace"] as const;
@@ -39,6 +40,7 @@ function Toggle({ id, label, description, checked, onChange }: ToggleProps): Rea
 }
 
 export function AdvancedSettings(): React.ReactElement {
+  const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();
   const current = settings.advanced;
 
@@ -98,16 +100,16 @@ export function AdvancedSettings(): React.ReactElement {
       <div className="space-y-4 mb-6">
         <Toggle
           id="toggle-telemetry"
-          label="Usage telemetry"
-          description="Send anonymous crash reports and usage statistics to help improve ɳClaw."
+          label={t('desktop.nclaw.telemetryLabel')}
+          description={t('desktop.nclaw.telemetryDesc')}
           checked={draft.telemetry}
           onChange={(v) => setDraft((d) => ({ ...d, telemetry: v }))}
         />
 
         <Toggle
           id="toggle-check-updates"
-          label="Check for updates"
-          description="Automatically check for new ɳClaw Desktop releases on startup."
+          label={t('desktop.nclaw.updatesLabel')}
+          description={t('desktop.nclaw.updatesDesc')}
           checked={draft.check_updates}
           onChange={(v) => setDraft((d) => ({ ...d, check_updates: v }))}
         />
@@ -122,9 +124,9 @@ export function AdvancedSettings(): React.ReactElement {
       <button
         onClick={handleSave}
         className="rounded-md bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
-        aria-label="Save advanced settings"
+        aria-label={t('save')}
       >
-        {saved ? "Saved" : "Save"}
+        {saved ? t('desktop.nclaw.saved') : t('save')}
       </button>
     </section>
   );

@@ -1,0 +1,16 @@
+{
+  "loading": "Loading…",
+  "error": "Something went wrong",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "save": "Save",
+  "saved": "Saved",
+  "done": "Done",
+  "delete": "Delete",
+  "close": "Close",
+  "remove": "Remove",
+  "rename": "Rename",
+  "archive": "Archive",
+  "export": "Export",
+  "confirm": "Confirm"
+}

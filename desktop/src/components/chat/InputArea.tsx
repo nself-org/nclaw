@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
+import { useNselfTranslation } from '@nself/i18n';
 
 interface Props {
   value: string;
@@ -15,6 +16,7 @@ const MAX_ROWS = 8;
  * Enter sends; Shift+Enter inserts newline. File paste is stubbed (v1.2.0).
  */
 export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
+  const { t } = useNselfTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize on content change.
@@ -61,7 +63,7 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         rows={1}
-        placeholder="Message ɳClaw…"
+        placeholder={t('desktop.nclaw.messagePlaceholder')}
         className="flex-1 resize-none rounded-xl bg-gray-800 px-4 py-2
                    text-slate-100 placeholder-gray-500 text-sm leading-6
                    focus:outline-none focus:ring-2 focus:ring-sky-500
@@ -76,9 +78,9 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }: Props) {
                    disabled:opacity-40 disabled:cursor-not-allowed
                    hover:not-disabled:bg-sky-400 focus:outline-none
                    focus:ring-2 focus:ring-sky-500"
-        aria-label="Send message"
+        aria-label={t('desktop.nclaw.sendMessage')}
       >
-        Send
+        {t('desktop.nclaw.sendMessage')}
       </button>
     </div>
   );

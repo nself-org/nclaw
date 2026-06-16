@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNselfTranslation } from '@nself/i18n';
 import { useTheme } from '@/hooks/useTheme';
 import { ACCENT_PRESETS, isValidHex } from '@/lib/theme';
 
 export function ThemeSettings(): React.ReactElement {
+  const { t } = useNselfTranslation();
   const { mode, setMode, accentHex, setAccentHex } = useTheme();
   const [customHex, setCustomHex] = useState('');
   const [customError, setCustomError] = useState('');
@@ -11,7 +13,7 @@ export function ThemeSettings(): React.ReactElement {
     const val = e.target.value;
     setCustomHex(val);
     if (val && !isValidHex(val)) {
-      setCustomError('Invalid hex. Use #RRGGBB or #RRGGBBAA.');
+      setCustomError(t('desktop.nclaw.invalidHex'));
     } else {
       setCustomError('');
     }
@@ -19,7 +21,7 @@ export function ThemeSettings(): React.ReactElement {
 
   const handleApplyCustom = () => {
     if (!customHex || !isValidHex(customHex)) {
-      setCustomError('Invalid hex. Use #RRGGBB or #RRGGBBAA.');
+      setCustomError(t('desktop.nclaw.invalidHex'));
       return;
     }
     setAccentHex(customHex.startsWith('#') ? customHex : `#${customHex}`);
@@ -38,7 +40,7 @@ export function ThemeSettings(): React.ReactElement {
     <div className="flex flex-col gap-6 p-6">
       {/* Theme Mode Selection */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-100 mb-3">Theme</h3>
+        <h3 className="text-sm font-semibold text-slate-100 mb-3">{t('desktop.nclaw.themeSection')}</h3>
         <div className="space-y-2">
           {['light', 'dark', 'system'].map((m) => (
             <label key={m} className="flex items-center gap-3 cursor-pointer group">
@@ -51,7 +53,7 @@ export function ThemeSettings(): React.ReactElement {
                 className="w-4 h-4 rounded-full border border-slate-600 bg-surface checked:bg-sky-500 checked:border-sky-400 cursor-pointer"
               />
               <span className="text-sm text-slate-300 capitalize group-hover:text-slate-100 transition-colors">
-                {m === 'system' ? 'System' : m.charAt(0).toUpperCase() + m.slice(1)}
+                {m === 'system' ? t('desktop.nclaw.themeSystem') : m.charAt(0).toUpperCase() + m.slice(1)}
               </span>
             </label>
           ))}
@@ -60,7 +62,7 @@ export function ThemeSettings(): React.ReactElement {
 
       {/* Accent Presets Grid */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-100 mb-3">Accent Color</h3>
+        <h3 className="text-sm font-semibold text-slate-100 mb-3">{t('desktop.nclaw.accentSection')}</h3>
         <div className="grid grid-cols-3 gap-2">
           {ACCENT_PRESETS.map((preset) => (
             <button
@@ -102,7 +104,7 @@ export function ThemeSettings(): React.ReactElement {
             disabled={!customHex || !isValidHex(customHex)}
             className="px-3 py-2 rounded-md bg-sky-500/20 text-sky-400 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Apply
+            {t('desktop.nclaw.customHexApply')}
           </button>
         </div>
       </div>
@@ -127,7 +129,7 @@ export function ThemeSettings(): React.ReactElement {
         onClick={handleReset}
         className="w-full px-4 py-2 rounded-md bg-slate-700/50 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
       >
-        Reset to Defaults
+        {t('desktop.nclaw.customHexReset')}
       </button>
     </div>
   );

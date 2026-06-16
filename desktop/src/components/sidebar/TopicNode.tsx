@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useNselfTranslation } from '@nself/i18n';
 import { TreeNode, useTopics } from '../../lib/topic-store';
 import { TopicTree } from './TopicTree';
 
@@ -11,14 +12,6 @@ interface TopicNodeProps {
 }
 
 type MenuAction = 'new-subtopic' | 'rename' | 'archive' | 'delete' | 'export';
-
-const MENU_ITEMS: { action: MenuAction; label: string }[] = [
-  { action: 'new-subtopic', label: 'New Subtopic' },
-  { action: 'rename', label: 'Rename' },
-  { action: 'archive', label: 'Archive' },
-  { action: 'delete', label: 'Delete' },
-  { action: 'export', label: 'Export' },
-];
 
 export function TopicNode({ node, depth, highlightIds }: TopicNodeProps) {
   const { topic, children } = node;
@@ -46,6 +39,16 @@ export function TopicNode({ node, depth, highlightIds }: TopicNodeProps) {
     // Stub — real implementations land when backend commands are wired in S17.
     console.info('[TopicNode] menu action', action, topic.id);
   }
+
+  const { t } = useNselfTranslation();
+
+  const MENU_ITEMS: { action: MenuAction; labelKey: string }[] = [
+    { action: 'new-subtopic', labelKey: 'desktop.nclaw.newSubtopic' },
+    { action: 'rename', labelKey: 'desktop.nclaw.rename' },
+    { action: 'archive', labelKey: 'desktop.nclaw.archive' },
+    { action: 'delete', labelKey: 'delete' },
+    { action: 'export', labelKey: 'desktop.nclaw.export' },
+  ];
 
   return (
     <li
@@ -110,7 +113,7 @@ export function TopicNode({ node, depth, highlightIds }: TopicNodeProps) {
             </svg>
           </summary>
           <ul className="absolute right-0 z-50 mt-1 w-36 rounded-md border border-gray-700 bg-gray-900 py-1 shadow-xl" role="menu">
-            {MENU_ITEMS.map(({ action, label }) => (
+            {MENU_ITEMS.map(({ action, labelKey }) => (
               <li key={action} role="none">
                 <button
                   role="menuitem"
@@ -120,7 +123,7 @@ export function TopicNode({ node, depth, highlightIds }: TopicNodeProps) {
                     action === 'delete' ? 'text-red-400 hover:bg-red-500/10' : 'text-gray-300 hover:bg-gray-700',
                   ].join(' ')}
                 >
-                  {label}
+                  {t(labelKey as Parameters<typeof t>[0])}
                 </button>
               </li>
             ))}

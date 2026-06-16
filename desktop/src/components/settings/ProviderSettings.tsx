@@ -1,5 +1,6 @@
 // ɳClaw Desktop — Provider Settings section
 import React, { useState } from "react";
+import { useNselfTranslation } from "@nself/i18n";
 import { useSettings, maskKey, type ProviderSettings as PS } from "../../lib/settings-store";
 
 const PROVIDERS: { id: PS["id"]; label: string; requiresKey: boolean; defaultUrl: string }[] = [
@@ -11,6 +12,7 @@ const PROVIDERS: { id: PS["id"]; label: string; requiresKey: boolean; defaultUrl
 ];
 
 export function ProviderSettings(): React.ReactElement {
+  const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();
   const current = settings.provider;
 
@@ -50,13 +52,13 @@ export function ProviderSettings(): React.ReactElement {
   return (
     <section aria-labelledby="provider-heading">
       <h2 id="provider-heading" className="text-lg font-semibold text-slate-100 mb-4">
-        AI Provider
+        {t('desktop.nclaw.aiProvider')}
       </h2>
 
       {/* Provider selector */}
       <div className="mb-4">
         <label htmlFor="provider-select" className="block text-sm font-medium text-slate-300 mb-1">
-          Provider
+          {t('desktop.nclaw.providerLabel')}
         </label>
         <select
           id="provider-select"
@@ -122,9 +124,9 @@ export function ProviderSettings(): React.ReactElement {
       <button
         onClick={handleSave}
         className="rounded-md bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
-        aria-label="Save provider settings"
+        aria-label={t('save')}
       >
-        {saved ? "Saved" : "Save"}
+        {saved ? t('desktop.nclaw.saved') : t('save')}
       </button>
     </section>
   );

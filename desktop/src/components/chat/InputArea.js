@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useRef, useEffect, useCallback } from 'react';
+import { useNselfTranslation } from '@nself/i18n';
 const LINE_HEIGHT = 24; // px, matches Tailwind leading-6
 const MAX_ROWS = 8;
 /**
@@ -7,6 +8,7 @@ const MAX_ROWS = 8;
  * Enter sends; Shift+Enter inserts newline. File paste is stubbed (v1.2.0).
  */
 export function InputArea({ value, onChange, onSubmit, isStreaming }) {
+    const { t } = useNselfTranslation();
     const textareaRef = useRef(null);
     // Auto-resize on content change.
     useEffect(() => {
@@ -35,5 +37,5 @@ export function InputArea({ value, onChange, onSubmit, isStreaming }) {
         // Text paste falls through to default browser handling.
     }, []);
     const disabled = isStreaming || !value.trim();
-    return (_jsxs("div", { className: "flex items-end gap-2 px-4 py-3 border-t border-gray-800 bg-gray-950", children: [_jsx("textarea", { ref: textareaRef, value: value, onChange: (e) => onChange(e.target.value), onKeyDown: handleKeyDown, onPaste: handlePaste, rows: 1, placeholder: "Message \u0273Claw\u2026", className: "flex-1 resize-none rounded-xl bg-gray-800 px-4 py-2\n                   text-slate-100 placeholder-gray-500 text-sm leading-6\n                   focus:outline-none focus:ring-2 focus:ring-sky-500\n                   min-h-[2.5rem] max-h-[12rem]", style: { overflowY: 'hidden' } }), _jsx("button", { onClick: onSubmit, disabled: disabled, className: "flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium\n                   bg-sky-500 text-white transition-opacity\n                   disabled:opacity-40 disabled:cursor-not-allowed\n                   hover:not-disabled:bg-sky-400 focus:outline-none\n                   focus:ring-2 focus:ring-sky-500", "aria-label": "Send message", children: "Send" })] }));
+    return (_jsxs("div", { className: "flex items-end gap-2 px-4 py-3 border-t border-gray-800 bg-gray-950", children: [_jsx("textarea", { ref: textareaRef, value: value, onChange: (e) => onChange(e.target.value), onKeyDown: handleKeyDown, onPaste: handlePaste, rows: 1, placeholder: t('desktop.nclaw.messagePlaceholder'), className: "flex-1 resize-none rounded-xl bg-gray-800 px-4 py-2\n                   text-slate-100 placeholder-gray-500 text-sm leading-6\n                   focus:outline-none focus:ring-2 focus:ring-sky-500\n                   min-h-[2.5rem] max-h-[12rem]", style: { overflowY: 'hidden' } }), _jsx("button", { onClick: onSubmit, disabled: disabled, className: "flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium\n                   bg-sky-500 text-white transition-opacity\n                   disabled:opacity-40 disabled:cursor-not-allowed\n                   hover:not-disabled:bg-sky-400 focus:outline-none\n                   focus:ring-2 focus:ring-sky-500", "aria-label": t('desktop.nclaw.sendMessage'), children: t('desktop.nclaw.sendMessage') })] }));
 }

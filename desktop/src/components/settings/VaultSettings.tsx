@@ -1,9 +1,11 @@
 // ɳClaw Desktop — Vault Settings section
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useNselfTranslation } from "@nself/i18n";
 import { useSettings } from "../../lib/settings-store";
 
 export function VaultSettings(): React.ReactElement {
+  const { t } = useNselfTranslation();
   const { settings, load } = useSettings();
   const vault = settings.vault;
 
@@ -27,7 +29,7 @@ export function VaultSettings(): React.ReactElement {
     try {
       await invoke("vault_repair_device");
       await load(); // refresh vault status from backend
-      setResult({ ok: true, message: "Device re-paired successfully." });
+      setResult({ ok: true, message: t('desktop.nclaw.deviceRePaired') });
     } catch (e) {
       setResult({ ok: false, message: String(e) });
     } finally {
@@ -38,7 +40,7 @@ export function VaultSettings(): React.ReactElement {
   return (
     <section aria-labelledby="vault-heading">
       <h2 id="vault-vault" className="text-lg font-semibold text-slate-100 mb-4">
-        Vault &amp; Keychain
+        {t('desktop.nclaw.vaultKeychain')}
       </h2>
 
       <div className="rounded-lg bg-slate-800/50 border border-slate-700 p-4 mb-6">
@@ -51,12 +53,12 @@ export function VaultSettings(): React.ReactElement {
             <p className="text-sm font-medium text-slate-200">
               {vault.paired
                 ? `Paired on ${vault.backend || "OS Keychain"}`
-                : "Not paired"}
+                : t('desktop.nclaw.notPaired')}
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
               {vault.paired
-                ? "Encryption keys are stored securely in the OS keychain."
-                : "Re-pair this device to store encryption keys in the OS keychain."}
+                ? t('desktop.nclaw.vaultPairedDesc')
+                : t('desktop.nclaw.vaultUnpairedDesc')}
             </p>
           </div>
         </div>
@@ -74,9 +76,9 @@ export function VaultSettings(): React.ReactElement {
             <button
               onClick={handleRepairClick}
               className="rounded-md bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
-              aria-label="Confirm device re-pair"
+              aria-label={t('desktop.nclaw.confirmRepair')}
             >
-              Confirm re-pair
+              {t('desktop.nclaw.confirmRepair')}
             </button>
             <button
               onClick={() => setConfirming(false)}
