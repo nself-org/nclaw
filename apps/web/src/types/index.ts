@@ -168,3 +168,48 @@ export type EmptyStateVariant =
   | 'loading'
   | 'forbidden'
   | 'searchEmpty';
+
+/** LiveKit voice call session returned by POST /claw/voice/call/start. */
+export interface VoiceCallSession {
+  /** LiveKit server URL, e.g. wss://livekit.example.com */
+  livekitUrl: string;
+  /** Short-lived participant token scoped to this room. */
+  participantToken: string;
+  /** Unique room identifier. */
+  roomName: string;
+}
+
+/** A knowledge item created by an ingest flow. */
+export interface KnowledgeItem {
+  id: string;
+  type: 'pdf' | 'audio' | 'video' | 'text';
+  title: string;
+  summary: string | null;
+  sourceFilename: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+/** Progress steps used by ProgressIngest component. */
+export type IngestStep = 'uploading' | 'processing' | 'indexing' | 'done';
+
+/**
+ * Cursor-paginated page result used by usePagination hook.
+ * nextCursor is null when no further pages exist.
+ */
+export interface FetchPageResult<T> {
+  items: T[];
+  nextCursor: string | null;
+}
+
+/** Offline-cache conversation row stored in IndexedDB. */
+export interface CachedConversation {
+  id: string;
+  title: string;
+  topicId: string | null;
+  updatedAt: string;
+  lastMessageAt: string | null;
+  messageCount: number;
+  messages: Message[];
+  cachedAt: number; // Date.now() when cached
+}
