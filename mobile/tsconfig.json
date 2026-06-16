@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nself/auth-core": ["../../packages/@nself/auth-core/src/index.ts"],
+      "@nself/errors": ["../../packages/@nself/errors/src/index.ts"],
+      "@nself/native-bridge": ["../../packages/@nself/native-bridge/src/index.ts"],
+      "@nself/graphql-client": ["../../packages/@nself/graphql-client/src/index.ts"],
+      "@nself/i18n": ["../../packages/@nself/i18n/src/index.ts"],
+      "@nself/observability": ["../../packages/@nself/observability/src/index.ts"],
+      "@nself/types": ["../../packages/@nself/types/src/index.ts"],
+      "@nself/ui": ["../../packages/@nself/ui/src/index.ts"],
+      "~/*": ["./*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "__tests__"
+  ]
+}
