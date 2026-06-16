@@ -1,7 +1,8 @@
 # nclaw monorepo pnpm workspace
-# Includes the RN mobile app and the web app.
-# @nself/* shared packages are consumed from the root packages/ workspace.
+# Includes the RN mobile app, web app, and desktop app.
+# @nself/* shared packages are resolved from the packages/ sibling workspace via relative path.
 packages:
   - 'mobile'
   - 'apps/web'
   - 'desktop'
+  - '../packages/@nself/*'
