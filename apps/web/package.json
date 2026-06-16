@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start -p 3020",
     "type-check": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@nself/claw-web": "link:../../../plugins-pro/paid/claw-web/web",
     "@tanstack/react-query": "^5.51.21",
     "framer-motion": "^11.3.19",
     "lucide-react": "^0.414.0",
@@ -20,6 +22,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.45.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",

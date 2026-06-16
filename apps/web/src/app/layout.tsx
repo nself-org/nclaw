@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { ClawWebProvider } from '@/providers/claw-web-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import '@/styles/globals.css';
 
@@ -27,7 +28,9 @@ export default async function RootLayout({
     <html lang={locale} className="dark">
       <body>
         <NextIntlClientProvider messages={messages}>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <ClawWebProvider>{children}</ClawWebProvider>
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>
