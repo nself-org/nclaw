@@ -7,6 +7,10 @@
     "build": "tsc && vite build",
     "tauri": "tauri",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "ci:local": "pnpm typecheck && pnpm test",
     "i18n:extract": "formatjs extract 'src/**/*.{ts,tsx}' --out-file src/i18n/locales/en.json --id-interpolation-pattern '[sha512:contenthash:base64:6]'",
     "e2e": "playwright test"
   },
@@ -45,12 +49,17 @@
     "@formatjs/cli": "^6.0.0",
     "@playwright/test": "^1.48",
     "@tauri-apps/cli": "^2.3.0",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^16.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@types/react-syntax-highlighter": "^15.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.0.0",
+    "jsdom": "^24.0.0",
     "playwright": "^1.48",
     "typescript": "^5.4.5",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^2.0.0"
   }
 }

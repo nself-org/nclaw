@@ -186,7 +186,7 @@ function RootLayoutInner() {
  *   i18n context is required by all screens including auth screens. Wrapping at the
  *   outermost level ensures expo-localization-detected locale propagates everywhere.
  */
-export default function RootLayout() {
+function RootLayout() {
   const locale = getDeviceLocale() as Locale;
   return (
     <NselfI18nProvider locale={locale}>
@@ -196,6 +196,10 @@ export default function RootLayout() {
     </NselfI18nProvider>
   );
 }
+
+// Sentry.wrap captures native crash reports (JS thread + native thread crashes).
+// Applied to the root layout component so the entire navigation tree is covered.
+export default SentryRN.wrap(RootLayout);
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

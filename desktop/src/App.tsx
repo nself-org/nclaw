@@ -11,8 +11,24 @@
  */
 
 import React from 'react';
+import * as Sentry from '@sentry/react';
 import { NselfI18nProvider, isRTL, useNselfTranslation, useTranslation } from '@nself/i18n';
 import { useAuth } from '@nself/auth-core';
+import { initObservability } from '@nself/observability';
+
+// Initialize Sentry error reporting (runs at module load, before first render)
+if (process.env.REACT_APP_SENTRY_DSN) {
+  initObservability({
+    sentry: {
+      sdk: Sentry as any, // Web SDK has different signature; type coercion needed
+      dsn: process.env.REACT_APP_SENTRY_DSN,
+      environment: process.env.NODE_ENV ?? 'development',
+      appKind: 'web' as const,
+      release: process.env.REACT_APP_VERSION ?? '1.1.5',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    },
+  });
+}
 
 // ─── RTL hook — sets document dir on locale change (Tauri embeds Vite SPA) ───
 
@@ -74,10 +90,14 @@ function Shell(): React.ReactElement {
 
 function App(): React.ReactElement {
   return (
-    <NselfI18nProvider>
-      <Shell />
-    </NselfI18nProvider>
+    <Sentry.ErrorBoundary fallback={<div>An error occurred</div>}>
+      <NselfI18nProvider>
+        <Sentry.Profiler name="AppShell">
+          <Shell />
+        </Sentry.Profiler>
+      </NselfI18nProvider>
+    </Sentry.ErrorBoundary>
   );
 }
 
-export default App;
+export default Sentry.withProfiler(App);
