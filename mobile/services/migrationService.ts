@@ -4,8 +4,9 @@
  * Purpose: On the first launch after upgrading from the Flutter-based ɳClaw mobile
  *          app, detects the legacy Flutter SQLCipher database (nclaw.db at the
  *          Flutter documents path) and migrates its data into the React Native
- *          SQLCipher database managed by EncryptedDB. The Flutter DB is then
- *          deleted to prevent double-import.
+ *          SQLCipher database managed by EncryptedDB. The original Flutter DB is
+ *          NEVER deleted — it is archived to a '.bak' copy and left in place so
+ *          the user can recover if anything goes wrong.
  *
  * Inputs:  EncryptedDB instance (already open, RN key applied).
  *          SecureStoreInterface — used to read the Flutter DB key stored under
@@ -22,12 +23,18 @@
  *     is skipped with a warning — existing RN data is preserved.
  *   - All data is imported via INSERT OR IGNORE to avoid duplicating rows that
  *     may already exist (e.g. from a prior partial migration).
+ *   - NON-DESTRUCTIVE: before importing, the original Flutter DB is copied to a
+ *     '.bak' sidecar. After import, migrated row counts are verified against the
+ *     source counts; the migration is only marked done when every table's source
+ *     rows are present in the RN DB. The original Flutter DB file is NEVER deleted
+ *     — it is left on disk (alongside the .bak) so users keep a recovery path.
  *
  * SPORT: None — SPORT updated in T09.
  * Cross-ref: T-P3-E4-W2-S3-T11 (encryptedDB.ts service)
  *            T-P3-E2-W3-S03-T01 (native-bridge SecureStoreInterface)
  */
 
+import * as FileSystem from 'expo-file-system';
 import { ok, err, isOk, type Result, type AppError } from '@nself/errors';
 import type { SecureStoreInterface } from '@nself/native-bridge';
 import { EncryptedDB, type LocalMessage, type LocalActionQueueItem, type LocalDraft } from './encryptedDB';
@@ -46,8 +53,20 @@ export interface MigrationResult {
   actionsImported: number;
   /** Number of drafts imported. */
   draftsImported: number;
+  /**
+   * Filesystem path of the retained backup copy of the original Flutter DB,
+   * or null if no migration ran (skipped) or the backup could not be created.
+   */
+  backupPath: string | null;
   /** Human-readable summary for debug logging. */
   summary: string;
+}
+
+/** Per-table source row counts read from the Flutter DB before import. */
+interface SourceCounts {
+  messages: number;
+  actions: number;
+  drafts: number;
 }
 
 // =============================================================================
@@ -97,6 +116,13 @@ export const FLUTTER_DB_BACKUP_SUFFIX = '_flutter_backup';
 
 /** Persistent flag key in SecureStore: set to '1' after successful migration. */
 const MIGRATION_DONE_FLAG = 'nclaw_rn_migration_done_v1';
+
+/**
+ * Suffix appended to the original Flutter DB path to form the retained backup.
+ * The backup is created BEFORE any import and is never removed by this service,
+ * giving the user a recovery path if migration corrupts the RN DB.
+ */
+const BACKUP_FILE_SUFFIX = '.bak';
 
 // =============================================================================
 // Flutter row types (raw, pre-cast)
@@ -150,6 +176,7 @@ export async function migrateFromFlutter(
       messagesImported: 0,
       actionsImported: 0,
       draftsImported: 0,
+      backupPath: null,
       summary: 'Migration already completed on a previous launch — skipped.',
     });
   }
@@ -165,6 +192,7 @@ export async function migrateFromFlutter(
       messagesImported: 0,
       actionsImported: 0,
       draftsImported: 0,
+      backupPath: null,
       summary: 'No Flutter DB key found in SecureStore — assuming fresh install, migration skipped.',
     });
   }
@@ -181,7 +209,38 @@ export async function migrateFromFlutter(
       messagesImported: 0,
       actionsImported: 0,
       draftsImported: 0,
+      backupPath: null,
       summary: `Flutter DB not accessible (${String(cause)}) — migration skipped.`,
+    });
+  }
+
+  const flutterDBPath = flutterDB.path;
+
+  // --- Read source row counts BEFORE any import (needed to verify the copy) ---
+  let sourceCounts: SourceCounts;
+  try {
+    sourceCounts = await readSourceCounts(flutterDB);
+  } catch (cause) {
+    await flutterDB.close().catch(() => {});
+    return err({
+      code: 'internal',
+      message: `Flutter migration: failed to read source row counts: ${String(cause)}`,
+      status: 500,
+    });
+  }
+
+  // --- Back up the original Flutter DB BEFORE importing or touching anything ---
+  // The backup is the user's recovery path. If we cannot create it, we refuse to
+  // proceed rather than risk an unrecoverable migration.
+  const backupPath = await backupFlutterDB(flutterDBPath);
+  if (backupPath === null) {
+    await flutterDB.close().catch(() => {});
+    return err({
+      code: 'internal',
+      message:
+        'Flutter migration: could not create a backup of the original DB — ' +
+        'aborting to avoid an unrecoverable migration.',
+      status: 500,
     });
   }
 
@@ -196,6 +255,7 @@ export async function migrateFromFlutter(
     draftsImported = await importDrafts(flutterDB, rnDB);
   } catch (cause) {
     // Partial import — do NOT mark done; user can retry on next launch.
+    // The original Flutter DB and its .bak are both intact.
     await flutterDB.close().catch(() => {});
     return err({
       code: 'internal',
@@ -206,13 +266,24 @@ export async function migrateFromFlutter(
 
   await flutterDB.close().catch(() => {});
 
-  // --- Delete Flutter DB ---
-  await deleteFlutterDB(flutterDB.path).catch((cause) => {
-    // Non-fatal — DB is now empty after migration; warn but don't fail.
-    console.warn(`EncryptedDB migration: could not delete Flutter DB at ${flutterDB?.path}: ${String(cause)}`);
-  });
+  // --- Verify migrated row counts match the source counts ---
+  // Only proceed to mark-done when every source row landed in the RN DB. On any
+  // shortfall we leave the original DB + backup intact and do NOT set the done
+  // flag, so the next launch retries the migration.
+  const verification = await verifyMigratedCounts(rnDB, sourceCounts);
+  if (!verification.ok) {
+    return err({
+      code: 'internal',
+      message:
+        `Flutter migration verification failed (${verification.detail}). ` +
+        `Original DB and backup retained at ${flutterDBPath} / ${backupPath} — will retry next launch.`,
+      status: 500,
+    });
+  }
 
   // --- Mark migration done ---
+  // The original Flutter DB is intentionally NOT deleted: it is left on disk
+  // alongside the .bak backup so the user always has a recovery path.
   await secureStore.setItem(MIGRATION_DONE_FLAG, '1').catch(() => {});
 
   return ok({
@@ -220,9 +291,11 @@ export async function migrateFromFlutter(
     messagesImported,
     actionsImported,
     draftsImported,
+    backupPath,
     summary:
       `Migration complete: ${messagesImported} messages, ` +
-      `${actionsImported} actions, ${draftsImported} drafts imported.`,
+      `${actionsImported} actions, ${draftsImported} drafts imported. ` +
+      `Original DB retained; backup at ${backupPath}.`,
   });
 }
 
@@ -285,13 +358,84 @@ async function openFlutterDB(key: string): Promise<FlutterDBAdapter> {
   };
 }
 
-async function deleteFlutterDB(dbPath: string): Promise<void> {
-  const opsqlite = await import('@op-engineering/op-sqlite');
-  // op-sqlite delete API: pass the filename only (no path prefix).
-  const filename = dbPath.split('/').pop() ?? FLUTTER_DB_FILENAME;
-  await (opsqlite as unknown as { delete(opts: { name: string }): Promise<void> }).delete({
-    name: filename,
-  });
+/**
+ * Read per-table row counts from the Flutter DB. A missing table (older schema)
+ * counts as zero rather than failing the whole migration.
+ */
+async function readSourceCounts(flutterDB: FlutterDBAdapter): Promise<SourceCounts> {
+  return {
+    messages: await countRows(flutterDB, 'messages'),
+    actions: await countRows(flutterDB, 'action_queue'),
+    drafts: await countRows(flutterDB, 'drafts'),
+  };
+}
+
+/** COUNT(*) for a single Flutter table; returns 0 if the table does not exist. */
+async function countRows(flutterDB: FlutterDBAdapter, table: string): Promise<number> {
+  try {
+    const rows = await flutterDB.query<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table}`);
+    return Number(rows[0]?.n ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Copy the original Flutter DB file to a sibling '.bak' path so the user keeps a
+ * recovery copy. Returns the backup path on success, or null if the copy failed
+ * (caller treats null as fatal and aborts the migration).
+ */
+async function backupFlutterDB(dbPath: string): Promise<string | null> {
+  const backupPath = `${dbPath}${BACKUP_FILE_SUFFIX}`;
+  try {
+    const info = await FileSystem.getInfoAsync(backupPath);
+    if (!info.exists) {
+      await FileSystem.copyAsync({ from: dbPath, to: backupPath });
+    }
+    return backupPath;
+  } catch (cause) {
+    console.warn(`EncryptedDB migration: backup copy failed for ${dbPath}: ${String(cause)}`);
+    return null;
+  }
+}
+
+/** Outcome of post-import row-count verification. */
+interface VerificationResult {
+  ok: boolean;
+  detail: string;
+}
+
+/**
+ * Verify that every source row is present in the RN DB after import. Because
+ * import uses INSERT OR IGNORE (rows pre-existing from a partial run are not
+ * re-counted), correctness is checked against the live RN row counts, which must
+ * be at least the source counts for each table.
+ */
+async function verifyMigratedCounts(
+  rnDB: EncryptedDB,
+  source: SourceCounts,
+): Promise<VerificationResult> {
+  const checks: Array<[label: string, table: string, expected: number]> = [
+    ['messages', 'nclaw_messages', source.messages],
+    ['actions', 'nclaw_action_queue', source.actions],
+    ['drafts', 'nclaw_drafts', source.drafts],
+  ];
+
+  for (const [label, table, expected] of checks) {
+    const result = await rnDB._rawExecute(`SELECT COUNT(*) AS n FROM ${table}`);
+    if (!isOk(result)) {
+      return { ok: false, detail: `could not read RN ${label} count` };
+    }
+    const actual = Number((result.value.rows[0] as { n?: number } | undefined)?.n ?? 0);
+    if (actual < expected) {
+      return {
+        ok: false,
+        detail: `${label}: RN has ${actual} rows but source had ${expected}`,
+      };
+    }
+  }
+
+  return { ok: true, detail: 'all source rows verified present in RN DB' };
 }
 
 // =============================================================================
