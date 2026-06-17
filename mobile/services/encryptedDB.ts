@@ -272,7 +272,7 @@ export class EncryptedDB {
       rawDB = opsqlite.open({
         name: DB_FILENAME,
         encryptionKey: key,
-      }) as OPSQLiteDB;
+      }) as unknown as OPSQLiteDB;
     } catch (cause) {
       return err({
         code: 'internal',

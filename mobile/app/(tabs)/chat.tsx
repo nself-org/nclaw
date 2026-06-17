@@ -260,7 +260,7 @@ function TypingIndicator() {
     <View
       className="w-full px-3 py-1 items-start"
       accessibilityLabel={t('chat.typingIndicator', 'ɳClaw is thinking')}
-      accessibilityRole="status"
+      accessible
     >
       <View className="bg-card rounded-2xl px-4 py-3 flex-row items-center gap-1">
         <ActivityIndicator size="small" color="#6C3CE1" />

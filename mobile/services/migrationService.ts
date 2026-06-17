@@ -264,7 +264,7 @@ async function openFlutterDB(key: string): Promise<FlutterDBAdapter> {
   const rawDB = opsqlite.open({
     name: FLUTTER_DB_FILENAME,
     encryptionKey: key,
-  }) as {
+  }) as unknown as {
     executeAsync(sql: string, params?: unknown[]): Promise<{ rows: { _array: unknown[] } }>;
     close(): Promise<void>;
     getDbPath(): string;

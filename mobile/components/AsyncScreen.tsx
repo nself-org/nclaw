@@ -377,27 +377,27 @@ export function AsyncScreen({
 }: AsyncScreenProps): React.ReactElement {
   switch (status) {
     case 'loading':
-      return <LoadingState testID={testID} />;
+      return <LoadingState {...(testID && { testID })} />;
     case 'skeleton':
-      return <SkeletonState testID={testID} />;
+      return <SkeletonState {...(testID && { testID })} />;
     case 'empty':
-      return <EmptyState message={emptyMessage} testID={testID} />;
+      return <EmptyState {...(emptyMessage && { message: emptyMessage })} {...(testID && { testID })} />;
     case 'error':
-      return <ErrorState error={error} onRetry={onRetry} testID={testID} />;
+      return <ErrorState {...(error && { error })} {...(onRetry && { onRetry })} {...(testID && { testID })} />;
     case 'offline':
-      return <OfflineState onRetry={onRetry} testID={testID} />;
+      return <OfflineState {...(onRetry && { onRetry })} {...(testID && { testID })} />;
     case 'permission-denied':
-      return <PermissionDeniedState onReAuth={onReAuth} testID={testID} />;
+      return <PermissionDeniedState {...(onReAuth && { onReAuth })} {...(testID && { testID })} />;
     case 'rate-limited':
       return (
         <RateLimitedState
-          retryAfterMs={retryAfterMs}
-          onRetry={onRetry}
-          testID={testID}
+          {...(retryAfterMs && { retryAfterMs })}
+          {...(onRetry && { onRetry })}
+          {...(testID && { testID })}
         />
       );
     case 'success':
-      return <SuccessState testID={testID} />;
+      return <SuccessState {...(testID && { testID })} />;
     case 'data':
     default:
       return <>{children}</>;

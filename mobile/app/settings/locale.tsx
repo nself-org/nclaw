@@ -28,7 +28,6 @@ import {
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useTranslation } from 'react-i18next'
-import { i18n } from 'react-i18next'
 
 import { AsyncScreen, type ScreenStatus } from '../../components/AsyncScreen'
 import { useDirection } from '../../lib/useDirection'
@@ -53,7 +52,7 @@ const LOCALE_OPTIONS: LocaleOption[] = [
 ]
 
 export default function LocaleSettingsScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const dir = useDirection()
   const [status, setStatus] = useState<ScreenStatus>('loading')
   const [selected, setSelected] = useState<Locale>('en')

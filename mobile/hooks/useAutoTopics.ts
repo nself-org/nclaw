@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useSubscription, gql } from '@apollo/client';
+import { useSubscription, gql } from 'urql';
 import type { Topic } from '@nself/native-bridge';
 
 // ---------------------------------------------------------------------------
@@ -83,13 +83,12 @@ export interface UseAutoTopicsResult {
 export function useAutoTopics(userId: string | undefined): UseAutoTopicsResult {
   const [topicsMap, setTopicsMap] = useState<Map<string, Topic>>(new Map());
 
-  const { data, loading, error } = useSubscription<TopicAutoClassifyData>(
-    TOPIC_AUTO_CLASSIFY_SUBSCRIPTION,
-    {
-      variables: { userId },
-      skip: !userId,
-    },
+  const [{ data, fetching, error }] = useSubscription<TopicAutoClassifyData>(
+    { query: TOPIC_AUTO_CLASSIFY_SUBSCRIPTION, variables: { userId } },
+    (prev, newData) => newData,
   );
+
+  const loading = fetching;
 
   // Merge incoming rows into the running deduped map.
   useEffect(() => {

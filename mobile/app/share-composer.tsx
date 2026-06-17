@@ -21,8 +21,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AsyncScreen } from '../components/AsyncScreen';
-import { useDirection } from '@nself/i18n';
-import { useTheme } from '@nself/ui/theme';
+import { useDirection } from '../lib/useDirection';
+// useTheme hook removed — use colorScheme from useColorScheme() instead
 
 interface ShareParams {
   text?: string;
@@ -38,7 +38,18 @@ export default function ShareComposerScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const direction = useDirection();
-  const { colors } = useTheme();
+  
+  // Simple color palette based on color scheme
+  const colors = {
+    background: colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
+    surface: colorScheme === 'dark' ? '#2a2a2a' : '#f5f5f5',
+    border: colorScheme === 'dark' ? '#444' : '#e5e5e5',
+    text: colorScheme === 'dark' ? '#ffffff' : '#000000',
+    textSecondary: colorScheme === 'dark' ? '#aaa' : '#666666',
+    textTertiary: colorScheme === 'dark' ? '#888' : '#999999',
+    primary: '#6C3CE1',
+    disabled: '#cccccc',
+  };
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -93,18 +104,19 @@ export default function ShareComposerScreen() {
 
   return (
     <AsyncScreen
-      state="data"
+      status="data"
       onRetry={() => {}}
-      style={{
-        flex: 1,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-        backgroundColor: colors.background,
-      }}
     >
       <ScrollView
         className="flex-1 px-4 py-4"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+        contentContainerStyle={{
+          flex: 1,
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.background,
+        }}
       >
         {/* Header */}
         <View className="flex-row justify-between items-center mb-6">

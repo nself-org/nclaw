@@ -93,7 +93,7 @@ function dbNotReadyError(): AppError {
   return {
     code: 'internal',
     message: 'useEncryptedDB: DB is not open yet — wait for isReady',
-    status: 503,
+    status: 500,
   };
 }
 

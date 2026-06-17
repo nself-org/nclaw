@@ -40,15 +40,20 @@ export class BiometricLockService {
    */
   async authenticate(config?: BiometricLockServiceConfig): Promise<boolean> {
     const reason = config?.promptMessage || 'Unlock ɳClaw';
-    const result = await this.provider.authenticate(reason);
-
-    if (result.ok) {
-      return result.value;
+    try {
+      const result = await this.provider.authenticate(reason);
+      // Handle Result<boolean, AppError> type
+      if (result && typeof result === 'object') {
+        const res = result as any;
+        return res.ok && res.value ? res.value : false;
+      }
+      // Fallback if result is a direct boolean
+      return Boolean(result);
+    } catch (error) {
+      // On error, gracefully allow access (fallback)
+      console.warn('[BiometricLockService] Auth failed:', error);
+      return false;
     }
-
-    // On error, gracefully allow access (fallback)
-    console.warn('[BiometricLockService] Auth failed:', result.error);
-    return false;
   }
 
   /**
