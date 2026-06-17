@@ -426,6 +426,21 @@ class ApiClient {
   ): Promise<Result<Page<KnowledgeItem>, ClawError>> {
     return this.request(`/claw/knowledge?page=${page}&pageSize=${pageSize}`);
   }
+
+  /**
+   * Cursor-paginated conversation listing for the /history surface.
+   * Returns a typed Result so callers handle the Err branch instead of
+   * receiving an Err object cast as page data (the prior history bug).
+   */
+  async listConversationsByCursor(
+    cursor?: string,
+    pageSize = 20
+  ): Promise<Result<{ data: Conversation[]; nextCursor: string | null }, ClawError>> {
+    const qs = cursor
+      ? `cursor=${encodeURIComponent(cursor)}&pageSize=${pageSize}`
+      : `pageSize=${pageSize}`;
+    return this.request(`/claw/conversations?${qs}`);
+  }
 }
 
 export const api = new ApiClient();

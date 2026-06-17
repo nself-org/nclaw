@@ -19,6 +19,7 @@ import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import api from '@/lib/api';
+import { getClawErrorMessage } from '@/lib/result';
 import {
   cacheConversations,
   readCachedConversations,
@@ -29,12 +30,14 @@ const PAGE_SIZE = 20;
 
 async function fetchConversationPage(cursor?: string): Promise<FetchPageResult<Conversation>> {
   // Backend supports ?cursor= for keyset pagination; falls back to offset if absent.
-  const url = cursor
-    ? `/claw/conversations?cursor=${encodeURIComponent(cursor)}&pageSize=${PAGE_SIZE}`
-    : `/claw/conversations?pageSize=${PAGE_SIZE}`;
-  type RawPage = { data: Conversation[]; nextCursor: string | null };
-  const page = await (api as unknown as { request: <T>(path: string) => Promise<T> }).request<RawPage>(url);
-  return { items: page.data, nextCursor: page.nextCursor };
+  // listConversationsByCursor returns Result<…, ClawError> and never throws, so we
+  // unwrap explicitly: throw on Err so usePagination's error state surfaces a real
+  // failure instead of silently treating the Err object as page data (prior crash).
+  const result = await api.listConversationsByCursor(cursor, PAGE_SIZE);
+  if (!result.ok) {
+    throw new Error(getClawErrorMessage(result.error));
+  }
+  return { items: result.value.data, nextCursor: result.value.nextCursor };
 }
 
 function HistorySkeleton(): React.ReactElement {
