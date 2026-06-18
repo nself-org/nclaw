@@ -1,6 +1,6 @@
 {
   "name": "nclaw",
-  "version": "1.1.1",
+  "version": "1.1.6",
   "private": true,
   "description": "ɳClaw — AI assistant monorepo (Tauri 2 desktop + React Native mobile + Rust core)",
   "scripts": {
