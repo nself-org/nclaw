@@ -63,7 +63,7 @@ export default function MemoryScreen() {
           <Text className="text-sm text-muted-foreground text-center mt-2">
             {t(
               'memory.hint',
-              'ɳClaw remembers everything you share. Full memory explorer coming in T05.',
+              'ɳClaw remembers everything you share. Open the explorer to search semantically.',
             )}
           </Text>
           <Pressable

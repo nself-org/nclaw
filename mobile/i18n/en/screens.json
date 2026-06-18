@@ -56,5 +56,82 @@
   "search": {
     "placeholder": "Search conversations and memories...",
     "noResults": "No results found"
+  },
+  "memoryExplorer": {
+    "title": "Memory Explorer",
+    "searchPlaceholder": "Semantic search across all memories...",
+    "noResults": "No matching memories",
+    "startHint": "Search to explore what ɳClaw remembers"
+  },
+  "pairing": {
+    "title": "Add Server",
+    "connect": "Connect",
+    "serverUrl": "Server URL",
+    "pairCode": "Pair code"
+  },
+  "thread": {
+    "title": "Conversation",
+    "branches": "Sub-threads",
+    "continue": "Continue conversation"
+  },
+  "voice": {
+    "title": "Voice",
+    "tapToSpeak": "Tap to speak",
+    "listening": "Listening…"
+  },
+  "voiceSettings": {
+    "title": "Voice Settings"
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "set": "Set",
+    "notSet": "Not set"
+  },
+  "localAi": {
+    "title": "Local AI",
+    "discover": "Discover models"
+  },
+  "usage": {
+    "title": "Usage",
+    "totalTokens": "Total tokens",
+    "totalCost": "Total cost"
+  },
+  "apiUsage": {
+    "title": "API Usage",
+    "subtitle": "Last 30 days, by model"
+  },
+  "actionDetail": {
+    "title": "Action",
+    "approve": "Approve"
+  },
+  "projects": {
+    "title": "Projects",
+    "create": "Create",
+    "empty": "No projects yet"
+  },
+  "quickCapture": {
+    "title": "Quick Capture",
+    "save": "Save"
+  },
+  "digest": {
+    "title": "Daily Digest",
+    "empty": "No digest yet. Check back in the morning."
+  },
+  "oauth": {
+    "title": "Connect Accounts"
+  },
+  "proactive": {
+    "title": "Proactive",
+    "quietHours": "Quiet hours"
+  },
+  "feedback": {
+    "title": "Send Feedback",
+    "submit": "Submit"
+  },
+  "about": {
+    "title": "About"
+  },
+  "home": {
+    "subtitle": "What can ɳClaw help you with today?"
   }
 }

@@ -56,5 +56,82 @@
   "search": {
     "placeholder": "البحث في المحادثات والذكريات...",
     "noResults": "لا توجد نتائج"
+  },
+  "memoryExplorer": {
+    "title": "مستكشف الذاكرة",
+    "searchPlaceholder": "بحث دلالي في كل الذكريات...",
+    "noResults": "لا توجد ذكريات مطابقة",
+    "startHint": "ابحث لاستكشاف ما يتذكره ɳClaw"
+  },
+  "pairing": {
+    "title": "إضافة خادم",
+    "connect": "اتصال",
+    "serverUrl": "عنوان URL للخادم",
+    "pairCode": "رمز الاقتران"
+  },
+  "thread": {
+    "title": "محادثة",
+    "branches": "المحادثات الفرعية",
+    "continue": "متابعة المحادثة"
+  },
+  "voice": {
+    "title": "الصوت",
+    "tapToSpeak": "اضغط للتحدث",
+    "listening": "جارٍ الاستماع…"
+  },
+  "voiceSettings": {
+    "title": "إعدادات الصوت"
+  },
+  "apiKeys": {
+    "title": "مفاتيح API",
+    "set": "مُعيَّن",
+    "notSet": "غير مُعيَّن"
+  },
+  "localAi": {
+    "title": "الذكاء الاصطناعي المحلي",
+    "discover": "اكتشاف النماذج"
+  },
+  "usage": {
+    "title": "الاستخدام",
+    "totalTokens": "إجمالي الرموز",
+    "totalCost": "إجمالي التكلفة"
+  },
+  "apiUsage": {
+    "title": "استخدام API",
+    "subtitle": "آخر 30 يوماً، حسب النموذج"
+  },
+  "actionDetail": {
+    "title": "إجراء",
+    "approve": "موافقة"
+  },
+  "projects": {
+    "title": "المشاريع",
+    "create": "إنشاء",
+    "empty": "لا توجد مشاريع بعد"
+  },
+  "quickCapture": {
+    "title": "التقاط سريع",
+    "save": "حفظ"
+  },
+  "digest": {
+    "title": "الملخص اليومي",
+    "empty": "لا يوجد ملخص بعد. تحقق في الصباح."
+  },
+  "oauth": {
+    "title": "ربط الحسابات"
+  },
+  "proactive": {
+    "title": "استباقي",
+    "quietHours": "ساعات الهدوء"
+  },
+  "feedback": {
+    "title": "إرسال ملاحظات",
+    "submit": "إرسال"
+  },
+  "about": {
+    "title": "حول"
+  },
+  "home": {
+    "subtitle": "بماذا يمكن أن يساعدك ɳClaw اليوم؟"
   }
 }
