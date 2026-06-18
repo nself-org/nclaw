@@ -24,7 +24,20 @@
       "react-native-share-extension": "2.0.0",
       "@op-engineering/op-sqlite": "16.2.2",
       "urql": "5.0.3",
-      "@sentry/tracing": "7.120.4"
+      "@sentry/tracing": "7.120.4",
+      "esbuild": "^0.25.12",
+      "prismjs": ">=1.30.0",
+      "jsondiffpatch": ">=0.7.2",
+      "postcss": ">=8.5.10",
+      "uuid": ">=11.1.1",
+      "js-yaml": ">=4.2.0",
+      "@opentelemetry/core": ">=2.8.0",
+      "@opentelemetry/sdk-trace-base": ">=2",
+      "@opentelemetry/sdk-trace-node": ">=2",
+      "@opentelemetry/exporter-zipkin": ">=2",
+      "@opentelemetry/resources": ">=2",
+      "@xmldom/xmldom": ">=0.8.13",
+      "vite": ">=6.4.2"
     }
   }
 }

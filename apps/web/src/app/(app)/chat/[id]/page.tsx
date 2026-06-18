@@ -142,13 +142,14 @@ function ConversationPageInner({
 }
 
 // ---------------------------------------------------------------------------
-// Page — Next.js 14 client page with dynamic params
+// Page — Next.js 15 client page; params is a Promise, unwrapped via React.use
 // ---------------------------------------------------------------------------
 
 interface ChatPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function ChatPage({ params }: ChatPageProps): React.ReactElement {
-  return <ConversationPageInner conversationId={params.id} />;
+  const { id } = React.use(params);
+  return <ConversationPageInner conversationId={id} />;
 }

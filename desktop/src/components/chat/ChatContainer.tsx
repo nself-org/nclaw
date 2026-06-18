@@ -1,36 +1,43 @@
 import React from 'react';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
 import { chatTransport } from '../../lib/chat-client';
 import { ChatList } from './ChatList';
 import { InputArea } from './InputArea';
 import type { Message } from './MessageBubble';
 
 /**
- * Top-level chat orchestrator. Wires Vercel AI SDK useChat to the Tauri
+ * Top-level chat orchestrator. Wires Vercel AI SDK (v5) useChat to the Tauri
  * command bridge via chatTransport. Real LlmBackend streaming lands in S15.T17.
  */
 export function ChatContainer() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    fetch: chatTransport as typeof fetch,
+  const [input, setInput] = React.useState('');
+  const { messages, status, sendMessage } = useChat({
+    transport: new DefaultChatTransport({ fetch: chatTransport as typeof fetch }),
   });
 
-  // Map AI SDK messages to our Message shape for ChatList.
-  const mapped: Message[] = messages.map((m) => ({
+  const isLoading = status === 'submitted' || status === 'streaming';
+
+  // Map AI SDK v5 UIMessages to our Message shape for ChatList. v5 messages
+  // carry an array of parts; concatenate text parts into a single string.
+  const mapped: Message[] = messages.map((m: UIMessage) => ({
     id: m.id,
     role: m.role as Message['role'],
-    content: m.content,
+    content: m.parts
+      .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+      .map((p) => p.text)
+      .join(''),
   }));
 
   function handleInputAreaChange(value: string) {
-    // Synthesise a ChangeEvent so we can reuse handleInputChange from useChat.
-    handleInputChange({
-      target: { value },
-    } as React.ChangeEvent<HTMLInputElement>);
+    setInput(value);
   }
 
   function handleSubmitWrapper() {
-    if (!input.trim() || isLoading) return;
-    handleSubmit();
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    void sendMessage({ text: trimmed });
+    setInput('');
   }
 
   const isEmpty = messages.length === 0;

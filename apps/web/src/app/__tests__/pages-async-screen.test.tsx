@@ -239,43 +239,43 @@ describe('ChatConversationPage — 7 states', () => {
 
   it('State 1 — loading: shows skeleton', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: true, error: null, sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-loading')).toBeTruthy();
   });
 
   it('State 2 — offline: shows offline UI', () => {
     setOffline();
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-offline')).toBeTruthy();
   });
 
   it('State 3 — error: shows error card', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: new Error('Fetch failed'), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-error')).toBeTruthy();
   });
 
   it('State 4 — rate-limited: shows rate-limit UI', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: make429(), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-rate-limited')).toBeTruthy();
   });
 
   it('State 5 — permission-denied: shows perm-denied UI', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: make401(), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-permission-denied')).toBeTruthy();
   });
 
   it('State 6 — empty: shows start-conversation CTA', () => {
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-empty')).toBeTruthy();
     expect(screen.getByText(/Start the conversation/i)).toBeTruthy();
   });
 
   it('State 7 — populated: renders message list stub', () => {
     mockUseMessages.mockReturnValue({ messages: [{ id: '1', conversationId: 'abc', role: 'user', content: 'Hi', createdAt: new Date().toISOString(), tokens: null }], isLoading: false, error: null, sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={{ id: 'abc' }} />);
+    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-populated')).toBeTruthy();
   });
 });
