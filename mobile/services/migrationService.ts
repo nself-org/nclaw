@@ -169,8 +169,15 @@ export async function migrateFromFlutter(
   secureStore: SecureStoreInterface,
 ): Promise<Result<MigrationResult, AppError>> {
   // --- Guard: check migration-done flag ---
-  const flagResult = await secureStore.getItem(MIGRATION_DONE_FLAG);
-  if (isOk(flagResult) && flagResult.value === '1') {
+  // get() throws on a backend failure; treat any read error as "flag not set"
+  // so a transient SecureStore error does not permanently skip migration.
+  let migrationFlag: string | null = null;
+  try {
+    migrationFlag = await secureStore.get(MIGRATION_DONE_FLAG);
+  } catch {
+    migrationFlag = null;
+  }
+  if (migrationFlag === '1') {
     return ok({
       skipped: true,
       messagesImported: 0,
@@ -186,7 +193,7 @@ export async function migrateFromFlutter(
   if (flutterKey === null) {
     // No Flutter key found — either the app was never a Flutter app or the
     // key was already cleaned up. Mark as done and skip.
-    await secureStore.setItem(MIGRATION_DONE_FLAG, '1').catch(() => {});
+    await secureStore.set(MIGRATION_DONE_FLAG, '1').catch(() => {});
     return ok({
       skipped: true,
       messagesImported: 0,
@@ -203,7 +210,7 @@ export async function migrateFromFlutter(
     flutterDB = await openFlutterDB(flutterKey);
   } catch (cause) {
     // Flutter DB not found or could not be decrypted — skip gracefully.
-    await secureStore.setItem(MIGRATION_DONE_FLAG, '1').catch(() => {});
+    await secureStore.set(MIGRATION_DONE_FLAG, '1').catch(() => {});
     return ok({
       skipped: true,
       messagesImported: 0,
@@ -284,7 +291,7 @@ export async function migrateFromFlutter(
   // --- Mark migration done ---
   // The original Flutter DB is intentionally NOT deleted: it is left on disk
   // alongside the .bak backup so the user always has a recovery path.
-  await secureStore.setItem(MIGRATION_DONE_FLAG, '1').catch(() => {});
+  await secureStore.set(MIGRATION_DONE_FLAG, '1').catch(() => {});
 
   return ok({
     skipped: false,
@@ -308,9 +315,16 @@ async function resolveFlutterKey(
   secureStore: SecureStoreInterface,
 ): Promise<string | null> {
   for (const storeKey of [FLUTTER_DB_KEY_STORE_KEY, FLUTTER_DB_KEY_STORE_KEY_LEGACY]) {
-    const result = await secureStore.getItem(storeKey);
-    if (isOk(result) && result.value !== null) {
-      return result.value;
+    // get() returns the raw value (or null) and throws on a backend failure;
+    // a read error for one key falls through to the next candidate.
+    let value: string | null = null;
+    try {
+      value = await secureStore.get(storeKey);
+    } catch {
+      value = null;
+    }
+    if (value !== null) {
+      return value;
     }
   }
   return null;

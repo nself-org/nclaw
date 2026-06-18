@@ -109,8 +109,12 @@ export const DB_FILENAME = 'nclaw.db';
 async function deriveDBKey(
   secureStore: SecureStoreInterface,
 ): Promise<Result<string, AppError>> {
-  const getResult = await secureStore.getItem(DB_KEY_SECURE_STORE_KEY);
-  if (!isOk(getResult)) {
+  // SecureStoreInterface.get returns the raw value (or null) and throws on a
+  // backend failure — so wrap the read in try/catch rather than expecting a Result.
+  let existingKey: string | null;
+  try {
+    existingKey = await secureStore.get(DB_KEY_SECURE_STORE_KEY);
+  } catch {
     return err({
       code: 'internal',
       message: 'EncryptedDB: failed to read DB key from SecureStore',
@@ -118,8 +122,8 @@ async function deriveDBKey(
     });
   }
 
-  if (getResult.value !== null) {
-    return ok(getResult.value);
+  if (existingKey !== null) {
+    return ok(existingKey);
   }
 
   // No key found — generate a new one.
@@ -134,8 +138,10 @@ async function deriveDBKey(
       status: 500,
     });
   }
-  const setResult = await secureStore.setItem(DB_KEY_SECURE_STORE_KEY, newKey);
-  if (!isOk(setResult)) {
+
+  try {
+    await secureStore.set(DB_KEY_SECURE_STORE_KEY, newKey);
+  } catch {
     return err({
       code: 'internal',
       message: 'EncryptedDB: failed to persist new DB key to SecureStore',

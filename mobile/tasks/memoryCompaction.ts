@@ -32,11 +32,13 @@ declare const NativeNclaw:
  */
 TaskManager.defineTask(MEMORY_COMPACTION_TASK, async () => {
   try {
-    // Resolve NativeNclaw from global (Nitro modules attach to global scope)
+    // Resolve NativeNclaw from the global scope (Nitro modules attach there).
+    // Use globalThis — `global` is a Node/RN ambient that this tsconfig's libs
+    // do not declare, whereas globalThis is part of the standard ES2020 lib.
     const nativeModule =
       typeof NativeNclaw !== 'undefined'
         ? NativeNclaw
-        : (global as Record<string, unknown>).NativeNclaw as typeof NativeNclaw;
+        : (globalThis as Record<string, unknown>).NativeNclaw as typeof NativeNclaw;
 
     if (!nativeModule?.triggerCompaction) {
       console.warn(
