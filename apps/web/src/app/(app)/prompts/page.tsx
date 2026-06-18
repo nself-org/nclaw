@@ -34,7 +34,7 @@ async function fetchPromptsPage(cursor?: string): Promise<FetchPageResult<Prompt
     : `/claw/prompts?pageSize=${PAGE_SIZE}`;
   const page = await (api as unknown as {
     request: <T>(path: string) => Promise<{ data: T[]; nextCursor: string | null }>;
-  }).request(url);
+  }).request<PromptTemplate>(url);
   return { items: page.data, nextCursor: page.nextCursor };
 }
 

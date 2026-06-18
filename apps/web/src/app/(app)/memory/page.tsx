@@ -28,7 +28,7 @@ async function fetchMemoryPage(cursor?: string): Promise<FetchPageResult<MemoryE
     : `/claw/memory?pageSize=${PAGE_SIZE}`;
   const page = await (api as unknown as {
     request: <T>(path: string) => Promise<{ data: T[]; nextCursor: string | null }>;
-  }).request(url);
+  }).request<MemoryEntity>(url);
   return { items: page.data, nextCursor: page.nextCursor };
 }
 

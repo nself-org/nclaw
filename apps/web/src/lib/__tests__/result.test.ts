@@ -60,7 +60,7 @@ describe('mapResult()', () => {
   it('passes Err through unchanged', () => {
     const clawErr: ClawError = { type: 'auth', message: 'auth', retryable: false };
     const r: Result<string> = err(clawErr);
-    const mapped = mapResult(r, (s) => s.length);
+    const mapped = mapResult(r, (s: string) => s.length);
     expect(mapped.ok).toBe(false);
     if (!mapped.ok) expect(mapped.error).toBe(clawErr);
   });

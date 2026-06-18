@@ -1,14 +1,13 @@
 /**
  * Purpose: Initialize Sentry error tracking and performance monitoring.
  * Inputs:  VITE_SENTRY_DSN environment variable (optional; disabled if not set)
- * Outputs: Initialized Sentry SDK configured with BrowserTracing and ErrorBoundary support
+ * Outputs: Initialized Sentry SDK configured with browser tracing and ErrorBoundary support
  * Constraints: Only initializes if DSN is provided. Never hardcode DSN.
  *              tracesSampleRate set to 0.1 (10% sampling for perf) to avoid quota issues.
  * SPORT: T-P3-E5-W1-S1-T05 — Sentry instrumentation
  */
 
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
 
 /**
  * Initialize Sentry for error tracking and performance monitoring.
@@ -26,12 +25,8 @@ export function initializeSentry(): void {
     Sentry.init({
       dsn,
       integrations: [
-        new BrowserTracing({
-          // Track client-side routing
-          routingInstrumentation: Sentry.nextRouterInstrumentation(
-            typeof window !== 'undefined' ? require('next/router') : null,
-          ),
-        }),
+        // v8 browser tracing — routing instrumentation is auto-wired by the integration.
+        Sentry.browserTracingIntegration(),
       ],
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
       // We recommend adjusting this value in production to avoid quota issues.

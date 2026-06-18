@@ -35,7 +35,7 @@ async function fetchGalleryPage(cursor?: string): Promise<FetchPageResult<Galler
     : `/claw/gallery?pageSize=${PAGE_SIZE}`;
   const page = await (api as unknown as {
     request: <T>(path: string) => Promise<{ data: T[]; nextCursor: string | null }>;
-  }).request(url);
+  }).request<GalleryImage>(url);
   return { items: page.data, nextCursor: page.nextCursor };
 }
 

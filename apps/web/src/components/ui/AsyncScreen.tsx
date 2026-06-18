@@ -115,7 +115,8 @@ function ErrorContent({ error, onRetry }: ErrorContentProps): React.ReactElement
       <AlertCircle size={40} aria-hidden="true" style={{ color: 'var(--color-error, #dc2626)' }} />
       <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-text)' }}>{message}</p>
       {onRetry !== undefined && (
-        <Button variant="secondary" size="sm" onClick={onRetry} leftIcon={<RefreshCw size={14} />}>
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          <RefreshCw size={14} />
           Retry
         </Button>
       )}
@@ -172,7 +173,7 @@ function RateLimitedContent({ retryAfter, onRetry }: RateLimitedContentProps): R
         <p style={{ margin: 0, fontSize: '0.875rem' }}>Please wait before trying again.</p>
       )}
       {countdown === 0 && onRetry !== undefined && (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="outline" size="sm" onClick={onRetry}>
           Retry now
         </Button>
       )}

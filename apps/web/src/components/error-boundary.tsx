@@ -164,8 +164,11 @@ export function ErrorBoundaryWrapper({ children }: ErrorBoundaryWrapperProps) {
   }
 
   return (
-    <Sentry.ErrorBoundary fallback={({ error, resetError }: { error: Error; resetError: () => void }) =>
-      <ErrorFallback error={error} resetError={resetError} />
+    <Sentry.ErrorBoundary fallback={({ error, resetError }) =>
+      <ErrorFallback
+        error={error instanceof Error ? error : new Error(String(error))}
+        resetError={resetError}
+      />
     }>
       {children}
     </Sentry.ErrorBoundary>
