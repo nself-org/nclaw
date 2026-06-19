@@ -42,4 +42,6 @@ regexes = [
   '''X25519''',
   # Keychain lookup key name (string used to retrieve passphrase from secure storage, not the passphrase itself)
   '''nclaw\.db\.passphrase\.v1''',
+  # AsyncStorage preference key constant in mobile/hooks/useNotifications.ts (not a secret value)
+  '''nclaw_notification_prefs_v1''',
 ]

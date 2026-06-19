@@ -115,9 +115,6 @@ jobs:
     name: Mobile Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -129,19 +126,19 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-          cache-dependency-path: mobile/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: pnpm --filter @nclaw/mobile typecheck
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm --filter @nclaw/mobile lint
 
       - name: Unit tests
-        run: pnpm test
+        run: pnpm --filter @nclaw/mobile test
 
   # ─── Android / iOS mobile builds ────────────────────────────────
   # NOTE (T-P3-E4-W2-S3-T09 2026-06-16): Flutter mobile build jobs removed.
