@@ -3,12 +3,20 @@
 //! Measures inference throughput, latency, and thermal behaviour against the
 //! active LLM backend, then persists results to `~/.nclaw/benchmark-history.json`
 //! and derives a `Recommendation` to hold, downgrade, or offer upgrade.
+//!
+//! # Submodules
+//!
+//! - `phases` — async warmup/measurement helpers and metric computation (extracted
+//!   for size compliance).
 
-use crate::backend::{GenOpts, LlmBackend};
+mod phases;
+
+use crate::backend::LlmBackend;
 use crate::device::DeviceProbe;
 use crate::error::CoreError;
 use crate::tier::Tier;
 use chrono::Utc;
+use phases::{compute_metrics, run_measurement, run_warmup, MeasurementOutcome};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -98,143 +106,36 @@ where
 {
     let run_start = Instant::now();
 
-    // -------------------------------------------------------------------------
-    // Phase 1: Warmup (10 s budget)
-    // -------------------------------------------------------------------------
-    let warmup_opts = GenOpts {
-        model: model_id.to_string(),
-        max_tokens: WARMUP_TOKENS as usize,
-        temperature: 0.0,
-        top_p: 1.0,
-        stop_sequences: vec![],
-    };
-
-    let warmup_deadline = Duration::from_secs(10);
-    let warmup_result = tokio::time::timeout(
-        warmup_deadline,
-        backend.generate(CANONICAL_PROMPT, warmup_opts),
-    )
-    .await;
-
-    // Warmup failure is non-fatal — surface only hard errors, not timeouts.
-    if let Ok(Err(e)) = warmup_result {
-        return Err(CoreError::Llm(e));
+    // Phase 1: warmup — returns early on hard error or overall timeout.
+    if let Some(early) = run_warmup(backend, probe, model_id, tier, run_start).await? {
+        return Ok(early);
     }
 
-    // Check overall timeout after warmup.
-    if run_start.elapsed() >= HARD_TIMEOUT {
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: model_id.to_string(),
-            tier,
-            tokens_per_second: 0.0,
-            p99_latency_ms: 0,
-            ram_peak_mb: probe.ram_total_mb.min(100),
-            thermal_throttle_events: 0,
-            first_token_latency_ms: 0,
-            timed_out: true,
+    // Phase 2: measurement — returns (token_count, elapsed, timed_out) or early result.
+    let (token_count, total_elapsed, timed_out) =
+        match run_measurement(backend, probe, model_id, tier, run_start).await? {
+            MeasurementOutcome::Timed(r) => return Ok(r),
+            MeasurementOutcome::Done(tc, elapsed, to) => (tc, elapsed, to),
         };
-        persist_result(&result)?;
-        return Ok(result);
-    }
 
-    // -------------------------------------------------------------------------
-    // Phase 2: Measurement (50 s budget)
-    // -------------------------------------------------------------------------
-    // The LlmBackend::generate trait returns a TokenStream with all tokens in
-    // one shot. We time the entire call, then simulate per-token latencies by
-    // splitting the total duration evenly across token count. This gives us
-    // meaningful throughput and a representative p99 from the distribution.
-    let measurement_opts = GenOpts {
-        model: model_id.to_string(),
-        max_tokens: MEASUREMENT_TOKENS as usize,
-        temperature: 0.0,
-        top_p: 1.0,
-        stop_sequences: vec![],
-    };
-
-    let measurement_deadline = Duration::from_secs(50);
-    let measurement_start = Instant::now();
-
-    let stream_result = tokio::time::timeout(
-        measurement_deadline,
-        backend.generate(CANONICAL_PROMPT, measurement_opts),
-    )
-    .await;
-
-    let total_elapsed = measurement_start.elapsed();
-    let timed_out = run_start.elapsed() >= HARD_TIMEOUT || stream_result.is_err(); // timeout variant
-
-    let token_stream = match stream_result {
-        Ok(Ok(ts)) => ts,
-        Ok(Err(e)) => return Err(CoreError::Llm(e)),
-        Err(_) => {
-            // Measurement phase timed out — return partial result.
-            let result = BenchmarkResult {
-                timestamp: Utc::now(),
-                model_id: model_id.to_string(),
-                tier,
-                tokens_per_second: 0.0,
-                p99_latency_ms: 0,
-                ram_peak_mb: probe.ram_total_mb.min(100),
-                thermal_throttle_events: 0,
-                first_token_latency_ms: 0,
-                timed_out: true,
-            };
-            persist_result(&result)?;
-            return Ok(result);
-        }
-    };
-
-    let token_count = token_stream.tokens.len();
-    let elapsed_secs = total_elapsed.as_secs_f64();
-
-    // -------------------------------------------------------------------------
-    // Metrics computation
-    // -------------------------------------------------------------------------
-
-    let tokens_per_second = if elapsed_secs > 0.0 && token_count > 0 {
-        token_count as f64 / elapsed_secs
-    } else {
-        0.0
-    };
-
-    // Synthesise per-token latencies from total elapsed time.
-    // Each token gets an equal share; mild jitter is inherent but the p99
-    // is deterministic for mock backends and representative for real ones.
-    let per_token_ms: Vec<u64> = if token_count > 0 {
-        let avg_ms = total_elapsed.as_millis() as u64 / token_count as u64;
-        vec![avg_ms; token_count]
-    } else {
-        vec![0]
-    };
-
-    let p99_latency_ms = percentile_99(&per_token_ms);
-
-    // First-token latency: use the average per-token latency as a proxy.
-    // (Real streaming would time from call to first yield; batch generate
-    // treats the entire call as "time to all tokens".)
-    let first_token_latency_ms = per_token_ms.first().copied().unwrap_or(0);
-
-    // RAM: best-effort; in tests use a synthetic fixed value bounded by probe.
-    // On device, probe.ram_total_mb already reflects peak RSS at probe time.
-    let ram_peak_mb = probe.ram_total_mb.clamp(64, 100);
-
+    // Synthesise per-token latencies and compute metrics.
+    let metrics = compute_metrics(token_count, total_elapsed, timed_out, probe);
     let result = BenchmarkResult {
         timestamp: Utc::now(),
         model_id: model_id.to_string(),
         tier,
-        tokens_per_second,
-        p99_latency_ms,
-        ram_peak_mb,
+        tokens_per_second: metrics.tokens_per_second,
+        p99_latency_ms: metrics.p99_latency_ms,
+        ram_peak_mb: metrics.ram_peak_mb,
         thermal_throttle_events: 0, // placeholder — macOS IOPMUserClient not yet wired
-        first_token_latency_ms,
+        first_token_latency_ms: metrics.first_token_latency_ms,
         timed_out,
     };
 
     persist_result(&result)?;
     Ok(result)
 }
+
 
 // ---------------------------------------------------------------------------
 // Recommendation engine
@@ -282,7 +183,7 @@ pub fn analyze(result: &BenchmarkResult) -> Recommendation {
 // ---------------------------------------------------------------------------
 
 /// Decision #9 target throughput range (min_tok_per_s, max_tok_per_s) per tier.
-fn target_range(tier: Tier) -> (f64, f64) {
+pub fn target_range(tier: Tier) -> (f64, f64) {
     match tier {
         Tier::T0 => (15.0, 30.0),
         Tier::T1 => (20.0, 40.0),
@@ -293,7 +194,7 @@ fn target_range(tier: Tier) -> (f64, f64) {
 }
 
 /// Compute the 99th-percentile value from a sorted or unsorted slice of u64.
-fn percentile_99(values: &[u64]) -> u64 {
+pub fn percentile_99(values: &[u64]) -> u64 {
     if values.is_empty() {
         return 0;
     }
@@ -305,7 +206,7 @@ fn percentile_99(values: &[u64]) -> u64 {
 
 /// Append `result` to `~/.nclaw/benchmark-history.json` (creates file if absent).
 /// Non-fatal: parse failures return `CoreError::Other`.
-fn persist_result(result: &BenchmarkResult) -> Result<(), CoreError> {
+pub(super) fn persist_result(result: &BenchmarkResult) -> Result<(), CoreError> {
     let path = history_path();
 
     // Ensure parent directory exists.
@@ -334,130 +235,3 @@ fn persist_result(result: &BenchmarkResult) -> Result<(), CoreError> {
     Ok(())
 }
 
-// ---------------------------------------------------------------------------
-// Unit tests
-// ---------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn target_ranges_are_correct() {
-        assert_eq!(target_range(Tier::T0), (15.0, 30.0));
-        assert_eq!(target_range(Tier::T1), (20.0, 40.0));
-        assert_eq!(target_range(Tier::T2), (25.0, 50.0));
-        assert_eq!(target_range(Tier::T3), (30.0, 80.0));
-        assert_eq!(target_range(Tier::T4), (15.0, 40.0));
-    }
-
-    #[test]
-    fn percentile_99_single_element() {
-        assert_eq!(percentile_99(&[42]), 42);
-    }
-
-    #[test]
-    fn percentile_99_empty() {
-        assert_eq!(percentile_99(&[]), 0);
-    }
-
-    #[test]
-    fn percentile_99_100_elements() {
-        let values: Vec<u64> = (1..=100).collect();
-        // p99 of [1..100] → index 98 (0-based) → value 99
-        assert_eq!(percentile_99(&values), 99);
-    }
-
-    #[test]
-    fn analyze_hold_within_range() {
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: "test".into(),
-            tier: Tier::T2,
-            tokens_per_second: 35.0, // within 25–50
-            p99_latency_ms: 30,
-            ram_peak_mb: 100,
-            thermal_throttle_events: 0,
-            first_token_latency_ms: 20,
-            timed_out: false,
-        };
-        assert_eq!(analyze(&result), Recommendation::Hold);
-    }
-
-    #[test]
-    fn analyze_downgrade_below_min() {
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: "test".into(),
-            tier: Tier::T2,
-            tokens_per_second: 5.0, // below 25
-            p99_latency_ms: 200,
-            ram_peak_mb: 100,
-            thermal_throttle_events: 0,
-            first_token_latency_ms: 150,
-            timed_out: false,
-        };
-        assert_eq!(analyze(&result), Recommendation::Downgrade);
-    }
-
-    #[test]
-    fn analyze_offer_upgrade_above_max_1_5x() {
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: "test".into(),
-            tier: Tier::T0,
-            tokens_per_second: 100.0, // above 30 * 1.5 = 45
-            p99_latency_ms: 10,
-            ram_peak_mb: 100,
-            thermal_throttle_events: 0,
-            first_token_latency_ms: 8,
-            timed_out: false,
-        };
-        assert_eq!(analyze(&result), Recommendation::OfferUpgrade);
-    }
-
-    #[test]
-    fn analyze_thermal_damper_preempts() {
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: "test".into(),
-            tier: Tier::T2,
-            tokens_per_second: 5.0,
-            p99_latency_ms: 200,
-            ram_peak_mb: 100,
-            thermal_throttle_events: 2,
-            first_token_latency_ms: 150,
-            timed_out: false,
-        };
-        assert_eq!(analyze(&result), Recommendation::EnableThermalDamper);
-    }
-
-    #[test]
-    fn analyze_t4_no_upgrade_offered() {
-        // T4 has no higher tier — should Hold even if well above max.
-        let result = BenchmarkResult {
-            timestamp: Utc::now(),
-            model_id: "test".into(),
-            tier: Tier::T4,
-            tokens_per_second: 200.0,
-            p99_latency_ms: 5,
-            ram_peak_mb: 100,
-            thermal_throttle_events: 0,
-            first_token_latency_ms: 4,
-            timed_out: false,
-        };
-        assert_eq!(analyze(&result), Recommendation::Hold);
-    }
-
-    #[test]
-    fn history_path_contains_nclaw() {
-        let path = history_path();
-        let path_str = path.to_string_lossy();
-        assert!(
-            path_str.contains(".nclaw"),
-            "expected .nclaw in path, got: {}",
-            path_str
-        );
-        assert!(path_str.ends_with("benchmark-history.json"));
-    }
-}

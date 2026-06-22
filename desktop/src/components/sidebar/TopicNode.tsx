@@ -13,6 +13,7 @@ interface TopicNodeProps {
 
 type MenuAction = 'new-subtopic' | 'rename' | 'archive' | 'delete' | 'export';
 
+/** Single draggable topic row with expand/collapse, context menu, and highlight support. */
 export function TopicNode({ node, depth, highlightIds }: TopicNodeProps) {
   const { topic, children } = node;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({

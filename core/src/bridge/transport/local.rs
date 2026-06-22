@@ -16,6 +16,7 @@ pub struct LocalTransport {
 }
 
 impl LocalTransport {
+    /// Create a new `LocalTransport` (connects to the on-device llama.cpp backend).
     pub fn new() -> Self {
         Self {}
     }

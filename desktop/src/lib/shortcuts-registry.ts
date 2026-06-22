@@ -1,6 +1,7 @@
 // ɳClaw Desktop — Keyboard shortcuts registry
 // Central definition of all keyboard shortcuts, with custom override support via localStorage
 
+/** A single keyboard shortcut binding with per-platform key strings and optional user override. */
 export interface ShortcutDef {
   id: string;
   label: string;
@@ -9,6 +10,7 @@ export interface ShortcutDef {
   current?: { mac: string; other: string };
 }
 
+/** Factory defaults for all ɳClaw keyboard shortcuts. User overrides are layered on top via localStorage. */
 export const DEFAULT_SHORTCUTS: ShortcutDef[] = [
   { id: "new-chat", label: "New Chat", section: "Chat", default: { mac: "⌘N", other: "Ctrl+N" } },
   { id: "send", label: "Send Message", section: "Chat", default: { mac: "Enter", other: "Enter" } },
@@ -26,6 +28,7 @@ export const DEFAULT_SHORTCUTS: ShortcutDef[] = [
   { id: "redo", label: "Redo", section: "Editing", default: { mac: "⌘⇧Z", other: "Ctrl+Shift+Z" } },
 ];
 
+/** Return all shortcuts with user overrides from localStorage merged into each entry's `current` field. */
 export function getShortcuts(): ShortcutDef[] {
   try {
     const stored = localStorage.getItem("nclaw.shortcuts.custom");
@@ -39,6 +42,7 @@ export function getShortcuts(): ShortcutDef[] {
   }
 }
 
+/** Persist a custom key binding for `id` to localStorage. */
 export function setShortcut(id: string, value: { mac: string; other: string }): void {
   try {
     const stored = localStorage.getItem("nclaw.shortcuts.custom");
@@ -50,6 +54,7 @@ export function setShortcut(id: string, value: { mac: string; other: string }): 
   }
 }
 
+/** Remove all custom shortcut overrides, reverting every binding to its default. */
 export function resetShortcuts(): void {
   try {
     localStorage.removeItem("nclaw.shortcuts.custom");
@@ -58,6 +63,7 @@ export function resetShortcuts(): void {
   }
 }
 
+/** Remove the custom override for a single shortcut `id`, reverting it to its default. */
 export function resetShortcut(id: string): void {
   try {
     const stored = localStorage.getItem("nclaw.shortcuts.custom");

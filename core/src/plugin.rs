@@ -164,6 +164,7 @@ pub struct ToolRegistry {
 }
 
 impl ToolRegistry {
+    /// Create an empty `ToolRegistry`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -191,6 +192,7 @@ impl ToolRegistry {
         self.actions.len()
     }
 
+    /// Returns `true` if no actions have been registered.
     pub fn is_empty(&self) -> bool {
         self.actions.is_empty()
     }

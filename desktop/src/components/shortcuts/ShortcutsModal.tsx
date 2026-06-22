@@ -8,6 +8,7 @@ interface ShortcutsModalProps {
   onClose: () => void;
 }
 
+/** Full-screen keyboard shortcuts reference modal, shown when the user presses '?'. */
 export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.ReactElement | null {
   const [shortcuts, setShortcuts] = useState<ShortcutDef[]>([]);
   const isMac = typeof navigator !== "undefined" && navigator.platform.includes("Mac");

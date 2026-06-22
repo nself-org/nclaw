@@ -12,6 +12,9 @@ use tokio_util::sync::CancellationToken;
 // Public types
 // ============================================================================
 
+/// An event emitted by the streaming token generator.
+///
+/// Either a single token, a terminal `Done` signal (with stats), or an `Error`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TokenEvent {
     Token {
@@ -28,6 +31,7 @@ pub enum TokenEvent {
     },
 }
 
+/// Generation statistics emitted in the terminal `Done` event.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GenerateStats {
     pub total_tokens: u32,
@@ -35,6 +39,10 @@ pub struct GenerateStats {
     pub tokens_per_second: f64,
 }
 
+/// Parameters that govern token sampling during generation.
+///
+/// Mirrors `SamplingParams` but with serialisation-friendly field ordering
+/// suitable for the streaming API surface.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerateParams {
     pub max_tokens: u32,
@@ -62,6 +70,7 @@ impl Default for GenerateParams {
 // StreamingGenerator
 // ============================================================================
 
+/// Drives token-by-token streaming over an `mpsc` channel with cancellation support.
 pub struct StreamingGenerator {
     pub channel_capacity: usize,
     /// How long (ms) to block on a full channel before emitting a backpressure error.
@@ -75,6 +84,7 @@ impl Default for StreamingGenerator {
 }
 
 impl StreamingGenerator {
+    /// Create a `StreamingGenerator` with default channel capacity (32) and backpressure timeout (500 ms).
     pub fn new() -> Self {
         Self {
             channel_capacity: 32,

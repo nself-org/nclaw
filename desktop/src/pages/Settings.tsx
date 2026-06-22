@@ -52,6 +52,7 @@ const SECTION_COMPONENTS: Record<SectionId, React.ComponentType> = {
   advanced: AdvancedSettings,
 };
 
+/** Full-page settings window with a left-nav sidebar and section-panel layout. */
 export function Settings(): React.ReactElement {
   const [active, setActive] = useState<SectionId>("provider");
   const { load } = useSettings();

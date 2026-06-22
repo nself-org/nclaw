@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { getShortcuts, setShortcut, resetShortcut, resetShortcuts, ShortcutDef } from "../../lib/shortcuts-registry";
 
+/** Shortcuts settings panel — view and customise all keyboard bindings. */
 export function ShortcutsSettings(): React.ReactElement {
   const [shortcuts, setShortcuts] = useState<ShortcutDef[]>(getShortcuts());
   const [editingId, setEditingId] = useState<string | null>(null);

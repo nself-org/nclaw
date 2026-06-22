@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useNselfTranslation } from "@nself/i18n";
 import { useSettings } from "../../lib/settings-store";
 
+/** Vault settings panel — keychain pairing status and backend selection. */
 export function VaultSettings(): React.ReactElement {
   const { t } = useNselfTranslation();
   const { settings, load } = useSettings();
