@@ -11,6 +11,7 @@ export interface ProviderSettings {
   api_key_masked: string;
 }
 
+/** Per-role model id assignments: which model to use for chat, summarization, embedding, and code. */
 export interface ModelSettings {
   chat: string;
   summarizer: string;
@@ -18,23 +19,27 @@ export interface ModelSettings {
   code: string;
 }
 
+/** Vault pairing state — whether the local keychain vault is paired and which backend it uses. */
 export interface VaultSettings {
   paired: boolean;
   backend: string;
 }
 
+/** Sync server connection settings: URL and masked license key. */
 export interface SyncSettings {
   server_url: string;
   /** Last 4 chars only — raw key is never stored on the frontend. */
   license_key_masked: string;
 }
 
+/** Developer / advanced settings: log verbosity, telemetry opt-in, and update check toggle. */
 export interface AdvancedSettings {
   log_level: "error" | "warn" | "info" | "debug" | "trace";
   telemetry: boolean;
   check_updates: boolean;
 }
 
+/** Top-level settings bag mirroring the backend `get_all_settings` response. */
 export interface Settings {
   provider: ProviderSettings;
   model: ModelSettings;
@@ -75,6 +80,7 @@ interface SettingsState {
 
 // ---- Zustand store ---------------------------------------------------------
 
+/** Zustand store for all ɳClaw settings. Load once on mount; persist sections via `saveSection`. */
 export const useSettings = create<SettingsState>((set, _get) => ({
   settings: DEFAULT_SETTINGS,
   loading: false,

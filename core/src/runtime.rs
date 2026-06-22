@@ -5,6 +5,10 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use thiserror::Error;
 
+/// Runtime-level errors for the task supervisor.
+///
+/// Distinct from `crate::error::CoreError` — this is the runtime module's own
+/// error type used only within task management and supervisor operations.
 #[derive(Error, Debug)]
 pub enum CoreError {
     #[error("runtime initialization failed: {0}")]

@@ -6,6 +6,7 @@ import { useSettings, maskKey } from "../../lib/settings-store";
 
 type TestState = "idle" | "testing" | "ok" | "fail";
 
+/** Sync settings panel — server URL and license key configuration. */
 export function SyncSettings(): React.ReactElement {
   const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();

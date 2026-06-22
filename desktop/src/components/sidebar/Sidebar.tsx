@@ -6,6 +6,7 @@ import { TopicTree } from './TopicTree';
 const COLLAPSED_WIDTH = 56;
 const EXPANDED_WIDTH = 280;
 
+/** Resizable left sidebar: topic tree + search bar. Collapses to an icon rail at 56px. */
 export function Sidebar() {
   const load = useTopics((s) => s.load);
   const topics = useTopics((s) => s.topics);

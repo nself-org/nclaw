@@ -5,6 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// Errors from model cache I/O operations.
 #[derive(Debug, Error)]
 pub enum CacheError {
     #[error("io error: {0}")]
@@ -15,6 +16,7 @@ pub enum CacheError {
     NotFound(String),
 }
 
+/// Metadata for a single cached model file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub id: String,
@@ -24,11 +26,13 @@ pub struct CacheEntry {
     pub user_imported: bool, // never auto-evicted if true
 }
 
+/// On-disk model cache — index.json + per-model GGUF files under `.nclaw/models/`.
 pub struct Cache {
     cache_dir: PathBuf,
     index: HashMap<String, CacheEntry>,
 }
 
+/// Result of verifying a cached model file against expected size and checksum.
 #[derive(Debug, Clone)]
 pub enum VerifyResult {
     Ok(String),
@@ -244,64 +248,4 @@ impl Cache {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use tempfile::TempDir;
-
-    #[test]
-    fn test_cache_open_creates_directory() {
-        let temp = TempDir::new().unwrap();
-        let cache_dir = temp.path().join(".nclaw/models");
-
-        let cache = Cache::open(&cache_dir).unwrap();
-        assert!(cache.cache_dir.exists());
-    }
-
-    #[test]
-    fn test_register_and_list() {
-        let temp = TempDir::new().unwrap();
-        let mut cache = Cache::open(temp.path()).unwrap();
-
-        cache.register("model-1".to_string(), 1024, false);
-        cache.register("model-2".to_string(), 2048, false);
-
-        assert_eq!(cache.list_installed().len(), 2);
-    }
-
-    #[test]
-    fn test_persist_and_reload() {
-        let temp = TempDir::new().unwrap();
-        {
-            let mut cache = Cache::open(temp.path()).unwrap();
-            cache.register("model-1".to_string(), 1024, false);
-            cache.persist_index().unwrap();
-        }
-
-        // Reload from disk
-        let cache = Cache::open(temp.path()).unwrap();
-        assert_eq!(cache.list_installed().len(), 1);
-        let entry = cache.index.get("model-1").unwrap();
-        assert_eq!(entry.size_mb, 1024);
-    }
-
-    #[test]
-    fn test_cleanup_orphans() {
-        let temp = TempDir::new().unwrap();
-        let models_dir = temp.path().join(".nclaw/models");
-        fs::create_dir_all(&models_dir).unwrap();
-
-        // Create some orphan .gguf files
-        fs::write(models_dir.join("orphan1.gguf"), "fake").unwrap();
-        fs::write(models_dir.join("orphan2.gguf"), "fake").unwrap();
-
-        let mut cache = Cache::open(&models_dir).unwrap();
-        cache.register("tracked".to_string(), 512, false);
-
-        let orphaned = cache.cleanup_orphans().unwrap();
-        assert_eq!(orphaned.len(), 2);
-        assert!(!models_dir.join("orphan1.gguf").exists());
-        assert!(!models_dir.join("orphan2.gguf").exists());
-    }
-}
+// Tests live in `tests/cache_lru.rs` (uses only public API).

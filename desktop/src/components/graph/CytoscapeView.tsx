@@ -78,6 +78,7 @@ const STYLESHEET: StyleEntry[] = [
   },
 ];
 
+/** Cytoscape.js memory graph canvas — renders nodes and edges with force-layout; calls onNodeClick with entity id. */
 export function CytoscapeView({ nodes, edges, onNodeClick }: Props) {
   const elements = useMemo(
     () => [

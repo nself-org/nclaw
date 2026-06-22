@@ -17,6 +17,7 @@ pub struct ServerMuxTransport {
 }
 
 impl ServerMuxTransport {
+    /// Create a new `ServerMuxTransport` that POSTs to `endpoint`.
     pub fn new(endpoint: String) -> Self {
         Self {
             endpoint,

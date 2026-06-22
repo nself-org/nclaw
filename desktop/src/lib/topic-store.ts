@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 
+/** A topic node in the sidebar tree, backed by an ltree path in Postgres. */
 export interface Topic {
   id: string;
   path: string;
@@ -8,6 +9,7 @@ export interface Topic {
   archived: boolean;
 }
 
+/** Full-text search result: matching topics and ids of topics that contain matching messages. */
 export interface SearchResult {
   topics: Topic[];
   matched_message_topics: string[];
@@ -26,6 +28,7 @@ interface TopicStoreState {
   search(query: string): Promise<SearchResult>;
 }
 
+/** Zustand store for the sidebar topic tree. Load once on mount; mutations call Tauri invoke. */
 export const useTopics = create<TopicStoreState>((set, get) => ({
   topics: [],
   expanded: new Set(),
@@ -74,6 +77,7 @@ export interface TreeNode {
   children: TreeNode[];
 }
 
+/** Build a nested `TreeNode[]` from a flat ltree-path topic list. Orphaned nodes become roots. */
 export function buildTree(topics: Topic[]): TreeNode[] {
   const byPath = new Map<string, TreeNode>();
   for (const t of topics) {

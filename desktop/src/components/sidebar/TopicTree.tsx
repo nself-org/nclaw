@@ -16,6 +16,7 @@ interface TopicTreeProps {
   highlightIds?: Set<string>;
 }
 
+/** Recursive drag-and-drop topic tree. Highlights matching node ids from search results. */
 export function TopicTree({ nodes, depth = 0, highlightIds = new Set() }: TopicTreeProps) {
   const move = useTopics((s) => s.move);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));

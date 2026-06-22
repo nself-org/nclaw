@@ -115,6 +115,8 @@ mod ffi_impl {
     // LlamaCpp — holds an optional loaded model + sampling/runtime config.
     // -------------------------------------------------------------------------
 
+    /// llama.cpp backend — holds the global llama backend, optional loaded model,
+    /// and runtime config (context size, GPU layers, seed).
     pub struct LlamaCpp {
         backend: LlamaBackend,
         model: Option<LlamaModel>,
@@ -458,9 +460,14 @@ mod no_ffi {
     const NO_FEATURE_MSG: &str =
         "llama.cpp not compiled in — enable one of: cpu | metal | cuda | vulkan";
 
+    /// Stub `LlamaCppBackend` returned when no llama.cpp feature flag is enabled.
+    ///
+    /// Every method returns `LlmError::InternalError` with a message directing the caller
+    /// to enable one of: `cpu | metal | cuda | vulkan`.
     pub struct LlamaCppBackend;
 
     impl LlamaCppBackend {
+        /// Create the stub — always errors at call time.
         pub fn new() -> Result<Self, LlmError> {
             Err(LlmError::InternalError(NO_FEATURE_MSG.into()))
         }

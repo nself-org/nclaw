@@ -20,6 +20,7 @@ pub struct FrontierTransport {
 }
 
 impl FrontierTransport {
+    /// Create a `FrontierTransport` for the given `provider` ("anthropic" | "openai" | "google").
     pub fn new(provider: String, api_key: String, model_id: String) -> Self {
         Self {
             provider,

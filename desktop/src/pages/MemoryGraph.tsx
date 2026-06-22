@@ -7,6 +7,7 @@ const CytoscapeView = lazy(() =>
   }))
 );
 
+/** Full-page memory knowledge graph view. Lazy-loads CytoscapeView; shows a detail panel on node selection. */
 export function MemoryGraph() {
   const [graph] = useState(() => buildMockGraph());
   const [selected, setSelected] = useState<string | null>(null);

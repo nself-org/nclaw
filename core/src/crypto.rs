@@ -88,12 +88,14 @@ pub struct EphemeralKeypair {
 }
 
 impl EphemeralKeypair {
+    /// Generate a fresh ephemeral X25519 keypair from OS randomness.
     pub fn generate() -> Self {
         let secret = EphemeralSecret::random_from_rng(OsRng);
         let public = PublicKey::from(&secret);
         Self { secret, public }
     }
 
+    /// Encode the ephemeral public key as standard base64.
     pub fn public_key_b64(&self) -> String {
         B64.encode(self.public.as_bytes())
     }

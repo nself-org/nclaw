@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ThemeMode, applyTheme, loadThemeFromStorage, saveTheme } from '@/lib/theme';
 
+/**
+ * Manages the active theme mode and accent colour.
+ *
+ * Reads initial values from localStorage, applies changes to the root element
+ * via `applyTheme`, persists updates via `saveTheme`, and tracks OS dark-mode
+ * changes when mode is `"system"`.
+ */
 export function useTheme() {
   const initial = loadThemeFromStorage();
   const [mode, setMode] = useState<ThemeMode>(initial.mode);
