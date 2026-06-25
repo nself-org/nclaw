@@ -34,10 +34,16 @@ harness = false
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# E2E encryption: X25519 key exchange + ChaCha20-Poly1305 AEAD
+# E2E encryption: X25519 key exchange + XChaCha20-Poly1305 AEAD + HKDF-SHA256 session derivation
 x25519-dalek = { version = "2", features = ["static_secrets"] }
 chacha20poly1305 = { version = "0.10", features = ["stream"] }
 rand_core = { version = "0.6", features = ["getrandom"] }
+# HKDF-SHA256 session key derivation (E2EE session.rs)
+ring = "0.17"
+# Zeroize-on-drop for secret key material (E2EE keys.rs, session.rs)
+zeroize = { version = "1", features = ["derive"] }
+# Sentry crash reporting — conditional init from NCLAW_SENTRY_DSN (T11)
+sentry = { version = "0.34", default-features = false, features = ["backtrace", "contexts", "panic", "debug-images"], optional = true }
 base64 = "0.22"
 # Client vault: Ed25519 keypair + XChaCha20 envelope encryption + OS keychain
 ed25519-dalek = { version = "2", features = ["rand_core"] }
@@ -107,6 +113,9 @@ mobile-sqlite = ["dep:rusqlite"]
 # Off by default so `cargo test` stays fast; CI workflow `llm-acceptance.yml`
 # turns it on for the dedicated acceptance jobs.
 llm-acceptance = []
+# sentry-reporting: enables conditional Sentry crash reporting for libnclaw-server.
+# T11: activated when NCLAW_SENTRY_DSN env var is set at runtime.
+sentry-reporting = ["dep:sentry"]
 
 [[bin]]
 name = "export-bindings"
@@ -116,3 +125,10 @@ required-features = ["ts-export"]
 [[bin]]
 name = "argon2_calibrate"
 path = "src/bin/argon2_calibrate.rs"
+
+# libnclaw-server: Unix socket JSON-RPC sidecar for E2EE operations (T04, T09).
+# Go intelligence service calls this sidecar over LIBNCLAW_SOCKET_PATH to
+# invoke encrypt/decrypt/derive_session without cgo. Per OD-3 in E9 spec.
+[[bin]]
+name = "libnclaw-server"
+path = "src/bin/libnclaw_server.rs"
