@@ -7,6 +7,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+/** Chat message record — carries id, role, and raw markdown/text content. */
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -74,6 +75,7 @@ const rehypePlugins = [
   rehypeKatex,
 ];
 
+/** Renders a single chat message bubble — supports Markdown, LaTeX, syntax-highlighted code blocks, and progressive streaming. */
 export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
   const hasMath =
     message.content.includes('$') || message.content.includes('\\(');

@@ -11,6 +11,7 @@ const PROVIDERS: { id: PS["id"]; label: string; requiresKey: boolean; defaultUrl
   { id: "openrouter", label: "OpenRouter", requiresKey: true, defaultUrl: "https://openrouter.ai/api/v1" },
 ];
 
+/** Provider settings panel — LLM backend selection and API key management. */
 export function ProviderSettings(): React.ReactElement {
   const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();

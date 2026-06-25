@@ -34,6 +34,19 @@ const localSecureStore: SecureStoreInterface = {
 
 // ─── Auth strategy singleton ───────────────────────────────────────────────────
 
+// Guard: VITE_NSELF_AUTH_URL must be set in non-development modes.
+// Without it, the app silently hits production auth (https://api.nself.org/v1/auth),
+// causing staging/preview builds to authenticate against production.
+// Development mode (import.meta.env.DEV) is allowed to use the fallback.
+const resolvedAuthBaseUrl = import.meta.env.VITE_NSELF_AUTH_URL as string | undefined;
+if (!resolvedAuthBaseUrl && !import.meta.env.DEV) {
+  throw new Error(
+    '[nclaw-desktop] VITE_NSELF_AUTH_URL is required in non-development mode. ' +
+    'Set it in .env.local or your deployment environment. ' +
+    'Refusing to default to production auth URL.',
+  );
+}
+
 export const authStrategy = createNativeAuthStrategy(localSecureStore, {
-  authBaseUrl: import.meta.env.VITE_NSELF_AUTH_URL ?? 'https://api.nself.org/v1/auth',
+  authBaseUrl: resolvedAuthBaseUrl ?? 'https://api.nself.org/v1/auth',
 });

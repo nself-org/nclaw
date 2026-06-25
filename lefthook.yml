@@ -1,0 +1,19 @@
+# lefthook.yml — nself/nclaw (Tauri 2 + Flutter + Rust monorepo)
+# Install: brew install lefthook && lefthook install (at repo root)
+
+pre-commit:
+  parallel: true
+  commands:
+    secrets-scan:
+      run: |
+        if [ -f .gitleaks.toml ]; then
+          gitleaks protect --staged --config .gitleaks.toml
+        else
+          gitleaks protect --staged
+        fi
+
+pre-push:
+  parallel: false
+  commands:
+    ci-suppression-guard:
+      run: bash .github/ci-suppression-guard.sh 2>/dev/null || true

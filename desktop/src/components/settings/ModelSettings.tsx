@@ -18,6 +18,7 @@ const ROLES: { key: "chat" | "summarizer" | "embedder" | "code"; label: string; 
   { key: "code", label: "Code", description: "Code generation and explanation" },
 ];
 
+/** Model settings panel — per-role model assignment (chat, summarizer, embedder, code). */
 export function ModelSettings(): React.ReactElement {
   const { settings, saveSection } = useSettings();
   const [models, setModels] = useState<ModelEntry[]>([]);

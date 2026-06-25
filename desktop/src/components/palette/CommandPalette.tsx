@@ -14,6 +14,7 @@ interface CommandPaletteProps {
   onSelect?: (result: PaletteResult) => void;
 }
 
+/** Cmd-K command palette — searches static commands and semantic memory topics. */
 export function CommandPalette({
   open,
   onClose,

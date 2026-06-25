@@ -6,6 +6,7 @@ interface SearchBarProps {
   onResult(result: SearchResult | null): void;
 }
 
+/** Debounced full-text search bar. Calls `onResult` with matching topics and conversations. */
 export function SearchBar({ onResult }: SearchBarProps) {
   const { t } = useNselfTranslation();
   const [query, setQuery] = useState('');

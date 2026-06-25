@@ -1,9 +1,11 @@
+/** A node in the memory knowledge graph — topic, fact, or named entity. */
 export interface GraphNode {
   id: string;
   label: string;
   kind: 'topic' | 'fact' | 'entity';
 }
 
+/** A directed edge between two `GraphNode` ids with a semantic relationship label. */
 export interface GraphEdge {
   id: string;
   source: string;
@@ -11,6 +13,7 @@ export interface GraphEdge {
   label: 'relates-to' | 'mentioned-in' | 'decided-on';
 }
 
+/** Generate a synthetic knowledge graph: 50 nodes (20 topics, 20 facts, 10 entities) and 80 edges. */
 export function buildMockGraph(): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];

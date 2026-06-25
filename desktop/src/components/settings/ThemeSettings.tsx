@@ -3,6 +3,7 @@ import { useNselfTranslation } from '@nself/i18n';
 import { useTheme } from '@/hooks/useTheme';
 import { ACCENT_PRESETS, isValidHex } from '@/lib/theme';
 
+/** Theme settings panel — mode toggle (light/dark/system) and accent colour picker. */
 export function ThemeSettings(): React.ReactElement {
   const { t } = useNselfTranslation();
   const { mode, setMode, accentHex, setAccentHex } = useTheme();

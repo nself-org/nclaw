@@ -1,6 +1,7 @@
 // TierBadge — displays local AI tier (T0..T4) with sky-500 accent and override indicator.
 import React from "react";
 
+/** Numeric hardware tier level as classified by `libnclaw::tier`. T0 = Nano, T4 = Heavy. */
 export type TierLevel = 0 | 1 | 2 | 3 | 4;
 
 interface TierBadgeProps {
@@ -17,6 +18,7 @@ const TIER_LABELS: Record<TierLevel, string> = {
   4: "T4 · Heavy",
 };
 
+/** Inline pill badge showing the active hardware tier and whether it was user-overridden. */
 export function TierBadge({ tier, isOverride = false, className = "" }: TierBadgeProps): React.ReactElement {
   const label = TIER_LABELS[tier] ?? `T${tier}`;
   const mode = isOverride ? "Override" : "Auto";

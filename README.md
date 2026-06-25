@@ -110,14 +110,16 @@ open apps/android/ in Android Studio
 ## Features
 
 - **AI chat**: Multi-turn conversations with memory and context window management
-- **Memory and context**: Persistent memory across sessions, context injection, knowledge base
+- **Memory and context**: Persistent memory across sessions, context injection, knowledge base. Hybrid retrieval (dense pgvector + lexical tsvector + RRF k=60) via BGE-M3 embeddings
 - **Tool calls**: AI executes tools: web search, file read/write, code execution, shell commands
 - **Personas**: Custom AI personas with defined behavior, tone, and knowledge scope
 - **Proactive intelligence**: Background agent monitoring, event-triggered actions, scheduled tasks
 - **Voice**: Speech-to-text input and text-to-speech output via the nself-voice plugin
 - **Browser automation**: AI-driven browser control via the nself-browser plugin (CDP)
 - **Multi-modal input**: Images, files, and documents as conversation inputs
-- **E2E encryption**: All messages encrypted end-to-end via libnclaw (X25519 + XChaCha20-Poly1305)
+- **E2E encryption**: All messages encrypted end-to-end via libnclaw (X25519 + XChaCha20-Poly1305). libnclaw is the single source of truth for types and protocol across all clients
+- **AI gateway**: Canonical nself-ai-gateway (port 3761) for all LLM routing; nself-ai-cc (3760) for Claude Code integration; nself-ai-mcp (3762) for MCP tool server. AES-256-GCM encrypted key pool with lane affinity
+- **gRPC intelligence layer**: HTTP/2 TLS with JWT auth for intelligence service calls (JWT dev-bypass removed in P4)
 
 ## Repo Structure
 

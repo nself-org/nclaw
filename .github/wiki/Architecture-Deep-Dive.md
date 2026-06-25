@@ -25,7 +25,7 @@ Plugin code is never bundled into this `claw/` repo. At backend install time, `n
 | Item | Required | Notes |
 |------|----------|-------|
 | ɳSelf CLI | 1.0+ | F01-MASTER-VERSIONS |
-| Plugin: `ai` | Yes | Pro tier — see [[plugin-ai]] in plugins-pro wiki |
+| Plugin: `nself-ai-gateway` | Yes | Pro tier (port 3761) — see `plugins-pro/.github/docs/nself-ai-gateway.md` |
 | Plugin: `claw` | Yes | Pro tier — see [[plugin-claw]] in plugins-pro wiki |
 | Plugin: `mux` | Yes | Pro tier — see [[plugin-mux]] in plugins-pro wiki |
 | Service: PostgreSQL with pgvector + ltree | Yes | F08-SERVICE-INVENTORY |

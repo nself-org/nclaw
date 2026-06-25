@@ -6,6 +6,7 @@
 
 use thiserror::Error;
 
+/// Convenience alias: `Result<T>` defaults to `CoreError` as the error type.
 pub type Result<T> = std::result::Result<T, CoreError>;
 
 /// Top-level error type for all libnclaw core operations.

@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Sampling hyper-parameters passed to a local LLM backend.
+///
+/// All fields use standard llama.cpp semantics; `mirostat = None` disables
+/// Mirostat adaptive sampling.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SamplingParams {
     pub temperature: f32,    // 0.0–2.0
@@ -12,6 +16,7 @@ pub struct SamplingParams {
     pub mirostat: Option<MirostatConfig>,
 }
 
+/// Configuration for Mirostat adaptive sampling (modes 0/1/2).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MirostatConfig {
     pub mode: u8, // 0 = off, 1 = v1, 2 = v2
@@ -34,6 +39,9 @@ impl Default for SamplingParams {
 }
 
 impl SamplingParams {
+    /// Validate all fields are within their legal ranges.
+    ///
+    /// Returns `Err(description)` on the first out-of-range value found.
     pub fn validate(&self) -> Result<(), String> {
         if !(0.0..=2.0).contains(&self.temperature) {
             return Err(format!(
@@ -62,6 +70,7 @@ impl SamplingParams {
     }
 }
 
+/// Inference role — selects the right sampling preset for the intended task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Role {
     Chat,
@@ -70,6 +79,7 @@ pub enum Role {
     Code,
 }
 
+/// Return the canonical `SamplingParams` preset for a given `Role`.
 pub fn defaults_for(role: Role) -> SamplingParams {
     match role {
         Role::Chat => SamplingParams {
@@ -111,6 +121,7 @@ pub fn defaults_for(role: Role) -> SamplingParams {
     }
 }
 
+/// Return a map of all role→preset pairs; useful for serialising the full preset table.
 pub fn all_role_defaults() -> HashMap<Role, SamplingParams> {
     [Role::Chat, Role::Summarize, Role::Code, Role::Embed]
         .into_iter()

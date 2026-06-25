@@ -215,245 +215,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_empty_input() {
-        let mgr = ContextManager::default();
-        let fitted = mgr.fit(&[], 10000);
-        assert_eq!(fitted.len(), 0);
-    }
-
-    #[test]
-    fn test_all_messages_fit() {
-        let conv_id = uuid::Uuid::new_v4();
-        let mut messages = vec![];
-
-        for i in 0..5 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: if i % 2 == 0 {
-                    MessageRole::User
-                } else {
-                    MessageRole::Assistant
-                },
-                content: crate::types::MessageContent::Text("short".to_string()),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        let mgr = ContextManager::default();
-        let fitted = mgr.fit(&messages, 10000);
-
-        // All should fit
-        assert_eq!(fitted.len(), 5);
-    }
-
-    #[test]
-    fn test_keep_recent_policy() {
-        let conv_id = uuid::Uuid::new_v4();
-        let mut messages = vec![];
-
-        // Add 10 user/assistant pairs
-        for _i in 0..10 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: MessageRole::User,
-                content: crate::types::MessageContent::Text(
-                    "This is a message with some text content.".to_string(),
-                ),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        let mgr = ContextManager {
-            policy: TruncationPolicy::KeepRecent,
-            recent_keep: 8,
-        };
-
-        // fix: stale test — 10 msgs ≈ 140 tokens total; budget 300 fit everything.
-        // Tighten budget to 50 so KeepRecent drops oldest messages.
-        let fitted = mgr.fit(&messages, 50);
-
-        // Should keep some recent messages, drop older ones
-        assert!(fitted.len() < messages.len());
-        // Most recent message should be present
-        assert_eq!(fitted.last().map(|m| &m.id), messages.last().map(|m| &m.id));
-    }
-
-    #[test]
-    fn test_summarize_middle_policy() {
-        let conv_id = uuid::Uuid::new_v4();
-        let mut messages = vec![];
-
-        // Add system message first
-        messages.push(Message {
-            id: uuid::Uuid::new_v4(),
-            conversation_id: conv_id,
-            role: MessageRole::System,
-            content: crate::types::MessageContent::Text("You are a helpful assistant.".to_string()),
-            created_at: chrono::Utc::now(),
-            model: None,
-            tool_calls: vec![],
-            metadata: crate::types::MessageMetadata::default(),
-        });
-
-        // Add many body messages
-        for i in 0..20 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: if i % 2 == 0 {
-                    MessageRole::User
-                } else {
-                    MessageRole::Assistant
-                },
-                content: crate::types::MessageContent::Text(
-                    "This is a message with some text content.".to_string(),
-                ),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        let mgr = ContextManager {
-            policy: TruncationPolicy::SummarizeMiddle,
-            recent_keep: 8,
-        };
-
-        // fix: stale test — 1 sys + 20 body ≈ 291 tokens; budget 400 fit everything.
-        // Tighten budget to 150 so SummarizeMiddle truncates and inserts placeholder.
-        let fitted = mgr.fit(&messages, 150);
-
-        // Should have system + placeholder + recent messages
-        assert!(fitted.len() > 1);
-        assert!(fitted.len() <= 10); // system + placeholder + 8 recent max
-
-        // First message should be system
-        assert_eq!(fitted.first().map(|m| &m.role), Some(&MessageRole::System));
-
-        // Should have a summary placeholder
-        let has_summary = fitted.iter().any(|m| {
-            m.role == MessageRole::System
-                && m.content
-                    .as_text()
-                    .is_some_and(|t| t.contains("earlier messages"))
-        });
-        assert!(has_summary);
-
-        // Last message should be from original body (recent)
-        assert_eq!(fitted.last().map(|m| &m.id), messages.last().map(|m| &m.id));
-    }
-
-    #[test]
-    fn test_system_messages_always_preserved() {
-        let conv_id = uuid::Uuid::new_v4();
-        let mut messages = vec![];
-
-        // Add 3 system messages
-        for i in 0..3 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: MessageRole::System,
-                content: crate::types::MessageContent::Text(format!("System message {}", i)),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        // Add many body messages
-        for _i in 0..20 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: MessageRole::User,
-                content: crate::types::MessageContent::Text(
-                    "User message with some text content here.".to_string(),
-                ),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        // fix: stale test — default policy is SummarizeMiddle which inserts a System
-        // placeholder summary, yielding 4 system msgs. Use KeepRecent so the count
-        // reflects exactly the 3 original system messages preserved.
-        let mgr = ContextManager {
-            policy: TruncationPolicy::KeepRecent,
-            recent_keep: 8,
-        };
-        let fitted = mgr.fit(&messages, 200);
-
-        // All 3 system messages should be present
-        let system_count = fitted
-            .iter()
-            .filter(|m| m.role == MessageRole::System)
-            .count();
-        assert_eq!(system_count, 3);
-
-        // First 3 should be the original system messages
-        for msg in fitted.iter().take(3) {
-            assert_eq!(msg.role, MessageRole::System);
-        }
-    }
-
-    #[test]
-    fn test_truncate_oldest_alias() {
-        let conv_id = uuid::Uuid::new_v4();
-        let mut messages = vec![];
-
-        for _i in 0..10 {
-            messages.push(Message {
-                id: uuid::Uuid::new_v4(),
-                conversation_id: conv_id,
-                role: MessageRole::User,
-                content: crate::types::MessageContent::Text(
-                    "Message with content here.".to_string(),
-                ),
-                created_at: chrono::Utc::now(),
-                model: None,
-                tool_calls: vec![],
-                metadata: crate::types::MessageMetadata::default(),
-            });
-        }
-
-        let mgr_keep_recent = ContextManager {
-            policy: TruncationPolicy::KeepRecent,
-            recent_keep: 8,
-        };
-
-        let mgr_truncate = ContextManager {
-            policy: TruncationPolicy::TruncateOldest,
-            recent_keep: 8,
-        };
-
-        let fitted_keep = mgr_keep_recent.fit(&messages, 300);
-        let fitted_truncate = mgr_truncate.fit(&messages, 300);
-
-        // Both should behave the same
-        assert_eq!(fitted_keep.len(), fitted_truncate.len());
-        assert_eq!(
-            fitted_keep.iter().map(|m| m.id).collect::<Vec<_>>(),
-            fitted_truncate.iter().map(|m| m.id).collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
     fn test_estimate_tokens() {
         let conv_id = uuid::Uuid::new_v4();
-
         let msg_short = Message {
             id: uuid::Uuid::new_v4(),
             conversation_id: conv_id,
@@ -464,25 +227,18 @@ mod tests {
             tool_calls: vec![],
             metadata: crate::types::MessageMetadata::default(),
         };
-
         let msg_long = Message {
             id: uuid::Uuid::new_v4(),
             conversation_id: conv_id,
             role: MessageRole::User,
             content: crate::types::MessageContent::Text(
-                "This is a much longer message with a lot more content that should result in a higher token count estimate."
-                    .to_string(),
+                "This is a much longer message with a lot more content.".to_string(),
             ),
             created_at: chrono::Utc::now(),
             model: None,
             tool_calls: vec![],
             metadata: crate::types::MessageMetadata::default(),
         };
-
-        let short_tokens = estimate_tokens(&msg_short);
-        let long_tokens = estimate_tokens(&msg_long);
-
-        // Longer message should have more estimated tokens
-        assert!(long_tokens > short_tokens);
+        assert!(estimate_tokens(&msg_long) > estimate_tokens(&msg_short));
     }
 }

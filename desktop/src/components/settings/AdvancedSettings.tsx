@@ -39,6 +39,7 @@ function Toggle({ id, label, description, checked, onChange }: ToggleProps): Rea
   );
 }
 
+/** Advanced settings panel — log level, telemetry opt-in, and update check. */
 export function AdvancedSettings(): React.ReactElement {
   const { t } = useNselfTranslation();
   const { settings, saveSection } = useSettings();

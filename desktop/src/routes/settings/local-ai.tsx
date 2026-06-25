@@ -1,116 +1,26 @@
-// Local AI Settings panel — tier override, benchmark history, installed models, custom GGUF import.
-// Tauri commands defined in src-tauri/src/commands/local_ai.rs (stubs; wired in S15.T17).
+/**
+ * Local AI Settings page — tier override, benchmark history, installed models, custom GGUF import.
+ *
+ * Tauri commands are defined in src-tauri/src/commands/local_ai.rs (stubs; wired in S15.T17).
+ * Types and UI micro-components are in `./_local-ai-helpers.tsx`.
+ */
 import React, { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { TierBadge, TierLevel } from "../../components/tier-badge";
+import { TierBadge } from "../../components/tier-badge";
+import {
+  BenchmarkResult,
+  ConfirmModal,
+  ModelEntry,
+  ModelsList,
+  Skeleton,
+  Sparkline,
+  Tier,
+  TierOverride,
+  Toast,
+  Toggle,
+} from "./_local-ai-helpers";
 
-// --- Types (mirror commands/local_ai.rs) ---
-
-type TierOverride = "auto" | "T0" | "T1" | "T2" | "T3" | "T4";
-
-interface Tier {
-  active: TierLevel;
-  override: TierOverride;
-}
-
-interface BenchmarkResult {
-  date: string;
-  toks_per_sec: number;
-  model_id: string;
-}
-
-interface ModelEntry {
-  model_id: string;
-  size_mb: number;
-  last_used_at: string | null;
-  roles: ("chat" | "summarize" | "embed" | "code")[];
-}
-
-// --- Helpers ---
-
-function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-white/5 ${className}`} />;
-}
-
-function Toast({ message, onClose }: { message: string; onClose: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, [onClose]);
-  return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-red-900/80 px-4 py-2 text-sm text-red-200 shadow-lg">
-      {message}
-    </div>
-  );
-}
-
-function ConfirmModal({
-  title,
-  body,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-}: {
-  title: string;
-  body: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-      <div className="w-80 rounded-xl border border-white/10 bg-gray-900 p-6 shadow-2xl">
-        <h3 className="mb-2 text-base font-semibold text-white">{title}</h3>
-        <p className="mb-5 text-sm text-gray-400">{body}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-lg px-4 py-1.5 text-sm text-gray-400 hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-500"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Minimal sparkline — renders tok/s values as an inline SVG bar chart.
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length === 0) return null;
-  const max = Math.max(...values, 1);
-  const w = 220;
-  const h = 40;
-  const bw = Math.floor(w / values.length) - 2;
-
-  return (
-    <svg width={w} height={h} className="mt-1">
-      {values.map((v, i) => {
-        const barH = Math.max(2, Math.round((v / max) * h));
-        return (
-          <rect
-            key={i}
-            x={i * (bw + 2)}
-            y={h - barH}
-            width={bw}
-            height={barH}
-            rx={2}
-            className="fill-sky-500/70"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-// --- Main component ---
-
+/** Local AI settings page: tier override select, benchmark sparkline, installed model list, and GGUF import. */
 export default function LocalAiSettingsPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +35,6 @@ export default function LocalAiSettingsPage(): React.ReactElement {
   const [benchRunning, setBenchRunning] = useState(false);
   const [importRunning, setImportRunning] = useState(false);
 
-  // Modals
   const [confirmT4, setConfirmT4] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -152,15 +61,18 @@ export default function LocalAiSettingsPage(): React.ReactElement {
     load();
   }, [load]);
 
-  const handleTierOverride = useCallback(async (value: TierOverride) => {
-    try {
-      const override = value === "auto" ? null : (parseInt(value.slice(1)) as TierLevel);
-      await invoke("set_tier_override", { tier: override });
-      await load();
-    } catch (e) {
-      setError(String(e));
-    }
-  }, [load]);
+  const handleTierOverride = useCallback(
+    async (value: TierOverride) => {
+      try {
+        const override = value === "auto" ? null : (parseInt(value.slice(1)) as Tier["active"]);
+        await invoke("set_tier_override", { tier: override });
+        await load();
+      } catch (e) {
+        setError(String(e));
+      }
+    },
+    [load],
+  );
 
   const handleAllowT4Toggle = useCallback(async (checked: boolean) => {
     if (checked) {
@@ -230,16 +142,18 @@ export default function LocalAiSettingsPage(): React.ReactElement {
     }
   }, []);
 
-  const handleSetChatRole = useCallback(async (modelId: string) => {
-    try {
-      await invoke("set_model_role", { modelId, role: "chat" });
-      await load();
-    } catch (e) {
-      setError(String(e));
-    }
-  }, [load]);
+  const handleSetChatRole = useCallback(
+    async (modelId: string) => {
+      try {
+        await invoke("set_model_role", { modelId, role: "chat" });
+        await load();
+      } catch (e) {
+        setError(String(e));
+      }
+    },
+    [load],
+  );
 
-  // --- Render: Loading ---
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -279,13 +193,11 @@ export default function LocalAiSettingsPage(): React.ReactElement {
       )}
 
       <div className="mx-auto max-w-2xl space-y-8 p-6">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold text-white">Local AI</h1>
           <TierBadge tier={tier.active} isOverride={tier.override !== "auto"} />
         </div>
 
-        {/* Tier override */}
         <section className="rounded-xl border border-white/10 bg-surface-soft p-5">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
             Tier override
@@ -304,7 +216,6 @@ export default function LocalAiSettingsPage(): React.ReactElement {
           </select>
         </section>
 
-        {/* Toggles */}
         <section className="rounded-xl border border-white/10 bg-surface-soft p-5 space-y-4">
           <Toggle
             label="Allow T4 (heavy models)"
@@ -321,7 +232,6 @@ export default function LocalAiSettingsPage(): React.ReactElement {
           />
         </section>
 
-        {/* Benchmark history */}
         <section className="rounded-xl border border-white/10 bg-surface-soft p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
@@ -347,64 +257,19 @@ export default function LocalAiSettingsPage(): React.ReactElement {
           </button>
         </section>
 
-        {/* Installed models */}
-        <section className="rounded-xl border border-white/10 bg-surface-soft p-5">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
-            Installed models
-          </h2>
-          {models.length === 0 ? (
-            <p className="text-sm text-gray-500">No models installed. Add a custom GGUF below.</p>
-          ) : (
-            <ul className="space-y-3">
-              {models.map((m) => (
-                <li
-                  key={m.model_id}
-                  className="flex items-start justify-between gap-4 rounded-lg bg-gray-900/50 px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{m.model_id}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {(m.size_mb / 1024).toFixed(1)} GB
-                      {m.last_used_at ? ` · last used ${m.last_used_at}` : ""}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {m.roles.map((r) => (
-                        <span
-                          key={r}
-                          className="rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-400"
-                        >
-                          {r}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-1.5 pt-0.5">
-                    <button
-                      onClick={() => handleSetChatRole(m.model_id)}
-                      className="rounded px-2 py-1 text-xs text-sky-400 hover:bg-sky-500/10"
-                    >
-                      Set as chat role
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(m.model_id)}
-                      className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <ModelsList
+          models={models}
+          onSetChatRole={handleSetChatRole}
+          onDeleteRequest={setDeleteTarget}
+        />
 
-        {/* Add custom GGUF */}
         <section className="rounded-xl border border-white/10 bg-surface-soft p-5">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
             Add custom GGUF
           </h2>
           <p className="mb-3 text-sm text-gray-500">
-            Import a .gguf model file from disk. It will be registered and available for role assignment.
+            Import a .gguf model file from disk. It will be registered and available for role
+            assignment.
           </p>
           <button
             onClick={handleImportGGUF}
@@ -416,38 +281,5 @@ export default function LocalAiSettingsPage(): React.ReactElement {
         </section>
       </div>
     </>
-  );
-}
-
-// --- Toggle sub-component ---
-interface ToggleProps {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function Toggle({ label, description, checked, onChange }: ToggleProps) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-white">{label}</p>
-        <p className="text-xs text-gray-500">{description}</p>
-      </div>
-      <button
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-          checked ? "bg-sky-500" : "bg-gray-700"
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-            checked ? "translate-x-4" : "translate-x-0"
-          }`}
-        />
-      </button>
-    </div>
   );
 }

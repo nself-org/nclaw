@@ -2,6 +2,7 @@
 
 export type PaletteResultKind = 'topic' | 'conversation' | 'setting' | 'command';
 
+/** A single command palette result item — covers topics, conversations, settings, and commands. */
 export interface PaletteResult {
   kind: PaletteResultKind;
   id: string;
@@ -11,6 +12,7 @@ export interface PaletteResult {
   shortcut?: string;
 }
 
+/** Hard-coded command list shown in the palette before the user types. */
 export const STATIC_COMMANDS: PaletteResult[] = [
   {
     kind: 'command',
@@ -47,6 +49,7 @@ export const STATIC_COMMANDS: PaletteResult[] = [
   },
 ];
 
+/** Search topics and conversations via Tauri `palette_search`. Returns up to ~20 results. */
 export async function paletteSearch(query: string): Promise<PaletteResult[]> {
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<PaletteResult[]>('palette_search', { query });
