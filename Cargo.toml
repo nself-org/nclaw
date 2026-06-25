@@ -9,7 +9,7 @@ members = [
 # protocol/ added as a workspace member once IDL crates land (subsequent S12 tickets).
 
 [workspace.package]
-version = "1.1.5"
+version = "1.1.6"
 edition = "2021"
 license = "MIT"
 authors = ["nSelf <hello@nself.org>"]
