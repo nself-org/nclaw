@@ -52,7 +52,7 @@ async fn push_with_retry_succeeds_on_first_try() {
         .await
         .expect("first try should succeed");
     assert!(resp.all_accepted());
-    mock.assert_hits_async(1).await;
+    mock.assert_calls_async(1).await;
 }
 
 #[tokio::test]
@@ -84,7 +84,7 @@ async fn push_with_retry_exhausts_after_max_attempts() {
         other => panic!("expected RetryExhausted, got {other:?}"),
     }
     // The retry loop should have hit the mock exactly max_attempts times.
-    mock.assert_hits_async(5).await;
+    mock.assert_calls_async(5).await;
 }
 
 #[tokio::test]
@@ -125,7 +125,7 @@ async fn push_with_retry_honors_retry_after_header() {
         }
         other => panic!("expected RetryExhausted, got {other:?}"),
     }
-    throttle_mock.assert_hits_async(1).await;
+    throttle_mock.assert_calls_async(1).await;
 }
 
 #[tokio::test]
@@ -151,7 +151,7 @@ async fn push_with_retry_does_not_retry_on_non_retryable_4xx() {
         }
         other => panic!("expected ProtocolViolation, got {other:?}"),
     }
-    mock.assert_hits_async(1).await;
+    mock.assert_calls_async(1).await;
 }
 
 #[tokio::test]
@@ -171,7 +171,7 @@ async fn push_with_retry_does_not_retry_on_403() {
         .expect_err("403 should NOT retry");
     // SyncError::InvalidState — proving non-retryable path was taken.
     assert!(matches!(err, CoreError::Sync(_)));
-    mock.assert_hits_async(1).await;
+    mock.assert_calls_async(1).await;
 }
 
 #[tokio::test]
@@ -192,5 +192,5 @@ async fn push_with_retry_sends_idempotency_key_header() {
         .push_with_retry_rng(&req, test_policy(), || 0.0)
         .await
         .expect("ok");
-    mock.assert_hits_async(1).await;
+    mock.assert_calls_async(1).await;
 }

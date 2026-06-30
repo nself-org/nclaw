@@ -116,7 +116,7 @@ async fn push_round_trip_happy_path_with_signed_event() {
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 // V04-F04: no token anywhere in URL or query
-                .matches(|req| {
+                .is_true(|req| {
                     let qs = req.query_params().iter().any(|(_, v)| v.contains(TEST_JWT));
                     !qs
                 });
@@ -139,8 +139,8 @@ async fn push_round_trip_happy_path_with_signed_event() {
 async fn push_request_wire_shape_matches_golden_fixture() {
     let server = MockServer::start_async().await;
 
-    // httpmock 0.8 removed json_body_partial; we verify the wire shape via a
-    // matches() closure that checks the well-known field paths. The full
+    // httpmock 0.8 removed json_body_partial; we verify the wire shape via an
+    // is_true() closure that checks the well-known field paths. The full
     // envelope is additionally serialized client-side and compared against the
     // golden fixture below — this catches drift in field ordering or naming.
     let mock = server
@@ -148,7 +148,7 @@ async fn push_request_wire_shape_matches_golden_fixture() {
             when.method(POST)
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
-                .matches(|req| {
+                .is_true(|req| {
                     let Ok(body) = serde_json::from_slice::<serde_json::Value>(req.body().as_ref())
                     else {
                         return false;

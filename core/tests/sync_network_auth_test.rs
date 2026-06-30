@@ -21,7 +21,7 @@ async fn push_sends_jwt_in_authorization_header_not_url() {
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 // V04-F04: the URL must not contain the token at all.
-                .matches(|req| {
+                .is_true(|req| {
                     let url_str = format!("{:?}", req);
                     !url_str.contains("token=")
                         && !url_str.contains(TEST_JWT.split('.').next().unwrap_or(""))

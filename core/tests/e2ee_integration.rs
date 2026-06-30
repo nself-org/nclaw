@@ -22,8 +22,8 @@ fn test_two_party_roundtrip() {
     let (bob_ks, bob_pub) = generate_keypair();
 
     // Both parties derive the shared session key using the other's public key.
-    let alice_session = derive_session(alice_ks.0, bob_pub.clone(), b"nclaw-v1").unwrap();
-    let bob_session = derive_session(bob_ks.0, alice_pub.clone(), b"nclaw-v1").unwrap();
+    let alice_session = derive_session(alice_ks.0, bob_pub, b"nclaw-v1").unwrap();
+    let bob_session = derive_session(bob_ks.0, alice_pub, b"nclaw-v1").unwrap();
 
     assert_eq!(
         alice_session.session_key, bob_session.session_key,
@@ -94,7 +94,7 @@ fn test_wrong_session_key_rejected() {
     let (eve_ks, _eve_pub) = generate_keypair();
 
     // Alice's session key (self-derive for simplicity).
-    let alice_session = derive_session(alice_ks.0, alice_pub.clone(), b"nclaw-v1").unwrap();
+    let alice_session = derive_session(alice_ks.0, alice_pub, b"nclaw-v1").unwrap();
     // Eve uses a different private key → different DH result → different session key.
     let eve_session = derive_session(eve_ks.0, alice_pub, b"nclaw-v1").unwrap();
 
