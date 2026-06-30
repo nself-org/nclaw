@@ -139,5 +139,3 @@ pub fn classify_tier(probe: &DeviceProbe, ovr: &TierOverride) -> Tier {
     // T1: RAM 5–8 GB, no qualifying GPU, not Apple Silicon.
     Tier::T1
 }
-
-

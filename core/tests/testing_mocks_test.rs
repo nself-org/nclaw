@@ -3,7 +3,7 @@
 //! Exercises `InMemoryDb`, `InMemoryLlm`, `InMemorySync`, `InMemoryVault`,
 //! and `NoopPlugin` via their public builder APIs.
 
-use libnclaw::backend::{GenOpts, LlmBackend, Database, SyncEngine, Vault};
+use libnclaw::backend::{Database, GenOpts, LlmBackend, SyncEngine, Vault};
 use libnclaw::testing::{InMemoryDb, InMemoryLlm, InMemorySync, InMemoryVault, NoopPlugin};
 use std::collections::HashMap;
 

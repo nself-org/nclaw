@@ -31,7 +31,11 @@ fn test_all_messages_fit() {
     let mut messages = vec![];
 
     for i in 0..5 {
-        let role = if i % 2 == 0 { MessageRole::User } else { MessageRole::Assistant };
+        let role = if i % 2 == 0 {
+            MessageRole::User
+        } else {
+            MessageRole::Assistant
+        };
         messages.push(make_msg(conv_id, role, "short"));
     }
 
@@ -44,10 +48,19 @@ fn test_all_messages_fit() {
 fn test_keep_recent_policy() {
     let conv_id = uuid::Uuid::new_v4();
     let messages: Vec<_> = (0..10)
-        .map(|_| make_msg(conv_id, MessageRole::User, "This is a message with some text content."))
+        .map(|_| {
+            make_msg(
+                conv_id,
+                MessageRole::User,
+                "This is a message with some text content.",
+            )
+        })
         .collect();
 
-    let mgr = ContextManager { policy: TruncationPolicy::KeepRecent, recent_keep: 8 };
+    let mgr = ContextManager {
+        policy: TruncationPolicy::KeepRecent,
+        recent_keep: 8,
+    };
 
     // Budget 50 so KeepRecent drops oldest messages.
     let fitted = mgr.fit(&messages, 50);
@@ -59,14 +72,29 @@ fn test_keep_recent_policy() {
 #[test]
 fn test_summarize_middle_policy() {
     let conv_id = uuid::Uuid::new_v4();
-    let mut messages = vec![make_msg(conv_id, MessageRole::System, "You are a helpful assistant.")];
+    let mut messages = vec![make_msg(
+        conv_id,
+        MessageRole::System,
+        "You are a helpful assistant.",
+    )];
 
     for i in 0..20 {
-        let role = if i % 2 == 0 { MessageRole::User } else { MessageRole::Assistant };
-        messages.push(make_msg(conv_id, role, "This is a message with some text content."));
+        let role = if i % 2 == 0 {
+            MessageRole::User
+        } else {
+            MessageRole::Assistant
+        };
+        messages.push(make_msg(
+            conv_id,
+            role,
+            "This is a message with some text content.",
+        ));
     }
 
-    let mgr = ContextManager { policy: TruncationPolicy::SummarizeMiddle, recent_keep: 8 };
+    let mgr = ContextManager {
+        policy: TruncationPolicy::SummarizeMiddle,
+        recent_keep: 8,
+    };
 
     // Budget 150 so SummarizeMiddle truncates and inserts placeholder.
     let fitted = mgr.fit(&messages, 150);
@@ -77,7 +105,9 @@ fn test_summarize_middle_policy() {
 
     let has_summary = fitted.iter().any(|m| {
         m.role == MessageRole::System
-            && m.content.as_text().is_some_and(|t| t.contains("earlier messages"))
+            && m.content
+                .as_text()
+                .is_some_and(|t| t.contains("earlier messages"))
     });
     assert!(has_summary);
     assert_eq!(fitted.last().map(|m| &m.id), messages.last().map(|m| &m.id));
@@ -87,17 +117,33 @@ fn test_summarize_middle_policy() {
 fn test_system_messages_always_preserved() {
     let conv_id = uuid::Uuid::new_v4();
     let mut messages: Vec<_> = (0..3)
-        .map(|i| make_msg(conv_id, MessageRole::System, &format!("System message {}", i)))
+        .map(|i| {
+            make_msg(
+                conv_id,
+                MessageRole::System,
+                &format!("System message {}", i),
+            )
+        })
         .collect();
 
     for _ in 0..20 {
-        messages.push(make_msg(conv_id, MessageRole::User, "User message with some text content here."));
+        messages.push(make_msg(
+            conv_id,
+            MessageRole::User,
+            "User message with some text content here.",
+        ));
     }
 
-    let mgr = ContextManager { policy: TruncationPolicy::KeepRecent, recent_keep: 8 };
+    let mgr = ContextManager {
+        policy: TruncationPolicy::KeepRecent,
+        recent_keep: 8,
+    };
     let fitted = mgr.fit(&messages, 200);
 
-    let system_count = fitted.iter().filter(|m| m.role == MessageRole::System).count();
+    let system_count = fitted
+        .iter()
+        .filter(|m| m.role == MessageRole::System)
+        .count();
     assert_eq!(system_count, 3);
 
     for msg in fitted.iter().take(3) {
@@ -112,8 +158,14 @@ fn test_truncate_oldest_alias() {
         .map(|_| make_msg(conv_id, MessageRole::User, "Message with content here."))
         .collect();
 
-    let mgr_keep = ContextManager { policy: TruncationPolicy::KeepRecent, recent_keep: 8 };
-    let mgr_trunc = ContextManager { policy: TruncationPolicy::TruncateOldest, recent_keep: 8 };
+    let mgr_keep = ContextManager {
+        policy: TruncationPolicy::KeepRecent,
+        recent_keep: 8,
+    };
+    let mgr_trunc = ContextManager {
+        policy: TruncationPolicy::TruncateOldest,
+        recent_keep: 8,
+    };
 
     let fitted_keep = mgr_keep.fit(&messages, 300);
     let fitted_trunc = mgr_trunc.fit(&messages, 300);
@@ -124,4 +176,3 @@ fn test_truncate_oldest_alias() {
         fitted_trunc.iter().map(|m| m.id).collect::<Vec<_>>()
     );
 }
-

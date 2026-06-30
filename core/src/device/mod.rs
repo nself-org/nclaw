@@ -13,25 +13,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
 
-#[cfg(target_os = "macos")]
-mod macos;
 #[cfg(target_os = "linux")]
 mod linux;
-#[cfg(target_os = "windows")]
-mod windows;
+#[cfg(target_os = "macos")]
+mod macos;
 #[cfg(any(target_os = "ios", target_os = "android"))]
 mod mobile;
+#[cfg(target_os = "windows")]
+mod windows;
 
-#[cfg(target_os = "macos")]
-pub use macos::probe_macos;
 #[cfg(target_os = "linux")]
 pub use linux::probe_linux;
-#[cfg(target_os = "windows")]
-pub use windows::probe_windows;
-#[cfg(target_os = "ios")]
-pub use mobile::{ios_set_low_power, probe_ios};
+#[cfg(target_os = "macos")]
+pub use macos::probe_macos;
 #[cfg(target_os = "android")]
 pub use mobile::{android_set_battery_percent, android_set_low_power, probe_android};
+#[cfg(target_os = "ios")]
+pub use mobile::{ios_set_low_power, probe_ios};
+#[cfg(target_os = "windows")]
+pub use windows::probe_windows;
 
 /// Hardware fingerprint of the current device.
 #[derive(Debug, Clone, Serialize, Deserialize)]

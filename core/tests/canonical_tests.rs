@@ -125,8 +125,7 @@ fn utf16_codeunit_ordering_differs_from_byte_ordering() {
 
 #[test]
 fn round_trip_via_serde_json_parse() {
-    let v =
-        json!({"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "count": 2});
+    let v = json!({"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "count": 2});
     let canon = canonical_json(&v);
     let reparsed: Value = serde_json::from_slice(&canon).unwrap();
     assert_eq!(reparsed, v);

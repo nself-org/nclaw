@@ -26,8 +26,7 @@ fn test_two_party_roundtrip() {
     let bob_session = derive_session(bob_ks.0, alice_pub.clone(), b"nclaw-v1").unwrap();
 
     assert_eq!(
-        alice_session.session_key,
-        bob_session.session_key,
+        alice_session.session_key, bob_session.session_key,
         "Alice and Bob must derive identical session keys"
     );
 
@@ -38,7 +37,10 @@ fn test_two_party_roundtrip() {
 
     // Bob decrypts.
     let decrypted = open(&bob_session.session_key, &encrypted).unwrap();
-    assert_eq!(decrypted, plaintext, "Decrypted plaintext must match original");
+    assert_eq!(
+        decrypted, plaintext,
+        "Decrypted plaintext must match original"
+    );
 }
 
 #[test]
@@ -112,7 +114,10 @@ fn test_different_keys_different_fingerprints() {
     let fp1 = fingerprint(&pub1);
     let fp2 = fingerprint(&pub2);
 
-    assert_ne!(fp1, fp2, "Different keys must produce different fingerprints");
+    assert_ne!(
+        fp1, fp2,
+        "Different keys must produce different fingerprints"
+    );
     assert_eq!(fp1.len(), 64, "Fingerprint must be 64 hex chars");
     assert_eq!(fp2.len(), 64, "Fingerprint must be 64 hex chars");
 }
@@ -146,5 +151,8 @@ fn test_e2ee_message_serialization() {
         serde_json::from_str(&json).expect("deserialize EncryptedMessage");
 
     let decrypted = open(&session.session_key, &deserialized).unwrap();
-    assert_eq!(decrypted, b"serialize me", "Round-trip through JSON must preserve plaintext");
+    assert_eq!(
+        decrypted, b"serialize me",
+        "Round-trip through JSON must preserve plaintext"
+    );
 }

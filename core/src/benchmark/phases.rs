@@ -107,7 +107,11 @@ where
     let timed_out = run_start.elapsed() >= HARD_TIMEOUT || result.is_err();
 
     match result {
-        Ok(Ok(ts)) => Ok(MeasurementOutcome::Done(ts.tokens.len(), elapsed, timed_out)),
+        Ok(Ok(ts)) => Ok(MeasurementOutcome::Done(
+            ts.tokens.len(),
+            elapsed,
+            timed_out,
+        )),
         Ok(Err(e)) => Err(CoreError::Llm(e)),
         Err(_) => {
             let r = make_timed_out_result(model_id, tier, probe);

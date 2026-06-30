@@ -68,7 +68,9 @@ pub fn generate_keypair() -> (KeychainSecret, PublicKey) {
 pub fn save_to_keychain(key_name: &str, secret_bytes: &[u8; 32]) -> Result<(), E2EEError> {
     let entry = Entry::new(KEYCHAIN_SERVICE, key_name).map_err(|_| E2EEError::KeychainWrite)?;
     let hex = hex_encode(secret_bytes);
-    entry.set_password(&hex).map_err(|_| E2EEError::KeychainWrite)?;
+    entry
+        .set_password(&hex)
+        .map_err(|_| E2EEError::KeychainWrite)?;
     Ok(())
 }
 
@@ -102,7 +104,7 @@ fn hex_encode(bytes: &[u8]) -> String {
 }
 
 fn hex_decode(s: &str) -> Result<Vec<u8>, ()> {
-    if s.len() % 2 != 0 {
+    if !s.len().is_multiple_of(2) {
         return Err(());
     }
     (0..s.len())

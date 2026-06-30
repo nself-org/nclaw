@@ -17,5 +17,7 @@ pub mod keys;
 pub mod session;
 
 pub use codec::{open, seal, EncryptedMessage};
-pub use keys::{fingerprint, generate_keypair, load_from_keychain, save_to_keychain, E2EEError, KeychainSecret};
+pub use keys::{
+    fingerprint, generate_keypair, load_from_keychain, save_to_keychain, E2EEError, KeychainSecret,
+};
 pub use session::{derive_session, E2EESession, NCLAW_HKDF_INFO};

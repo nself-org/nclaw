@@ -19,7 +19,10 @@ pub use types::{
 };
 
 use crate::tier::Tier;
-use helpers::{estimate_cost_usd, estimate_latency_ms, frontier_model_id, local_model_id, pick_frontier_provider};
+use helpers::{
+    estimate_cost_usd, estimate_latency_ms, frontier_model_id, local_model_id,
+    pick_frontier_provider,
+};
 
 // ---------------------------------------------------------------------------
 // Router — filter → score → pick

@@ -117,10 +117,7 @@ async fn push_round_trip_happy_path_with_signed_event() {
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 // V04-F04: no token anywhere in URL or query
                 .matches(|req| {
-                    let qs = req
-                        .query_params()
-                        .iter()
-                        .any(|(_, v)| v.contains(TEST_JWT));
+                    let qs = req.query_params().iter().any(|(_, v)| v.contains(TEST_JWT));
                     !qs
                 });
             then.status(200).json_body(resp_body);
@@ -152,19 +149,25 @@ async fn push_request_wire_shape_matches_golden_fixture() {
                 .path("/sync/push")
                 .header("Authorization", format!("Bearer {}", TEST_JWT))
                 .matches(|req| {
-                    let Ok(body) = serde_json::from_slice::<serde_json::Value>(req.body().as_ref()) else { return false };
+                    let Ok(body) = serde_json::from_slice::<serde_json::Value>(req.body().as_ref())
+                    else {
+                        return false;
+                    };
                     let body = &body;
                     body["device_id"] == "44444444-4444-4444-4444-444444444444"
                         && body["events"]
                             .as_array()
                             .map(|evs| {
-                                evs.first().map(|ev| {
-                                    ev["event_id"] == "22222222-2222-2222-2222-222222222222"
-                                        && ev["entity_type"] == "Note"
-                                        && ev["entity_id"] == "33333333-3333-3333-3333-333333333333"
-                                        && ev["op"] == "insert"
-                                        && ev["schema_version"] == 1
-                                }).unwrap_or(false)
+                                evs.first()
+                                    .map(|ev| {
+                                        ev["event_id"] == "22222222-2222-2222-2222-222222222222"
+                                            && ev["entity_type"] == "Note"
+                                            && ev["entity_id"]
+                                                == "33333333-3333-3333-3333-333333333333"
+                                            && ev["op"] == "insert"
+                                            && ev["schema_version"] == 1
+                                    })
+                                    .unwrap_or(false)
                             })
                             .unwrap_or(false)
                 });

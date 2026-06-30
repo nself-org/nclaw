@@ -1,6 +1,8 @@
 //! Integration tests for libnclaw::benchmark — recommendation engine and utility fns.
 
-use libnclaw::benchmark::{analyze, history_path, percentile_99, target_range, BenchmarkResult, Recommendation};
+use libnclaw::benchmark::{
+    analyze, history_path, percentile_99, target_range, BenchmarkResult, Recommendation,
+};
 use libnclaw::tier::Tier;
 
 #[test]
@@ -44,33 +46,52 @@ fn make_result(tier: Tier, tps: f64, thermal: u32) -> BenchmarkResult {
 
 #[test]
 fn analyze_hold_within_range() {
-    assert_eq!(analyze(&make_result(Tier::T2, 35.0, 0)), Recommendation::Hold);
+    assert_eq!(
+        analyze(&make_result(Tier::T2, 35.0, 0)),
+        Recommendation::Hold
+    );
 }
 
 #[test]
 fn analyze_downgrade_below_min() {
-    assert_eq!(analyze(&make_result(Tier::T2, 5.0, 0)), Recommendation::Downgrade);
+    assert_eq!(
+        analyze(&make_result(Tier::T2, 5.0, 0)),
+        Recommendation::Downgrade
+    );
 }
 
 #[test]
 fn analyze_offer_upgrade_above_max_1_5x() {
-    assert_eq!(analyze(&make_result(Tier::T0, 100.0, 0)), Recommendation::OfferUpgrade);
+    assert_eq!(
+        analyze(&make_result(Tier::T0, 100.0, 0)),
+        Recommendation::OfferUpgrade
+    );
 }
 
 #[test]
 fn analyze_thermal_damper_preempts() {
-    assert_eq!(analyze(&make_result(Tier::T2, 5.0, 2)), Recommendation::EnableThermalDamper);
+    assert_eq!(
+        analyze(&make_result(Tier::T2, 5.0, 2)),
+        Recommendation::EnableThermalDamper
+    );
 }
 
 #[test]
 fn analyze_t4_no_upgrade_offered() {
-    assert_eq!(analyze(&make_result(Tier::T4, 200.0, 0)), Recommendation::Hold);
+    assert_eq!(
+        analyze(&make_result(Tier::T4, 200.0, 0)),
+        Recommendation::Hold
+    );
 }
 
 #[test]
 fn history_path_contains_nclaw() {
     let path = history_path();
     let path_str = path.to_string_lossy();
-    assert!(path_str.contains(".nclaw"), "expected .nclaw in path, got: {}", path_str);
+    assert!(
+        path_str.contains(".nclaw"),
+        "expected .nclaw in path, got: {}",
+        path_str
+    );
     assert!(path_str.ends_with("benchmark-history.json"));
 }

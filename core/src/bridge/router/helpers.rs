@@ -3,9 +3,9 @@
 //! Extracted from `router/mod.rs` to keep each file under 300 lines.
 //! All functions are `pub(super)` — consumed only by the router logic.
 
+use super::types::{BridgeContext, PromptRequest, RouteDecision};
 use crate::registry;
 use crate::tier::Tier;
-use super::types::{BridgeContext, PromptRequest, RouteDecision};
 
 // ---------------------------------------------------------------------------
 // Cost estimation helpers (pseudo-rates, no I/O)

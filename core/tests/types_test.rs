@@ -3,11 +3,10 @@
 //! Verifies that all protocol types serialize and deserialize correctly via
 //! serde_json, covering Message, ContentPart, Memory, and Entity.
 
-use libnclaw::types::{
-    ContentPart, Entity, Memory, MemoryType, Message, MessageContent, MessageMetadata,
-    MessageRole,
-};
 use chrono::Utc;
+use libnclaw::types::{
+    ContentPart, Entity, Memory, MemoryType, Message, MessageContent, MessageMetadata, MessageRole,
+};
 use uuid::Uuid;
 
 #[test]

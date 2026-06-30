@@ -42,7 +42,10 @@ pub fn seal(key: &[u8; 32], plaintext: &[u8], aad: &[u8]) -> Result<EncryptedMes
     let nonce_generic = XChaCha20Poly1305::generate_nonce(&mut OsRng);
     let nonce: [u8; 24] = nonce_generic.into();
 
-    let payload = chacha20poly1305::aead::Payload { msg: plaintext, aad };
+    let payload = chacha20poly1305::aead::Payload {
+        msg: plaintext,
+        aad,
+    };
     let ciphertext = cipher
         .encrypt(&XNonce::from(nonce), payload)
         .map_err(|_| E2EEError::EncryptionFailed)?;
@@ -82,7 +85,8 @@ mod serde_bytes_b64 {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<[u8; 24], D::Error> {
         let b64 = String::deserialize(d)?;
         let v = STANDARD.decode(&b64).map_err(serde::de::Error::custom)?;
-        v.try_into().map_err(|_| serde::de::Error::custom("expected 24 bytes"))
+        v.try_into()
+            .map_err(|_| serde::de::Error::custom("expected 24 bytes"))
     }
 }
 
@@ -157,7 +161,10 @@ mod tests {
         let key = test_key();
         let msg1 = seal(&key, b"a", b"").unwrap();
         let msg2 = seal(&key, b"a", b"").unwrap();
-        assert_ne!(msg1.nonce, msg2.nonce, "Each seal call must use a fresh nonce");
+        assert_ne!(
+            msg1.nonce, msg2.nonce,
+            "Each seal call must use a fresh nonce"
+        );
     }
 
     #[test]
@@ -165,6 +172,9 @@ mod tests {
         let key1 = test_key();
         let key2 = [0x99u8; 32];
         let msg = seal(&key1, b"secret", b"").unwrap();
-        assert!(matches!(open(&key2, &msg), Err(E2EEError::DecryptionFailed)));
+        assert!(matches!(
+            open(&key2, &msg),
+            Err(E2EEError::DecryptionFailed)
+        ));
     }
 }

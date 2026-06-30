@@ -65,7 +65,9 @@ fn run_command_silent(cmd: &str, args: &[&str]) -> Option<String> {
 /// Query CPU brand name from wmic.
 fn query_cpu_brand() -> String {
     let output = run_command_silent("wmic", &["cpu", "get", "Name", "/value"]);
-    let Some(text) = output else { return "unknown".to_string() };
+    let Some(text) = output else {
+        return "unknown".to_string();
+    };
     for line in text.lines() {
         if let Some(val) = line.strip_prefix("Name=") {
             let brand = val.trim().to_string();
@@ -84,7 +86,9 @@ fn query_physical_cores() -> u32 {
     for line in text.lines() {
         if let Some(val) = line.strip_prefix("NumberOfCores=") {
             if let Ok(n) = val.trim().parse::<u32>() {
-                if n > 0 { return n; }
+                if n > 0 {
+                    return n;
+                }
             }
         }
     }
@@ -93,12 +97,17 @@ fn query_physical_cores() -> u32 {
 
 /// Query logical processor count from wmic.
 fn query_logical_cores() -> u32 {
-    let output = run_command_silent("wmic", &["cpu", "get", "NumberOfLogicalProcessors", "/value"]);
+    let output = run_command_silent(
+        "wmic",
+        &["cpu", "get", "NumberOfLogicalProcessors", "/value"],
+    );
     let Some(text) = output else { return 1 };
     for line in text.lines() {
         if let Some(val) = line.strip_prefix("NumberOfLogicalProcessors=") {
             if let Ok(n) = val.trim().parse::<u32>() {
-                if n > 0 { return n; }
+                if n > 0 {
+                    return n;
+                }
             }
         }
     }
@@ -115,7 +124,9 @@ fn query_ram_mb() -> u64 {
     for line in text.lines() {
         if let Some(val) = line.strip_prefix("TotalPhysicalMemory=") {
             if let Ok(bytes) = val.trim().parse::<u64>() {
-                if bytes > 0 { return bytes / (1024 * 1024); }
+                if bytes > 0 {
+                    return bytes / (1024 * 1024);
+                }
             }
         }
     }
@@ -128,9 +139,17 @@ fn query_ram_mb() -> u64 {
 fn query_gpu() -> (Option<String>, Option<u64>) {
     let output = run_command_silent(
         "wmic",
-        &["path", "win32_VideoController", "get", "Name,AdapterRAM", "/value"],
+        &[
+            "path",
+            "win32_VideoController",
+            "get",
+            "Name,AdapterRAM",
+            "/value",
+        ],
     );
-    let Some(text) = output else { return (None, None) };
+    let Some(text) = output else {
+        return (None, None);
+    };
 
     let mut gpu_vendor = None;
     let mut gpu_vram_mb = None;

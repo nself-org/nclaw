@@ -113,6 +113,9 @@ mod tests {
         let (secret, remote_pub) = generate_keypair();
         let session = derive_session(secret.0, remote_pub, NCLAW_HKDF_INFO).unwrap();
         let dbg = format!("{session:?}");
-        assert!(dbg.contains("REDACTED"), "Debug must not expose session_key bytes");
+        assert!(
+            dbg.contains("REDACTED"),
+            "Debug must not expose session_key bytes"
+        );
     }
 }

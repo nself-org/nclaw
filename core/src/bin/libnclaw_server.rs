@@ -12,18 +12,33 @@
 //! Constraints: Never log decrypted plaintext or key material.
 //!              Error responses use code -32603 (internal) — no detail in message.
 //! SPORT: REGISTRY-SERVICES.md — libnclaw-server, socket=/tmp/libnclaw.sock.
+//!
+//! Platform: Unix only. The sidecar uses Unix domain sockets which are not
+//!           available on Windows. The binary compiles on all platforms but
+//!           exits immediately on non-Unix targets.
 
+// Non-Unix stub — binary compiles but does nothing on Windows.
+#[cfg(not(unix))]
+fn main() {
+    eprintln!("libnclaw-server: Unix domain sockets are not supported on this platform.");
+    std::process::exit(1);
+}
+
+#[cfg(unix)]
 use std::io::{BufRead, BufReader, Write};
+#[cfg(unix)]
 use std::os::unix::net::UnixListener;
+#[cfg(unix)]
 use std::path::PathBuf;
 
-use libnclaw::e2ee::{
-    derive_session, generate_keypair, open, seal, E2EEError, NCLAW_HKDF_INFO,
-};
+#[cfg(unix)]
+use libnclaw::e2ee::{derive_session, generate_keypair, open, seal, E2EEError, NCLAW_HKDF_INFO};
+#[cfg(unix)]
 use serde::{Deserialize, Serialize};
 
 // ── JSON-RPC 2.0 types ─────────────────────────────────────────────────────
 
+#[cfg(unix)]
 #[derive(Debug, Deserialize)]
 struct RpcRequest {
     jsonrpc: String,
@@ -32,6 +47,7 @@ struct RpcRequest {
     id: serde_json::Value,
 }
 
+#[cfg(unix)]
 #[derive(Debug, Serialize)]
 struct RpcResponse {
     jsonrpc: &'static str,
@@ -42,18 +58,30 @@ struct RpcResponse {
     id: serde_json::Value,
 }
 
+#[cfg(unix)]
 #[derive(Debug, Serialize)]
 struct RpcError {
     code: i32,
     message: &'static str,
 }
 
+#[cfg(unix)]
 impl RpcResponse {
     fn ok(id: serde_json::Value, result: serde_json::Value) -> Self {
-        Self { jsonrpc: "2.0", result: Some(result), error: None, id }
+        Self {
+            jsonrpc: "2.0",
+            result: Some(result),
+            error: None,
+            id,
+        }
     }
     fn err(id: serde_json::Value, code: i32, msg: &'static str) -> Self {
-        Self { jsonrpc: "2.0", result: None, error: Some(RpcError { code, message: msg }), id }
+        Self {
+            jsonrpc: "2.0",
+            result: None,
+            error: Some(RpcError { code, message: msg }),
+            id,
+        }
     }
     fn internal_error(id: serde_json::Value) -> Self {
         Self::err(id, -32603, "Internal error")
@@ -68,6 +96,7 @@ impl RpcResponse {
 
 // ── Dispatch ───────────────────────────────────────────────────────────────
 
+#[cfg(unix)]
 fn dispatch(req: RpcRequest) -> RpcResponse {
     match req.method.as_str() {
         "encrypt" => handle_encrypt(req.id, req.params),
@@ -77,6 +106,7 @@ fn dispatch(req: RpcRequest) -> RpcResponse {
     }
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 struct EncryptParams {
     /// Base64-encoded 32-byte session key.
@@ -87,6 +117,7 @@ struct EncryptParams {
     aad_b64: String,
 }
 
+#[cfg(unix)]
 fn handle_encrypt(id: serde_json::Value, params: serde_json::Value) -> RpcResponse {
     let p: EncryptParams = match serde_json::from_value(params) {
         Ok(v) => v,
@@ -111,12 +142,14 @@ fn handle_encrypt(id: serde_json::Value, params: serde_json::Value) -> RpcRespon
     }
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 struct DecryptParams {
     key_b64: String,
     message: libnclaw::e2ee::EncryptedMessage,
 }
 
+#[cfg(unix)]
 fn handle_decrypt(id: serde_json::Value, params: serde_json::Value) -> RpcResponse {
     let p: DecryptParams = match serde_json::from_value(params) {
         Ok(v) => v,
@@ -132,19 +165,19 @@ fn handle_decrypt(id: serde_json::Value, params: serde_json::Value) -> RpcRespon
             RpcResponse::ok(id, serde_json::json!({ "plaintext_b64": b64 }))
         }
         // Auth failure — no detail in error message (no oracle)
-        Err(E2EEError::DecryptionFailed) => {
-            RpcResponse::err(id, -32603, "Internal error")
-        }
+        Err(E2EEError::DecryptionFailed) => RpcResponse::err(id, -32603, "Internal error"),
         Err(_) => RpcResponse::internal_error(id),
     }
 }
 
+#[cfg(unix)]
 #[derive(Deserialize)]
 struct DeriveSessionParams {
     /// Base64-encoded remote public key (32 bytes).
     remote_pub_b64: String,
 }
 
+#[cfg(unix)]
 fn handle_derive_session(id: serde_json::Value, params: serde_json::Value) -> RpcResponse {
     let p: DeriveSessionParams = match serde_json::from_value(params) {
         Ok(v) => v,
@@ -169,10 +202,13 @@ fn handle_derive_session(id: serde_json::Value, params: serde_json::Value) -> Rp
             // Never log session_key bytes.
             let local_pub_b64 = b64_encode(local_pub.as_bytes());
             let session_key_b64 = b64_encode(&session.session_key);
-            RpcResponse::ok(id, serde_json::json!({
-                "local_pub_b64": local_pub_b64,
-                "session_key_b64": session_key_b64,
-            }))
+            RpcResponse::ok(
+                id,
+                serde_json::json!({
+                    "local_pub_b64": local_pub_b64,
+                    "session_key_b64": session_key_b64,
+                }),
+            )
         }
         Err(_) => RpcResponse::internal_error(id),
     }
@@ -180,16 +216,19 @@ fn handle_derive_session(id: serde_json::Value, params: serde_json::Value) -> Rp
 
 // ── Base64 helpers ─────────────────────────────────────────────────────────
 
+#[cfg(unix)]
 fn b64_encode(bytes: &[u8]) -> String {
     use base64::{engine::general_purpose::STANDARD, Engine};
     STANDARD.encode(bytes)
 }
 
+#[cfg(unix)]
 fn b64_decode(s: &str) -> Result<Vec<u8>, ()> {
     use base64::{engine::general_purpose::STANDARD, Engine};
     STANDARD.decode(s).map_err(|_| ())
 }
 
+#[cfg(unix)]
 fn b64_to_32(s: &str) -> Result<[u8; 32], ()> {
     let v = b64_decode(s)?;
     v.try_into().map_err(|_| ())
@@ -199,6 +238,7 @@ fn b64_to_32(s: &str) -> Result<[u8; 32], ()> {
 
 /// Conditionally initialise Sentry if NCLAW_SENTRY_DSN is set.
 /// Never crashes if DSN is absent or invalid.
+#[cfg(unix)]
 pub fn init_sentry() {
     #[cfg(feature = "sentry-reporting")]
     {
@@ -211,6 +251,7 @@ pub fn init_sentry() {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
+#[cfg(unix)]
 fn main() {
     init_sentry();
 
@@ -270,4 +311,5 @@ fn main() {
 }
 
 // External crate needed for DeriveSession key type
+#[cfg(unix)]
 extern crate x25519_dalek;

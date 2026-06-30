@@ -24,7 +24,11 @@ pub fn probe_linux() -> Result<DeviceProbe, CoreError> {
         os: "linux".into(),
         arch: std::env::consts::ARCH.into(),
         cpu_brand,
-        physical_cores: if physical_cores > 0 { physical_cores } else { 1 },
+        physical_cores: if physical_cores > 0 {
+            physical_cores
+        } else {
+            1
+        },
         logical_cores: if logical_cores > 0 { logical_cores } else { 1 },
         ram_total_mb: if ram_total_mb > 0 { ram_total_mb } else { 1024 },
         gpu_vendor,

@@ -136,7 +136,6 @@ where
     Ok(result)
 }
 
-
 // ---------------------------------------------------------------------------
 // Recommendation engine
 // ---------------------------------------------------------------------------
@@ -234,4 +233,3 @@ pub(super) fn persist_result(result: &BenchmarkResult) -> Result<(), CoreError> 
 
     Ok(())
 }
-

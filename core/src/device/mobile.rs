@@ -193,13 +193,11 @@ mod tests_ios {
 
 /// Battery percentage for Android, injected from Kotlin FFI.
 #[cfg(target_os = "android")]
-static ANDROID_BATTERY_PERCENT: std::sync::atomic::AtomicU8 =
-    std::sync::atomic::AtomicU8::new(100);
+static ANDROID_BATTERY_PERCENT: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(100);
 
 /// Low-power mode flag for Android, injected from Kotlin FFI.
 #[cfg(target_os = "android")]
-static ANDROID_LOW_POWER: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
+static ANDROID_LOW_POWER: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Set Android device battery percentage (called from Kotlin FFI).
 ///
