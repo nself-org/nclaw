@@ -118,6 +118,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The root pnpm-workspace.yaml references @nself/* packages via `../packages/@nself/*`.
+      # In CI the packages repo is a sibling that must be checked out explicitly.
+      # Clone into the parent-level `packages/` dir so the relative path resolves correctly.
+      - name: Checkout @nself/packages
+        uses: actions/checkout@v4
+        with:
+          repository: nself-org/packages
+          path: ../packages
+          token: ${{ secrets.NSELF_PACKAGES_READ_TOKEN }}
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9

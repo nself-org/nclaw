@@ -118,4 +118,9 @@ commits = [
   "670c936362bb0c1b574dd8882bfd1c49a1939b95",
   # Changelog.md XChaCha20-Poly1305 cipher name in v0.9.x documentation
   "a722d27b1d9cacfae46e7e6968138bb58557d538",
+  # core/src/e2ee/keys.rs:156 — test variable name `let key_name = "test-key-e9-roundtrip"`
+  # False positive: generic-api-key rule in gitleaks v8.21.2 matches the variable assignment.
+  # The value is a keychain storage label (e.g. for SecItemAdd), not a secret.
+  "aca51f88316da001fbbfd2043e49d7e86e77abbb",
+  "77fe463a731f9d60b083de62148d4803b2f08553",
 ]

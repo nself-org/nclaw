@@ -46,7 +46,8 @@ jobs:
         with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'desktop/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
-        with: { targets: ${{ matrix.target }} }
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
