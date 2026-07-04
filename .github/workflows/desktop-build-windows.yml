@@ -53,8 +53,17 @@ jobs:
         working-directory: desktop
         run: cargo tauri build --target x86_64-pc-windows-msvc
 
+      # secrets context is not allowed in step `if:` — it invalidates the whole
+      # workflow at parse time. Gate via an output check instead.
+      - name: Check EV cert secret presence
+        id: evcheck
+        shell: bash
+        env:
+          EV_THUMB: ${{ secrets.WINDOWS_EV_CERT_THUMBPRINT }}
+        run: echo "present=$([ -n "$EV_THUMB" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
       - name: Conditional signtool (no-op until WINDOWS_EV_CERT_THUMBPRINT secret set)
-        if: ${{ secrets.WINDOWS_EV_CERT_THUMBPRINT != '' }}
+        if: steps.evcheck.outputs.present == 'true' 
         run: |
           $files = Get-ChildItem -Path "desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
           foreach ($f in $files) {
