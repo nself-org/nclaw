@@ -106,7 +106,10 @@ jobs:
       - name: Build Android targets
         working-directory: core
         run: |
-          cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 build --release
+          # Android uses mobile-sqlite (not the default `cpu` feature which pulls
+          # llama-cpp-2/llama.cpp — that C++ does not cross-compile to the Android
+          # NDK, POSIX_MADV_* undeclared). Mobile inference is remote (ollama), not embedded.
+          cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 build --release --no-default-features --features "mobile-sqlite,vault"
 
       - name: Upload AAR artifacts
         uses: actions/upload-artifact@v7
