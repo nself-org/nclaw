@@ -31,6 +31,7 @@ jobs:
       - name: Install Tauri Linux system deps
         # core pulls tauri-specta -> gtk/gio-sys/glib-sys, which need the GTK/
         # webkit dev libraries present for the build scripts to find via pkg-config.
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev pkg-config
