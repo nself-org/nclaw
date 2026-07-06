@@ -55,7 +55,10 @@ bip39 = "2"
 # Cryptographically secure random bytes for first-run DB key generation.
 getrandom = "0.2"
 thiserror = "1"
-reqwest = { version = "0.12", features = ["stream", "json"] }
+# default-features=false drops native-tls (system OpenSSL) in favor of rustls
+# (pure-Rust TLS) — required so `cargo ndk` Android cross-compiles don't need
+# an OpenSSL toolchain for the target (aarch64/armv7/x86_64-linux-android).
+reqwest = { version = "0.12", default-features = false, features = ["stream", "json", "rustls-tls", "charset", "http2"] }
 sha2 = "0.10"
 futures = "0.3"
 fs2 = "0.4"
