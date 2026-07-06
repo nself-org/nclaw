@@ -108,10 +108,27 @@ fn main() {
     //   -O2                 — reasonable optimisation for vector math kernels.
     // -------------------------------------------------------------------------
     let mut build = cc::Build::new();
-    // libsqlite3-sys exposes sqlite3.h's dir via DEP_SQLITE3_INCLUDE; sqlite-vec.c
-    // includes "sqlite3.h" and Android NDK has no system fallback.
-    if let Ok(inc) = env::var("DEP_SQLITE3_INCLUDE") {
-        build.include(inc);
+    // sqlite-vec.c `#include`s "sqlite3.h" (SQLITE_CORE mode). Cross-compile
+    // targets like the Android NDK have no system sqlite3.h, so we point the C
+    // compiler at the header shipped by libsqlite3-sys. Cargo exports that dir as
+    // DEP_SQLITE3_INCLUDE — but ONLY when libsqlite3-sys is a *direct* dependency
+    // (see the `dep:libsqlite3-sys` in the mobile-sqlite feature in Cargo.toml).
+    // When the mobile-sqlite feature is on, the var MUST be present; a missing
+    // var means the direct-dep wiring regressed — fail loudly rather than emit a
+    // "sqlite3.h not found" clang error three layers down.
+    match env::var("DEP_SQLITE3_INCLUDE") {
+        Ok(inc) => {
+            build.include(inc);
+        }
+        Err(_) if cfg!(feature = "mobile-sqlite") => {
+            panic!(
+                "mobile-sqlite is enabled but DEP_SQLITE3_INCLUDE is unset — \
+                 libsqlite3-sys must be a *direct* dependency for Cargo to export \
+                 its sqlite3.h include dir. Check the `dep:libsqlite3-sys` entry in \
+                 the mobile-sqlite feature in core/Cargo.toml."
+            );
+        }
+        Err(_) => {}
     }
     build
         .file(vendor_dir.join("sqlite-vec.c"))

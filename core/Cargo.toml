@@ -122,7 +122,14 @@ embedded-pg = ["dep:postgresql_embedded"]
 # self-contained (no system OpenSSL in the NDK sysroot). Preserves at-rest DB
 # encryption (PRAGMA key / SQLITE_HAS_CODEC) on mobile — do NOT downgrade to plain
 # `bundled` (that silently drops mobile DB encryption).
-mobile-sqlite = ["dep:rusqlite", "rusqlite/bundled-sqlcipher-vendored-openssl"]
+# NOTE the explicit `dep:libsqlite3-sys`: rusqlite pulls libsqlite3-sys
+# transitively, but Cargo only exports a `links` crate's `DEP_SQLITE3_INCLUDE`
+# (the dir holding sqlite3.h) to a build script when that crate is a *direct*
+# dependency of the crate being built. build.rs needs that path to compile
+# vendor/sqlite-vec/sqlite-vec.c (which `#include`s "sqlite3.h") for the Android
+# NDK, whose sysroot has no system sqlite3.h. So we depend on libsqlite3-sys
+# directly (same version + vendored-openssl feature as rusqlite → single build).
+mobile-sqlite = ["dep:rusqlite", "dep:libsqlite3-sys", "rusqlite/bundled-sqlcipher-vendored-openssl"]
 # llm-acceptance: enables the LLM acceptance test runner (CF-01 baseline, P102 S05.T01).
 # Off by default so `cargo test` stays fast; CI workflow `llm-acceptance.yml`
 # turns it on for the dedicated acceptance jobs.
