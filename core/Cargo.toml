@@ -62,6 +62,12 @@ reqwest = { version = "0.12", default-features = false, features = ["stream", "j
 sha2 = "0.10"
 futures = "0.3"
 fs2 = "0.4"
+# SQLCipher-backed mobile DB. `bundled-sqlcipher` compiles SQLCipher's C source
+# but expects a *system* OpenSSL for its crypto — fine on desktop/CI hosts, but
+# the Android NDK sysroot ships no OpenSSL, so the mobile-sqlite feature layers
+# on `bundled-sqlcipher-vendored-openssl` (compiles OpenSSL from vendored C via
+# openssl-src) so the AAR cross-compile is self-contained. This is SQLCipher's
+# at-rest DB crypto and is orthogonal to reqwest's rustls network TLS (152b3de).
 rusqlite = { version = "0.31", optional = true, features = ["bundled-sqlcipher"] }
 async-stream = "0.3"
 tokio-stream = "0.1"
@@ -110,8 +116,12 @@ vault = []
 pglite = []
 # embedded-pg: launches a real postgres binary subprocess as fallback when pglite lacks pgvector/ltree.
 embedded-pg = ["dep:postgresql_embedded"]
-# mobile-sqlite: SQLite + sqlite-vec extension for iOS/Android targets.
-mobile-sqlite = ["dep:rusqlite"]
+# mobile-sqlite: SQLCipher-encrypted SQLite + sqlite-vec extension for iOS/Android.
+# Uses the vendored-openssl SQLCipher build so the Android NDK cross-compile is
+# self-contained (no system OpenSSL in the NDK sysroot). Preserves at-rest DB
+# encryption (PRAGMA key / SQLITE_HAS_CODEC) on mobile — do NOT downgrade to plain
+# `bundled` (that silently drops mobile DB encryption).
+mobile-sqlite = ["dep:rusqlite", "rusqlite/bundled-sqlcipher-vendored-openssl"]
 # llm-acceptance: enables the LLM acceptance test runner (CF-01 baseline, P102 S05.T01).
 # Off by default so `cargo test` stays fast; CI workflow `llm-acceptance.yml`
 # turns it on for the dedicated acceptance jobs.
