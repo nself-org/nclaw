@@ -21,12 +21,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache: true
@@ -70,7 +70,8 @@ jobs:
               OS=$(uname -s | tr '[:upper:]' '[:lower:]')
               ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
               if curl -fsSL "https://github.com/nself-org/cli/releases/download/v${LATEST}/nself-${LATEST}-${OS}-${ARCH}.tar.gz" \
-                | tar -xz -C /tmp; then
+                | tar -xz -C /tmp --strip-components=1; then
+                # release tarballs nest a nself-<ver>-<os>-<arch>/ dir — strip it
                 sudo mv /tmp/nself /usr/local/bin/nself
               else
                 echo "::warning::Failed to download nself CLI v${LATEST} — skipping audit tool install."
