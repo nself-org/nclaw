@@ -34,6 +34,14 @@ allow = [
     # OSI-approved permissive license used by the optional embedded-pg feature
     # (postgresql_embedded family). Functionally equivalent to BSD/MIT.
     "PostgreSQL",
+    # Community Data License Agreement Permissive 2.0 — a permissive, non-copyleft
+    # *data* license (not a code license) used by webpki-roots to distribute
+    # Mozilla's CA root certificate bundle. Pulled in transitively via the
+    # reqwest rustls-tls stack (hyper-rustls -> webpki-roots), added when
+    # reqwest switched from native-tls to rustls-tls for Android cross-compile
+    # (commit 152b3de). Equivalent in spirit to CC-BY for data; no code
+    # copyleft obligations.
+    "CDLA-Permissive-2.0",
 ]
 # r-efi is "MIT OR Apache-2.0 OR LGPL-2.1-or-later" — the MIT/Apache choices
 # above already satisfy it, so LGPL is intentionally not allow-listed.
