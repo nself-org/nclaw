@@ -69,6 +69,7 @@ fs2 = "0.4"
 # openssl-src) so the AAR cross-compile is self-contained. This is SQLCipher's
 # at-rest DB crypto and is orthogonal to reqwest's rustls network TLS (152b3de).
 rusqlite = { version = "0.31", optional = true, features = ["bundled-sqlcipher"] }
+libsqlite3-sys = { version = "0.28", optional = true, features = ["bundled-sqlcipher-vendored-openssl"] }
 async-stream = "0.3"
 tokio-stream = "0.1"
 libc = "0.2"
