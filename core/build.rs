@@ -110,7 +110,9 @@ fn main() {
     let mut build = cc::Build::new();
     // libsqlite3-sys exposes sqlite3.h's dir via DEP_SQLITE3_INCLUDE; sqlite-vec.c
     // includes "sqlite3.h" and Android NDK has no system fallback.
-    if let Ok(inc) = env::var("DEP_SQLITE3_INCLUDE") { build.include(inc); }
+    if let Ok(inc) = env::var("DEP_SQLITE3_INCLUDE") {
+        build.include(inc);
+    }
     build
         .file(vendor_dir.join("sqlite-vec.c"))
         // Tell the compiler where to find our generated sqlite-vec.h.
