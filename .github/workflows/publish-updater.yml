@@ -23,7 +23,7 @@ jobs:
     name: Gate — verify pubkey is not a $VAR literal
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fail if tauri.conf.json pubkey contains unresolved $VAR
         run: |
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download build metadata
         uses: actions/download-artifact@v4

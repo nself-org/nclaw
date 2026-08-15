@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # core's tauri-specta dev-dependency (-> tauri) links GTK/glib via
       # pkg-config on Linux; install the system libraries before cargo runs.

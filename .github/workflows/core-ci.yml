@@ -28,7 +28,7 @@ jobs:
         os: [macos-14, ubuntu-latest, windows-latest]
         rust: [stable]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Linux desktop dev-dependency (tauri-specta -> tauri) links GTK/glib via
       # pkg-config; install the system libraries before any cargo build.
@@ -83,7 +83,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -93,7 +93,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # --all-targets compiles test/bench targets that pull the tauri-specta
       # dev-dependency (-> tauri -> glib-sys/gobject-sys), which links GTK via
       # pkg-config. Install the system libraries first.
@@ -122,7 +122,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -142,7 +142,7 @@ jobs:
       contents: read
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       # Cargo.lock is gitignored. core is a workspace member, so the lockfile is
       # generated at the workspace root (./Cargo.lock), which is where the action
@@ -161,7 +161,7 @@ jobs:
     name: License Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:

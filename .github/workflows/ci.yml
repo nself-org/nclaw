@@ -29,7 +29,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The crate's tauri-specta dev-dependency (-> tauri) links GTK/glib on
       # Linux via pkg-config; install the system libraries before cargo runs.
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install GTK/WebKit system dependencies
         run: |
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The root pnpm-workspace.yaml references @nself/* packages via `../packages/@nself/*`.
       # actions/checkout restricts path to inside the workspace root, so we use git clone
