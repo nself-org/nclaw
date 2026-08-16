@@ -31,13 +31,25 @@ jobs:
     uses: ./.github/workflows/desktop-build-linux.yml
     secrets: inherit
 
-  mobile-ios:
-    uses: ./.github/workflows/mobile-ios.yml
-    secrets: inherit
-
-  mobile-android:
-    uses: ./.github/workflows/mobile-android.yml
-    secrets: inherit
+  # Mobile release jobs (iOS/Android) are DISABLED PENDING IMPLEMENTATION.
+  # mobile/ is an active Expo/React Native app (see mobile/package.json), but
+  # no CI build workflow exists yet for it — .github/workflows/mobile-ios.yml,
+  # mobile-android.yml, and publish-mobile.yml were referenced here but were
+  # never created, which made this entire cascade unparseable (0 jobs, cannot
+  # even be re-run). To re-enable, create those three workflow files (EAS
+  # Build for iOS/Android + store/TestFlight publish step, following the same
+  # disabled_manually pattern used by desktop-build-windows.yml /
+  # desktop-build-linux.yml while signing is pending), then uncomment the
+  # mobile-ios, mobile-android, and publish-mobile jobs below and restore
+  # publish-mobile to the github-release job's `needs:` list.
+  #
+  # mobile-ios:
+  #   uses: ./.github/workflows/mobile-ios.yml
+  #   secrets: inherit
+  #
+  # mobile-android:
+  #   uses: ./.github/workflows/mobile-android.yml
+  #   secrets: inherit
 
   # Sign phase (depends on builds)
   linux-sign:
@@ -56,14 +68,14 @@ jobs:
     uses: ./.github/workflows/publish-updater.yml
     secrets: inherit
 
-  publish-mobile:
-    needs: [mobile-ios, mobile-android]
-    uses: ./.github/workflows/publish-mobile.yml
-    secrets: inherit
+  # publish-mobile:
+  #   needs: [mobile-ios, mobile-android]
+  #   uses: ./.github/workflows/publish-mobile.yml
+  #   secrets: inherit
 
   # Final phase: GitHub Release
   github-release:
-    needs: [publish-r2, publish-updater, publish-mobile]
+    needs: [publish-r2, publish-updater]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
