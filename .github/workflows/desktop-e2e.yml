@@ -1,10 +1,10 @@
 name: Desktop E2E
 on:
   pull_request:
-    paths: ['nclaw/desktop/**']
+    paths: ['desktop/**', '.github/workflows/desktop-e2e.yml']
   push:
     branches: [main]
-    paths: ['nclaw/desktop/**']
+    paths: ['desktop/**', '.github/workflows/desktop-e2e.yml']
 
 jobs:
   e2e:
@@ -15,20 +15,41 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 8
     steps:
+      # pnpm-workspace.yaml globs '../packages/@nself/*', i.e. the
+      # nself-org/packages repo as a SIBLING directory. desktop/package.json
+      # depends on five of them (auth-core, graphql-client, i18n, observability,
+      # ui) as workspace:*. Checking out only nclaw leaves those unresolvable and
+      # vite dies with "Failed to resolve import @nself/observability".
+      # nclaw goes in a subdir so the sibling lands beside it, matching the
+      # layout the workspace file expects.
       - uses: actions/checkout@v7
+        with:
+          path: nclaw
+      - uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          path: packages
+
       - uses: actions/setup-node@v7
         with: { node-version: '20' }
       - uses: pnpm/action-setup@v6
         with: { version: '9' }
+
+      # Install at the workspace ROOT, not desktop/. The lockfile lives at the
+      # root (pnpm-lock.yaml, ~712 KB) and covers every workspace member;
+      # installing inside desktop/ cannot link the workspace siblings.
       - name: Install deps
-        working-directory: nclaw/desktop
+        working-directory: nclaw
         run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browsers
         working-directory: nclaw/desktop
         run: pnpm exec playwright install --with-deps chromium
+
       - name: Run E2E
         working-directory: nclaw/desktop
         run: pnpm e2e
+
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

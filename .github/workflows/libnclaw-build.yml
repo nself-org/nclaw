@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'core/**'
+      - '.github/workflows/libnclaw-build.yml'
   pull_request:
     paths:
       - 'core/**'
+      - '.github/workflows/libnclaw-build.yml'
   workflow_dispatch:
 
 concurrency:
