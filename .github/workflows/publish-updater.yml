@@ -59,7 +59,35 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
+      # Pinned to the tag being released, not the default branch. Without an
+      # explicit ref, checkout defaults to the ref that triggered this
+      # workflow_run — for a workflow_run event that resolves to the DEFAULT
+      # BRANCH, not the tag (the same head_branch subtlety behind the old
+      # `branches: ['main']` bug). Unpinned, every step below that reads
+      # desktop/package.json or tauri.conf.json would read main's version,
+      # not the version actually being released.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+
+      - name: Resolve and validate release tag
+        run: |
+          # No github.ref_name / github.ref fallback: for a workflow_run
+          # event, both resolve to the default branch, never the tag. If
+          # neither the dispatch input nor head_branch is set (should not
+          # happen given this workflow's two declared triggers), TAG is
+          # empty and the regex check below fails loudly instead of
+          # silently publishing under a "main"-derived version.
+          TAG="${{ inputs.tag }}"
+          TAG="${TAG:-${{ github.event.workflow_run.head_branch }}}"
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::Resolved tag '$TAG' does not look like a version tag (expected vX.Y.Z...). Refusing to publish."
+            exit 1
+          fi
+
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Resolved release tag: $TAG"
 
       - name: Preflight — verify required credentials are set
         env:
@@ -114,6 +142,18 @@ jobs:
           # Both must agree.
           if [[ "$OFFERED_VERSION" != "$CONF_VERSION" ]]; then
             echo "ERROR: version mismatch between package.json ($OFFERED_VERSION) and tauri.conf.json ($CONF_VERSION)"
+            exit 1
+          fi
+
+          # Cross-check against the release tag resolved and validated in
+          # "Resolve and validate release tag" (env.TAG). Both files above
+          # were read from the checkout pinned to that same tag, so a
+          # mismatch here means the tag was moved/retagged after the
+          # checked-out commit's version was bumped, or vice versa — either
+          # way, publishing would mislabel the release.
+          TAG_VERSION="${TAG#v}"
+          if [[ "$OFFERED_VERSION" != "$TAG_VERSION" ]]; then
+            echo "ERROR: resolved tag $TAG (version $TAG_VERSION) does not match package.json version ($OFFERED_VERSION)"
             exit 1
           fi
 
