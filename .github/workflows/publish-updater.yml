@@ -9,14 +9,29 @@ name: Publish Tauri Updater Manifest
 # - TAURI_UPDATER_PUBLIC_KEY is the literal Ed25519 public key string baked into
 #   tauri.conf.json (NOT a $VAR reference). CI gate below fails if it detects a
 #   literal "$" in the pubkey field, indicating a broken substitution.
-# - R2 account ID lives in GH Actions secret R2_ACCOUNT_ID (not in this file).
+# - R2 account ID (vars.R2_ACCOUNT_ID) is a GH Actions repo VARIABLE, not a
+#   secret — see the "Upload manifests to R2" step below.
 
 on:
+  # NOTE: no `branches:` filter. Publish to R2 (packages.nself.org) is itself
+  # triggered from a tag-triggered build, so its workflow_run carries
+  # head_branch = the TAG name (e.g. "v1.4.0"), never "main". A
+  # `branches: ['main']` filter therefore excluded every real release run —
+  # this workflow has never once fired for a shipped version (found
+  # 2026-08-26; zero recorded runs).
   workflow_run:
     workflows: ['Publish to R2 (packages.nself.org)']
     types: [completed]
-    branches: ['main']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.4.0)'
+        required: true
+      force:
+        description: 'Republish even if this version is already published (use to repair a bad manifest)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   validate-pubkey:
@@ -37,11 +52,43 @@ jobs:
 
   publish-manifest:
     needs: validate-pubkey
-    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    # Only run for a successful upstream R2 publish, or an explicit manual
+    # dispatch — never a failed/cancelled upstream run, which would otherwise
+    # publish an updater manifest for a release that never actually shipped.
+    if: (github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+
+      - name: Preflight — verify required credentials are set
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TAURI_UPDATER_PRIVATE_KEY: ${{ secrets.TAURI_UPDATER_PRIVATE_KEY }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+        run: |
+          # If R2_ACCOUNT_ID is unset, the rclone endpoint below becomes the
+          # literal string "https://.r2.cloudflarestorage.com" and the upload
+          # step fails obscurely (or silently no-ops) far from the real cause.
+          # Check every credential this job needs up front and name exactly
+          # what is missing, without ever printing a value.
+          missing=""
+          [ -z "$CLOUDFLARE_R2_ACCESS_KEY_ID" ] && missing="$missing CLOUDFLARE_R2_ACCESS_KEY_ID"
+          [ -z "$CLOUDFLARE_R2_SECRET_ACCESS_KEY" ] && missing="$missing CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ZONE_ID" ] && missing="$missing CLOUDFLARE_ZONE_ID"
+          [ -z "$TAURI_UPDATER_PRIVATE_KEY" ] && missing="$missing TAURI_UPDATER_PRIVATE_KEY"
+          [ -z "$R2_ACCOUNT_ID" ] && missing="$missing R2_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets/variables:$missing"
+            echo "Set secrets in this repo's Settings > Secrets and variables > Actions > Secrets."
+            echo "Set R2_ACCOUNT_ID in this repo's Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
+          echo "OK: all required credentials are set."
 
       - name: Download build metadata
         uses: actions/download-artifact@v8
