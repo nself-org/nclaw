@@ -1,10 +1,10 @@
 name: Desktop E2E
 on:
   pull_request:
-    paths: ['nclaw/desktop/**', '.github/workflows/desktop-e2e.yml']
+    paths: ['desktop/**', '.github/workflows/desktop-e2e.yml']
   push:
     branches: [main]
-    paths: ['nclaw/desktop/**', '.github/workflows/desktop-e2e.yml']
+    paths: ['desktop/**', '.github/workflows/desktop-e2e.yml']
 
 jobs:
   e2e:
@@ -21,16 +21,16 @@ jobs:
       - uses: pnpm/action-setup@v6
         with: { version: '9' }
       - name: Install deps
-        working-directory: nclaw/desktop
+        working-directory: desktop
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
-        working-directory: nclaw/desktop
+        working-directory: desktop
         run: pnpm exec playwright install --with-deps chromium
       - name: Run E2E
-        working-directory: nclaw/desktop
+        working-directory: desktop
         run: pnpm e2e
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-${{ matrix.os }}
-          path: nclaw/desktop/playwright-report/
+          path: desktop/playwright-report/
