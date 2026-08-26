@@ -1,10 +1,10 @@
 name: Desktop E2E
 on:
   pull_request:
-    paths: ['nclaw/desktop/**']
+    paths: ['nclaw/desktop/**', '.github/workflows/desktop-e2e.yml']
   push:
     branches: [main]
-    paths: ['nclaw/desktop/**']
+    paths: ['nclaw/desktop/**', '.github/workflows/desktop-e2e.yml']
 
 jobs:
   e2e:
