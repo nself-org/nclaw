@@ -1,11 +1,20 @@
 name: Publish to R2 (packages.nself.org)
 
 on:
+  # NOTE: no `branches:` filter. Desktop macOS Build (and, transitively, Sign
+  # Linux Artifacts / Desktop Windows Build) is tag-triggered (push tags v*),
+  # so its workflow_run carries head_branch = the TAG name (e.g. "v1.4.0"),
+  # never "main". A `branches: ['main']` filter therefore excluded every real
+  # release run and this workflow never published a real release (found
+  # 2026-08-26).
   workflow_run:
     workflows: ['Sign Linux Artifacts', 'Desktop macOS Build', 'Desktop Windows Build']
     types: [completed]
-    branches: ['main']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.4.0)'
+        required: true
 
 concurrency:
   group: publish-r2-${{ github.ref }}
@@ -13,11 +22,36 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    # Only run for a successful upstream build, or an explicit manual dispatch —
+    # never a failed/cancelled upstream run, which would otherwise publish
+    # whatever partial artifacts that run happened to produce.
+    if: (github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+
+      - name: Preflight — verify required credentials are set
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          # An empty R2 credential does not fail loudly — rclone either no-ops
+          # or errors deep in the sync step, far from the real cause. Check
+          # every credential this job needs up front and name what is missing.
+          missing=""
+          [ -z "$CLOUDFLARE_R2_ACCESS_KEY_ID" ] && missing="$missing CLOUDFLARE_R2_ACCESS_KEY_ID"
+          [ -z "$CLOUDFLARE_R2_SECRET_ACCESS_KEY" ] && missing="$missing CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ZONE_ID" ] && missing="$missing CLOUDFLARE_ZONE_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets:$missing"
+            echo "Set these in this repo's Settings > Secrets and variables > Actions > Secrets."
+            exit 1
+          fi
+          echo "OK: all required secrets are set."
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -36,6 +70,33 @@ jobs:
           # List what we're publishing
           find publish -type f | sort
 
+      - name: Resolve and validate release version
+        run: |
+          # github.ref_name is WRONG here. For a workflow_run event fired by a
+          # tag-triggered workflow (Desktop macOS Build etc. push on tags v*),
+          # ref_name resolves to the DEFAULT BRANCH — the ref this workflow
+          # FILE was loaded from — never the tag that was actually pushed.
+          # That is the exact head_branch subtlety that made the old
+          # `branches: ['main']` filter never match a real release; falling
+          # back to ref_name here would silently publish under VERSION="main"
+          # instead of just failing to trigger. The real tag lives in
+          # workflow_run.head_branch (or the dispatch input on manual runs).
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.event.workflow_run.head_branch }}"
+          fi
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::Resolved tag '$TAG' does not look like a version tag (expected vX.Y.Z...). Refusing to publish."
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Resolved release: $TAG (version $VERSION)"
+
       - name: Publish to R2 bucket
         env:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
@@ -43,8 +104,8 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: https://36b8dcc20c6a6fb77fa22f1fb2c5e96d.r2.cloudflarestorage.com
           CLOUDFLARE_R2_BUCKET: packages-nself-org
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
+          # VERSION/TAG resolved and validated in "Resolve and validate
+          # release version" above; available here via $GITHUB_ENV.
 
           # Install rclone
           curl https://rclone.org/install.sh | sudo bash

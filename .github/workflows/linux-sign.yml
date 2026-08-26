@@ -1,10 +1,14 @@
 name: Sign Linux Artifacts
 
 on:
+  # NOTE: no `branches:` filter. The upstream Desktop Linux Build is invoked
+  # for a release from a tag-triggered workflow, so its run's head_branch is
+  # the TAG name (e.g. "v1.4.0"), never "main". A `branches: ['main']` filter
+  # therefore excluded every real release run and this workflow never fired
+  # for a shipped version (found 2026-08-26).
   workflow_run:
     workflows: ['Desktop Linux Build']
     types: [completed]
-    branches: ['main']
   workflow_dispatch:
 
 concurrency:
@@ -13,11 +17,33 @@ concurrency:
 
 jobs:
   sign:
-    if: github.event.workflow_run.conclusion == 'success'
+    # Cover both triggers: a workflow_run has no event_name check needed, but a
+    # manual workflow_dispatch run has no `workflow_run` context at all, so the
+    # bare conclusion check alone would always evaluate false on dispatch.
+    if: (github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+
+      - name: Preflight — verify required credentials are set
+        env:
+          LINUX_SIGNING_GPG_KEY_BASE64: ${{ secrets.LINUX_SIGNING_GPG_KEY_BASE64 }}
+          LINUX_SIGNING_GPG_PASSPHRASE: ${{ secrets.LINUX_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          # An unset secret here does not fail loudly downstream — gpg silently
+          # imports nothing and dpkg-sig/rpm --addsign fail with an opaque
+          # "no default secret key" error far from the real cause. Check every
+          # credential this job needs up front and name exactly what is missing.
+          missing=""
+          [ -z "$LINUX_SIGNING_GPG_KEY_BASE64" ] && missing="$missing LINUX_SIGNING_GPG_KEY_BASE64"
+          [ -z "$LINUX_SIGNING_GPG_PASSPHRASE" ] && missing="$missing LINUX_SIGNING_GPG_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets:$missing"
+            echo "Set these in this repo's Settings > Secrets and variables > Actions > Secrets."
+            exit 1
+          fi
+          echo "OK: all required secrets are set."
 
       - name: Download build artifacts
         uses: actions/download-artifact@v8
