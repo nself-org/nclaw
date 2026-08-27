@@ -60,6 +60,13 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      # Build verification only -- the macOS artifact here is intentionally
+      # UNSIGNED. Neither APPLE_SIGNING_IDENTITY nor APPLE_CERTIFICATE is set
+      # in this workflow, so tauri skips codesigning entirely (tauri-bundler
+      # sign::keychain() returns None when neither is present). Signed and
+      # notarized macOS artifacts come from macos-release.yml, which supplies
+      # the real certificate secrets, and desktop-macos.yml, which verifies
+      # the result with `codesign --verify --deep --strict`.
       - name: Build Tauri app
         working-directory: nclaw/desktop/src-tauri
         run: cargo tauri build
