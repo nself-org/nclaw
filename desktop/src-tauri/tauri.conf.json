@@ -72,6 +72,15 @@
     "macOS": {
       "minimumSystemVersion": "10.15",
       "entitlements": "entitlements.plist"
+    },
+    "windows": {
+      "wix": {
+        "language": {
+          "en-US": {
+            "localePath": "wix/en-US.wxl"
+          }
+        }
+      }
     }
   }
 }

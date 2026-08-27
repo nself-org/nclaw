@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Forces the MSI database code page to UTF-8 (65001).
+
+  The product name is "ɳClaw", whose first character is U+0273 LATIN SMALL
+  LETTER N WITH RETROFLEX HOOK, the eta the brand uses for display names.
+  WiX defaults an MSI's database code page to the culture's ANSI code page,
+  which for en-US is 1252, and 1252 cannot represent U+0273. light.exe
+  therefore rejected every string carrying the product name:
+
+    main.wxs(23) : error LGHT0311 : A string was provided with characters
+    that are not available in the specified database code page '1252'.
+
+  LGHT0311 names WixLocalization/@Codepage as one of the supported places to
+  change that code page, which is the entire purpose of this file. The
+  TauriCodepage string is overridden to match, so the summary information
+  stream (Package/@SummaryCodepage in tauri's bundled main.wxs) agrees with
+  the database rather than staying on 1252.
+
+  tauri-bundler reads this file verbatim and then appends any default String
+  element whose Id it cannot already find, so only the values that must
+  differ from the defaults are defined here. TauriLanguage and the product
+  name strings are deliberately left out and come from tauri.
+-->
+<WixLocalization
+    Culture="en-us"
+    Codepage="65001"
+    xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="TauriCodepage">65001</String>
+</WixLocalization>
