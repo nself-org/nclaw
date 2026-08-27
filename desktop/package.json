@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.0.0",
     "@ai-sdk/react": "^3.0.0",
+    "@fontsource/inter": "^5.0.0",
     "@formatjs/intl-localematcher": "^0.5.0",
     "@sentry/react": "^8.0.0",
     "@nself/auth-core": "workspace:*",
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@formatjs/cli": "^6.0.0",
     "@playwright/test": "^1.48",
+    "@tailwindcss/postcss": "^4.0.0",
     "@tauri-apps/cli": "^2.3.0",
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
@@ -57,8 +59,11 @@
     "@types/react-syntax-highlighter": "^15.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^3.2.6",
+    "autoprefixer": "^10.4.0",
     "jsdom": "^24.0.0",
     "playwright": "^1.48",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^4.0.0",
     "typescript": "^5.4.5",
     "vite": "^6.4.2",
     "vitest": "^3.2.6"
