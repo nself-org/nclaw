@@ -14,3 +14,11 @@ tauri-updater.key.*
 node_modules/
 dist/
 .vite/
+
+# tsc emits .js next to sources when run without --noEmit; the build script
+# only type-checks (tsc --noEmit) and lets vite build produce output. A
+# stray compiled .js beside its .ts/.tsx source will shadow the real source
+# at Vite's module resolution (.js is preferred over .tsx), so these must
+# never be committed. See desktop/src/App.js incident, 2026-08-27.
+src/**/*.js
+!src/**/*.config.js

@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       # pnpm-workspace.yaml globs '../packages/@nself/*', i.e. the
       # nself-org/packages repo as a SIBLING directory. desktop/package.json

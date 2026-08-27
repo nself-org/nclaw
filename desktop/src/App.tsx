@@ -17,15 +17,19 @@ import { useAuth } from '@nself/auth-core';
 import { initObservability } from '@nself/observability';
 
 // Initialize Sentry error reporting (runs at module load, before first render)
-if (process.env.REACT_APP_SENTRY_DSN) {
+// Vite exposes build-time env via import.meta.env, not the Node-only `process`
+// global. Referencing `process` here threw a ReferenceError in the browser
+// (Vite does not polyfill it), which crashed the whole module graph before
+// React ever mounted.
+if (import.meta.env.VITE_NSELF_SENTRY_DSN) {
   initObservability({
     sentry: {
       sdk: Sentry as any, // Web SDK has different signature; type coercion needed
-      dsn: process.env.REACT_APP_SENTRY_DSN,
-      environment: process.env.NODE_ENV ?? 'development',
+      dsn: import.meta.env.VITE_NSELF_SENTRY_DSN,
+      environment: import.meta.env.VITE_APP_ENV ?? 'development',
       appKind: 'web' as const,
-      release: process.env.REACT_APP_VERSION ?? '1.1.5',
-      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      release: import.meta.env.VITE_APP_VERSION ?? '1.1.5',
+      tracesSampleRate: import.meta.env.VITE_APP_ENV === 'production' ? 0.1 : 1.0,
     },
   });
 }

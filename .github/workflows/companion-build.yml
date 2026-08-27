@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'desktop/tauri/**'
+      - 'desktop/src-tauri/**'
       - '.github/workflows/companion-build.yml'
   workflow_dispatch:
 
@@ -40,7 +40,7 @@ jobs:
             patchelf
 
       - name: Build Tauri app
-        working-directory: desktop/tauri
+        working-directory: desktop/src-tauri
         run: cargo tauri build
 
       - name: Upload Linux artifacts
@@ -49,8 +49,8 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/tauri/target/release/bundle/appimage/*.AppImage
-            desktop/tauri/target/release/bundle/deb/*.deb
+            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            desktop/src-tauri/target/release/bundle/deb/*.deb
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
@@ -58,8 +58,8 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/tauri/target/release/bundle/msi/*.msi
-            desktop/tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
@@ -67,4 +67,4 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/tauri/target/release/bundle/dmg/*.dmg
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg
