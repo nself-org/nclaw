@@ -1,8 +1,10 @@
 @import '@fontsource/inter';
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 is CSS-first, but tailwind.config.js still carries this app's
+   custom colors (bg-surface, accent) and darkMode setting — @config keeps
+   that file authoritative instead of duplicating theme values here. */
+@config '../../tailwind.config.js';
 
 body {
   @apply bg-surface text-slate-100 font-sans antialiased;

@@ -2,7 +2,8 @@
  * Purpose: ɳClaw desktop root component. Wraps the app with shared providers and
  *          renders the main shell. Auth state drives the top-level view.
  * Inputs:  Auth context from NselfAuthProvider (via useAuth hook).
- * Outputs: Renders i18n-wrapped shell. Unauthenticated state shows a sign-in prompt.
+ * Outputs: Renders i18n-wrapped shell. Authenticated state renders the chat UI;
+ *          unauthenticated state shows a sign-in prompt.
  * Constraints:
  *   - NselfI18nProvider wraps all children so useNselfTranslation() works everywhere.
  *   - Do NOT lift graphql queries here — let page components own their queries.
@@ -15,6 +16,7 @@ import * as Sentry from '@sentry/react';
 import { NselfI18nProvider, isRTL, useNselfTranslation, useTranslation } from '@nself/i18n';
 import { useAuth } from '@nself/auth-core';
 import { initObservability } from '@nself/observability';
+import { ChatContainer } from './components/chat/ChatContainer';
 
 // Initialize Sentry error reporting (runs at module load, before first render)
 // Vite exposes build-time env via import.meta.env, not the Node-only `process`
@@ -58,6 +60,28 @@ function Shell(): React.ReactElement {
   const { status } = useAuth();
   const { t } = useNselfTranslation();
   useDocumentDir();
+
+  // Authenticated is the only state with content below the title bar — render
+  // it full-height so ChatContainer's own flex layout can fill the window.
+  if (status === 'authenticated') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          fontFamily: 'system-ui, sans-serif',
+        }}
+      >
+        <div style={{ padding: '0.5rem 1rem', color: '#6b7280', fontSize: '0.75rem' }}>
+          {t('desktop.nclaw.title')}
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <ChatContainer />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

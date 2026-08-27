@@ -4,6 +4,12 @@
  * Inputs:  VITE_NSELF_SENTRY_DSN, VITE_APP_ENV, VITE_APP_VERSION from build env.
  * Outputs: React app mounted on #root, Sentry + OTel registered, i18next initialised.
  * Constraints:
+ *   - styles/tokens.css and styles/globals.css (which pulls in Tailwind via
+ *     @import 'tailwindcss') MUST be imported here — Vite only emits CSS that's reachable
+ *     from the module graph. Without this import every Tailwind utility class
+ *     in the tree is inert (elements keep className but get no rules), which
+ *     silently collapses flex layouts (e.g. ChatList's scroll container) to
+ *     zero height.
  *   - initObservability() MUST be called before ReactDOM.createRoot() so Sentry catches
  *     any errors thrown during React hydration.
  *   - initializeI18next() runs synchronously at module level — must complete before render.
@@ -24,6 +30,8 @@ import { Provider as UrqlProvider } from 'urql';
 import App from './App';
 import { authStrategy } from './lib/auth';
 import { graphqlClient } from './lib/graphql';
+import './styles/tokens.css';
+import './styles/globals.css';
 
 // ─── i18n init (module level — before first render) ──────────────────────────
 initializeI18next();
