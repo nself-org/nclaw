@@ -67,32 +67,46 @@ jobs:
       # notarized macOS artifacts come from macos-release.yml, which supplies
       # the real certificate secrets, and desktop-macos.yml, which verifies
       # the result with `codesign --verify --deep --strict`.
+      # --verbose is deliberate. tauri-bundler runs candle.exe/light.exe via
+      # output_ok(), which pipes their stdout+stderr and re-emits each line at
+      # log::debug! level, then discards it on failure in favour of a bare
+      # "failed to run <exe>". Without --verbose a WiX linker failure surfaces
+      # with no LGHT diagnostic at all, which is unactionable from CI logs.
       - name: Build Tauri app
         working-directory: nclaw/desktop/src-tauri
-        run: cargo tauri build
+        run: cargo tauri build --verbose
 
+      # Bundles land in the CARGO WORKSPACE target dir. desktop/src-tauri is a
+      # member of the root Cargo.toml workspace, so cargo writes to
+      # <repo>/target/, NOT <repo>/desktop/src-tauri/target/. The old paths
+      # matched nothing: upload-artifact only warns ("No files were found")
+      # and still exits 0, so the linux and macos legs reported success while
+      # uploading zero artifacts.
       - name: Upload Linux artifacts
         if: matrix.platform == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
         with:
           name: companion-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
-            nclaw/desktop/src-tauri/target/release/bundle/deb/*.deb
+            nclaw/target/release/bundle/appimage/*.AppImage
+            nclaw/target/release/bundle/deb/*.deb
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v7
         with:
           name: companion-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/release/bundle/msi/*.msi
-            nclaw/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            nclaw/target/release/bundle/msi/*.msi
+            nclaw/target/release/bundle/nsis/*.exe
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v7
         with:
           name: companion-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            nclaw/target/release/bundle/dmg/*.dmg
