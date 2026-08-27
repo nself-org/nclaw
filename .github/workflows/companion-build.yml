@@ -22,7 +22,28 @@ jobs:
             target: aarch64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
+      # pnpm-workspace.yaml globs '../packages/@nself/*', i.e. the
+      # nself-org/packages repo as a SIBLING directory. desktop/package.json
+      # depends on five of them as workspace:*, and tauri.conf.json's
+      # beforeBuildCommand runs `pnpm build` before cargo builds the shell.
+      # nclaw goes in a subdir so the sibling lands beside it, matching the
+      # layout the workspace file expects (same pattern as desktop-e2e.yml).
       - uses: actions/checkout@v7
+        with:
+          path: nclaw
+      - uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          path: packages
+
+      - uses: actions/setup-node@v7
+        with: { node-version: '20' }
+      - uses: pnpm/action-setup@v6
+        with: { version: '9' }
+
+      - name: Install frontend dependencies
+        working-directory: nclaw
+        run: pnpm install --frozen-lockfile
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -40,7 +61,7 @@ jobs:
             patchelf
 
       - name: Build Tauri app
-        working-directory: desktop/src-tauri
+        working-directory: nclaw/desktop/src-tauri
         run: cargo tauri build
 
       - name: Upload Linux artifacts
@@ -49,8 +70,8 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
-            desktop/src-tauri/target/release/bundle/deb/*.deb
+            nclaw/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            nclaw/desktop/src-tauri/target/release/bundle/deb/*.deb
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
@@ -58,8 +79,8 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/src-tauri/target/release/bundle/msi/*.msi
-            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            nclaw/desktop/src-tauri/target/release/bundle/msi/*.msi
+            nclaw/desktop/src-tauri/target/release/bundle/nsis/*.exe
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
@@ -67,4 +88,4 @@ jobs:
         with:
           name: companion-${{ matrix.target }}
           path: |
-            desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            nclaw/desktop/src-tauri/target/release/bundle/dmg/*.dmg
