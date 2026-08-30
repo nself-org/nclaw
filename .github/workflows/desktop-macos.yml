@@ -21,6 +21,15 @@ jobs:
             target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
+    env:
+      # Job-level env indirection: GitHub Actions' `if:` expression parser
+      # rejects direct `secrets.X` references on some step conditions
+      # ("Unrecognized named-value: 'secrets'", confirmed live 2026-08-30 via
+      # workflow_dispatch against this file). Routing through job env first
+      # is the standard workaround and lets each step's `if:` test a plain
+      # env var instead.
+      HAS_APPLE_CERT: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 != '' }}
+      HAS_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -65,7 +74,7 @@ jobs:
       # string when unset), which cargo tauri / tauri-bundler treats as "no
       # identity" and produces an unsigned .app/.dmg instead of erroring.
       - name: Import Apple cert
-        if: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 != '' }}
+        if: ${{ env.HAS_APPLE_CERT == 'true' }}
         env:
           CERT_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 }}
           CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD }}
@@ -95,7 +104,7 @@ jobs:
       # signing identity was actually supplied. When the gate is absent, the
       # build+upload steps still prove the unsigned artifact was produced.
       - name: Verify codesign
-        if: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
+        if: ${{ env.HAS_APPLE_SIGNING_IDENTITY == 'true' }}
         run: |
           for app in desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
             codesign --verify --deep --strict --verbose=2 "$app"
@@ -124,6 +133,8 @@ jobs:
       fail-fast: false
       matrix:
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    env:
+      HAS_APPLE_NOTARIZATION: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -134,7 +145,7 @@ jobs:
           path: artifacts/
 
       - name: Notarize DMG
-        if: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID != '' }}
+        if: ${{ env.HAS_APPLE_NOTARIZATION == 'true' }}
         env:
           APPLE_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID }}
           APPLE_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
@@ -148,7 +159,7 @@ jobs:
           done
 
       - name: Report notarization gate skipped
-        if: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID == '' }}
+        if: ${{ env.HAS_APPLE_NOTARIZATION == 'false' }}
         run: echo "::notice::Apple notarization gate absent (no APPLE_NOTARIZATION_APPLE_ID secret) — uploading unsigned/un-notarized artifact. See p6/EXTERNAL-GATES.md 'Apple Developer Program' row."
 
       - name: Upload notarized artifacts
