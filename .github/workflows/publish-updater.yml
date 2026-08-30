@@ -159,7 +159,9 @@ jobs:
 
           # Downgrade guard: fetch the latest published manifest and compare.
           # If no prior manifest exists (first publish), skip the check.
-          MANIFEST_URL="https://packages.nself.org/desktop/latest-macos.json"
+          # Filename matches tauri.conf.json's endpoint scheme
+          # (latest-{{target}}.json) — see the manifest-naming fix below.
+          MANIFEST_URL="https://packages.nself.org/desktop/latest-darwin-aarch64.json"
           CURRENT_VERSION=$(curl -sf "$MANIFEST_URL" | jq -r '.version' 2>/dev/null || echo "0.0.0")
           echo "Current published version: $CURRENT_VERSION"
 
@@ -211,10 +213,22 @@ jobs:
             cat "${file}.minisig"
           }
 
-          # macOS manifest
+          # Filenames MUST match tauri.conf.json plugins.updater.endpoints:
+          # "https://packages.nself.org/desktop/latest-{{target}}.json"
+          # Tauri substitutes {{target}} with the platform triple it detects
+          # (darwin-aarch64, darwin-x86_64, windows-x86_64, linux-x86_64) — it
+          # never requests "latest-macos.json"/"latest-windows.json"/
+          # "latest-linux.json". Writing one combined manifest per OS family
+          # under those names meant the updater's actual GET always 404'd
+          # against a manifest that was never written (found 2026-08-30: a
+          # curl of every endpoint the client can construct came back 404
+          # even after a successful upload, because the uploaded keys didn't
+          # match any key the client would ever ask for). One manifest file
+          # per {{target}}, matching the ntask sibling's proven pattern.
+
+          # macOS arm64
           SIG_MACOS_ARM=$(sign_file "release-data/desktop/macos/nclaw_aarch64.app.tar.gz")
-          SIG_MACOS_X64=$(sign_file "release-data/desktop/macos/nclaw_x64.app.tar.gz")
-          cat > manifests/latest-macos.json <<EOF
+          cat > manifests/latest-darwin-aarch64.json <<EOF
           {
             "version": "${VERSION}",
             "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
@@ -223,7 +237,19 @@ jobs:
               "darwin-aarch64": {
                 "signature": "${SIG_MACOS_ARM}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_aarch64.app.tar.gz"
-              },
+              }
+            }
+          }
+          EOF
+
+          # macOS x86_64
+          SIG_MACOS_X64=$(sign_file "release-data/desktop/macos/nclaw_x64.app.tar.gz")
+          cat > manifests/latest-darwin-x86_64.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
               "darwin-x86_64": {
                 "signature": "${SIG_MACOS_X64}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.app.tar.gz"
@@ -232,9 +258,9 @@ jobs:
           }
           EOF
 
-          # Windows manifest
+          # Windows x86_64
           SIG_WIN_X64=$(sign_file "release-data/desktop/windows/nclaw_x64.msi")
-          cat > manifests/latest-windows.json <<EOF
+          cat > manifests/latest-windows-x86_64.json <<EOF
           {
             "version": "${VERSION}",
             "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
@@ -248,10 +274,9 @@ jobs:
           }
           EOF
 
-          # Linux manifest (AppImage)
+          # Linux x86_64 (AppImage)
           SIG_LINUX_X64=$(sign_file "release-data/desktop/linux/nclaw_x64.AppImage")
-          SIG_LINUX_ARM=$(sign_file "release-data/desktop/linux/nclaw_arm64.AppImage")
-          cat > manifests/latest-linux.json <<EOF
+          cat > manifests/latest-linux-x86_64.json <<EOF
           {
             "version": "${VERSION}",
             "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
@@ -260,7 +285,19 @@ jobs:
               "linux-x86_64": {
                 "signature": "${SIG_LINUX_X64}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_x64.AppImage"
-              },
+              }
+            }
+          }
+          EOF
+
+          # Linux aarch64 (AppImage)
+          SIG_LINUX_ARM=$(sign_file "release-data/desktop/linux/nclaw_arm64.AppImage")
+          cat > manifests/latest-linux-aarch64.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See https://github.com/nself-org/nclaw/releases/tag/v${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
               "linux-aarch64": {
                 "signature": "${SIG_LINUX_ARM}",
                 "url": "https://packages.nself.org/desktop/v${VERSION}/nclaw_arm64.AppImage"
@@ -309,8 +346,10 @@ jobs:
             -H "Content-Type: application/json" \
             --data '{
               "files": [
-                "https://packages.nself.org/desktop/latest-macos.json",
-                "https://packages.nself.org/desktop/latest-windows.json",
-                "https://packages.nself.org/desktop/latest-linux.json"
+                "https://packages.nself.org/desktop/latest-darwin-aarch64.json",
+                "https://packages.nself.org/desktop/latest-darwin-x86_64.json",
+                "https://packages.nself.org/desktop/latest-windows-x86_64.json",
+                "https://packages.nself.org/desktop/latest-linux-x86_64.json",
+                "https://packages.nself.org/desktop/latest-linux-aarch64.json"
               ]
             }'
