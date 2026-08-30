@@ -21,7 +21,7 @@
 
 ### Step 1: Release Gate (10 min)
 ```bash
-cd /Volumes/X9/Sites/nself
+cd /Volumes/UG/Sites/nself
 bash nclaw/scripts/release-gate.sh
 ```
 Expected: "RELEASE GATE PASSED"

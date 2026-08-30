@@ -37,7 +37,7 @@ This document guides integrating the new validation, idempotency, and Sentry inf
 The `package.json` has been updated with required packages. Run:
 
 ```bash
-cd /Volumes/X9/Sites/nself/nclaw/apps/web
+cd /Volumes/UG/Sites/nself/nclaw/apps/web
 pnpm install
 ```
 
