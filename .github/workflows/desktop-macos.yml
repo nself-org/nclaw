@@ -2,6 +2,7 @@ name: Desktop macOS Build
 on:
   push:
     tags: ['v*']
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -31,7 +32,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml'
+          cache-dependency-path: 'desktop/pnpm-lock.yaml'
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,17 +44,28 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            nclaw/desktop/src-tauri/target
-          key: cargo-${{ matrix.target }}-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
+            target
+          key: cargo-${{ matrix.target }}-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: nclaw/desktop
+        working-directory: desktop
         run: pnpm install --frozen-lockfile
 
+      # Two-mode signing gate: this repo currently has no APPLE_* signing
+      # secrets configured (verified via `gh secret list` 2026-08-30 — zero
+      # APPLE_* entries exist), so the identity import step is skipped
+      # entirely rather than running `security import` against an empty
+      # certificate. If/when APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 is
+      # added as a repo secret, this step activates automatically. The build
+      # step below never passes an unresolved "$APPLE_SIGNING_IDENTITY"
+      # literal to cargo tauri build — it reads the real secret value (empty
+      # string when unset), which cargo tauri / tauri-bundler treats as "no
+      # identity" and produces an unsigned .app/.dmg instead of erroring.
       - name: Import Apple cert
+        if: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 != '' }}
         env:
           CERT_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 }}
           CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_PASSWORD }}
@@ -69,14 +81,23 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build Tauri
-        working-directory: nclaw/desktop
+        working-directory: desktop
         env:
+          # Empty when the secret is unset (gate absent) — cargo tauri build
+          # / tauri-bundler's sign::keychain() treats an empty/unset identity
+          # as "skip signing" and produces an unsigned bundle. It never
+          # receives the literal string "$APPLE_SIGNING_IDENTITY".
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: cargo tauri build --target ${{ matrix.target }}
 
+      # Signed-only verification: codesign --verify fails immediately (and
+      # correctly) on an unsigned bundle, so this step only runs when a
+      # signing identity was actually supplied. When the gate is absent, the
+      # build+upload steps still prove the unsigned artifact was produced.
       - name: Verify codesign
+        if: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
         run: |
-          for app in nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
+          for app in desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
             codesign --verify --deep --strict --verbose=2 "$app"
           done
 
@@ -84,11 +105,17 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: desktop-macos-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
           retention-days: 30
 
+  # Notarization is P7-gated (Apple Developer Program membership — see
+  # p6/EXTERNAL-GATES.md "Apple Developer Program"). This job runs
+  # unconditionally but every step inside it two-mode gates on the
+  # notarization secrets being present, so it degrades to a no-op success
+  # rather than a red job when the gate is absent.
   notarize:
     needs: build
     runs-on: macos-14
@@ -107,17 +134,22 @@ jobs:
           path: artifacts/
 
       - name: Notarize DMG
+        if: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID != '' }}
         env:
           APPLE_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID }}
           APPLE_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
           APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
         run: |
-          chmod +x nclaw/desktop/scripts/notarize.sh
+          chmod +x desktop/scripts/notarize.sh
           for dmg in artifacts/*.dmg; do
             if [[ -f "$dmg" ]]; then
-              nclaw/desktop/scripts/notarize.sh "$dmg"
+              desktop/scripts/notarize.sh "$dmg"
             fi
           done
+
+      - name: Report notarization gate skipped
+        if: ${{ secrets.APPLE_NOTARIZATION_APPLE_ID == '' }}
+        run: echo "::notice::Apple notarization gate absent (no APPLE_NOTARIZATION_APPLE_ID secret) — uploading unsigned/un-notarized artifact. See p6/EXTERNAL-GATES.md 'Apple Developer Program' row."
 
       - name: Upload notarized artifacts
         uses: actions/upload-artifact@v7
