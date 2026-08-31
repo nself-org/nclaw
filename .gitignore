@@ -230,3 +230,5 @@ docker-compose.override.yml
 # OS junk (Mega P1 T-E3-03 hardening)
 .DS_Store
 Thumbs.db
+*.generated.env
+**/*.gen.yml
