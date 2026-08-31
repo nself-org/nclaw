@@ -32,7 +32,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
+      # pnpm-workspace.yaml (nclaw/pnpm-workspace.yaml) globs
+      # '../packages/@nself/*', i.e. the nself-org/packages repo as a SIBLING
+      # directory. desktop/package.json depends on five of them (auth-core,
+      # graphql-client, i18n, observability, ui) as workspace:*. Checking out
+      # only nclaw leaves those unresolvable and `tsc --noEmit` (run by the
+      # beforeBuildCommand) dies with TS2307 "Cannot find module '@nself/*'".
+      # nclaw goes in a subdir so the sibling lands beside it, matching the
+      # layout the workspace file expects (same pattern as desktop-e2e.yml
+      # and companion-build.yml).
       - uses: actions/checkout@v7
+        with:
+          path: nclaw
+      - uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          path: packages
 
       - name: Install system deps
         run: |
@@ -43,7 +58,7 @@ jobs:
         with: { version: '9' }
 
       - uses: actions/setup-node@v7
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'desktop/pnpm-lock.yaml' }
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -55,18 +70,18 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            desktop/src-tauri/target
-          key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+            nclaw/desktop/src-tauri/target
+          key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: desktop
+        working-directory: nclaw/desktop
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri (AppImage + deb + rpm)
-        working-directory: desktop
+        working-directory: nclaw/desktop
         run: cargo tauri build --target ${{ matrix.target }} --bundles appimage,deb,rpm
 
       - name: Upload artifacts
@@ -74,7 +89,7 @@ jobs:
         with:
           name: desktop-linux-${{ matrix.arch }}
           path: |
-            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
-            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
           retention-days: 30

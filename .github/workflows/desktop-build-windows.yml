@@ -22,13 +22,28 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
+      # pnpm-workspace.yaml (nclaw/pnpm-workspace.yaml) globs
+      # '../packages/@nself/*', i.e. the nself-org/packages repo as a SIBLING
+      # directory. desktop/package.json depends on five of them (auth-core,
+      # graphql-client, i18n, observability, ui) as workspace:*. Checking out
+      # only nclaw leaves those unresolvable and `tsc --noEmit` (run by the
+      # beforeBuildCommand) dies with TS2307 "Cannot find module '@nself/*'".
+      # nclaw goes in a subdir so the sibling lands beside it, matching the
+      # layout the workspace file expects (same pattern as desktop-e2e.yml
+      # and companion-build.yml).
       - uses: actions/checkout@v7
+        with:
+          path: nclaw
+      - uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          path: packages
 
       - uses: pnpm/action-setup@v6
         with: { version: '9' }
 
       - uses: actions/setup-node@v7
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'desktop/pnpm-lock.yaml' }
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: 'x86_64-pc-windows-msvc' }
@@ -39,18 +54,18 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            desktop/src-tauri/target
-          key: cargo-windows-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+            nclaw/desktop/src-tauri/target
+          key: cargo-windows-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: desktop
+        working-directory: nclaw/desktop
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri (unsigned at v1.1.1; signing wired in T06 once EV cert lands)
-        working-directory: desktop
+        working-directory: nclaw/desktop
         run: cargo tauri build --target x86_64-pc-windows-msvc
 
       # secrets context is not allowed in step `if:` — it invalidates the whole
@@ -63,9 +78,9 @@ jobs:
         run: echo "present=$([ -n "$EV_THUMB" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Conditional signtool (no-op until WINDOWS_EV_CERT_THUMBPRINT secret set)
-        if: steps.evcheck.outputs.present == 'true' 
+        if: steps.evcheck.outputs.present == 'true'
         run: |
-          $files = Get-ChildItem -Path "desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
+          $files = Get-ChildItem -Path "nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -Include *.msi,*.exe
           foreach ($f in $files) {
             signtool sign /sha1 "$env:WINDOWS_EV_CERT_THUMBPRINT" /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$f.FullName"
           }
@@ -75,6 +90,6 @@ jobs:
         with:
           name: desktop-windows-x64
           path: |
-            desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            nclaw/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           retention-days: 30

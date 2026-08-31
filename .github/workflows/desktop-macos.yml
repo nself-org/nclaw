@@ -31,7 +31,22 @@ jobs:
       HAS_APPLE_CERT: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERT_P12_BASE64 != '' }}
       HAS_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
     steps:
+      # pnpm-workspace.yaml (nclaw/pnpm-workspace.yaml) globs
+      # '../packages/@nself/*', i.e. the nself-org/packages repo as a SIBLING
+      # directory. desktop/package.json depends on five of them (auth-core,
+      # graphql-client, i18n, observability, ui) as workspace:*. Checking out
+      # only nclaw leaves those unresolvable and `tsc --noEmit` (run by the
+      # beforeBuildCommand) dies with TS2307 "Cannot find module '@nself/*'".
+      # nclaw goes in a subdir so the sibling lands beside it, matching the
+      # layout the workspace file expects (same pattern as desktop-e2e.yml
+      # and companion-build.yml).
       - uses: actions/checkout@v7
+        with:
+          path: nclaw
+      - uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          path: packages
 
       - uses: pnpm/action-setup@v6
         with:
@@ -41,7 +56,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'desktop/pnpm-lock.yaml'
+          cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml'
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -53,14 +68,14 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: cargo-${{ matrix.target }}-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+            nclaw/target
+          key: cargo-${{ matrix.target }}-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
 
       - name: Install pnpm deps
-        working-directory: desktop
+        working-directory: nclaw/desktop
         run: pnpm install --frozen-lockfile
 
       # Two-mode signing gate: this repo currently has no APPLE_* signing
@@ -90,7 +105,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build Tauri
-        working-directory: desktop
+        working-directory: nclaw/desktop
         env:
           # Empty when the secret is unset (gate absent) — cargo tauri build
           # / tauri-bundler's sign::keychain() treats an empty/unset identity
@@ -106,7 +121,7 @@ jobs:
       - name: Verify codesign
         if: ${{ env.HAS_APPLE_SIGNING_IDENTITY == 'true' }}
         run: |
-          for app in desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
+          for app in nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
             codesign --verify --deep --strict --verbose=2 "$app"
           done
 
@@ -116,8 +131,8 @@ jobs:
           name: desktop-macos-${{ matrix.target }}
           if-no-files-found: error
           path: |
-            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
           retention-days: 30
 
   # Notarization is P7-gated (Apple Developer Program membership — see
