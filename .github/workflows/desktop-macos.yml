@@ -130,18 +130,26 @@ jobs:
       - name: Verify codesign
         if: ${{ env.HAS_APPLE_SIGNING_IDENTITY == 'true' }}
         run: |
-          for app in nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app; do
+          for app in nclaw/target/${{ matrix.target }}/release/bundle/macos/*.app; do
             codesign --verify --deep --strict --verbose=2 "$app"
           done
 
+      # Bundles land in the CARGO WORKSPACE target dir (nclaw/target/, not
+      # nclaw/desktop/src-tauri/target/ — desktop/src-tauri is a member of
+      # the root Cargo.toml workspace). The old path here matched nothing;
+      # if-no-files-found: error (already set below) turned that into a
+      # visible "Upload artifacts" failure (proven live 2026-08-31, run
+      # 33382002757, job 99456257025) rather than the silent zero-artifact
+      # success this same bug produced in the sibling Linux/Windows
+      # workflows before if-no-files-found was tightened there too.
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: desktop-macos-${{ matrix.target }}
           if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+            nclaw/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            nclaw/target/${{ matrix.target }}/release/bundle/macos/*.app
           retention-days: 30
 
   # Notarization is P7-gated (Apple Developer Program membership — see

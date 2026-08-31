@@ -70,7 +70,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            nclaw/desktop/src-tauri/target
+            nclaw/target
           key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('nclaw/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install Tauri CLI
@@ -84,12 +84,21 @@ jobs:
         working-directory: nclaw/desktop
         run: cargo tauri build --target ${{ matrix.target }} --bundles appimage,deb,rpm
 
+      # Bundles land in the CARGO WORKSPACE target dir. desktop/src-tauri is a
+      # member of the root Cargo.toml workspace, so cargo writes to
+      # nclaw/target/, NOT nclaw/desktop/src-tauri/target/. The old paths
+      # matched nothing and this step's default if-no-files-found ("warn")
+      # let the job report success while uploading zero artifacts (proven
+      # live 2026-08-31, run 33380065746 — "No files were found ... No
+      # artifacts will be uploaded", exit 0). if-no-files-found: error turns
+      # that into a real, visible failure instead of a silent false-green.
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: desktop-linux-${{ matrix.arch }}
+          if-no-files-found: error
           path: |
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            nclaw/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+            nclaw/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            nclaw/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            nclaw/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
           retention-days: 30
