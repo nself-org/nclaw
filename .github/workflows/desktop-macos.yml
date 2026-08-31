@@ -106,13 +106,22 @@ jobs:
 
       - name: Build Tauri
         working-directory: nclaw/desktop
+        run: |
+          # Two-mode gate, corrected: tauri-bundler's sign::keychain() does
+          # NOT treat an empty-but-set APPLE_SIGNING_IDENTITY as "no
+          # identity" -- it attempts `codesign --sign ""`, which fails with
+          # "The specified item could not be found in the keychain" (proven
+          # live 2026-08-31, run 33380061471, macos-14/aarch64-apple-darwin:
+          # log shows `Signing with identity ""` immediately before the
+          # error). The env var must be genuinely ABSENT for tauri-bundler to
+          # skip signing, not merely empty. `if [ -n ... ]` only exports it
+          # when the secret actually has a value.
+          if [ -n "$APPLE_SIGNING_IDENTITY_SECRET" ]; then
+            export APPLE_SIGNING_IDENTITY="$APPLE_SIGNING_IDENTITY_SECRET"
+          fi
+          cargo tauri build --target ${{ matrix.target }}
         env:
-          # Empty when the secret is unset (gate absent) — cargo tauri build
-          # / tauri-bundler's sign::keychain() treats an empty/unset identity
-          # as "skip signing" and produces an unsigned bundle. It never
-          # receives the literal string "$APPLE_SIGNING_IDENTITY".
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: cargo tauri build --target ${{ matrix.target }}
+          APPLE_SIGNING_IDENTITY_SECRET: ${{ secrets.APPLE_SIGNING_IDENTITY }}
 
       # Signed-only verification: codesign --verify fails immediately (and
       # correctly) on an unsigned bundle, so this step only runs when a
