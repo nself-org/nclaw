@@ -1,6 +1,7 @@
 {
   "name": "nclaw",
   "version": "1.1.6",
+  "license": "MIT",
   "private": true,
   "description": "ɳClaw \u2014 AI assistant monorepo (Tauri 2 desktop + React Native mobile + Rust core)",
   "scripts": {
