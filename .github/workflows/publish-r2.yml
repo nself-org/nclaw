@@ -57,6 +57,14 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           path: release-artifacts/
+          # This workflow runs on workflow_run, so the artifacts belong to the
+          # TRIGGERING run, not this one. Without run-id the action looks in the
+          # current run, finds nothing, and does not even create the directory —
+          # which is why the next step failed with "find: 'release-artifacts':
+          # No such file or directory" on every release. A github-token is
+          # required to reach another run's artifacts.
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Organize artifacts
         run: |
@@ -69,6 +77,19 @@ jobs:
           find release-artifacts -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.asc" | xargs -I {} cp {} publish/desktop/linux/
           # List what we're publishing
           find publish -type f | sort
+
+          # Assert we actually have something. Every cp above is driven by find,
+          # so an empty or missing release-artifacts makes them all no-op and the
+          # job would publish an empty tree to packages.nself.org with a green
+          # tick, leaving the desktop auto-updater serving a stale or empty
+          # manifest. Fail loudly instead.
+          count=$(find publish -type f | wc -l | tr -d ' ')
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No artifacts to publish. release-artifacts was empty or missing, so nothing was staged."
+            echo "Check that the triggering run produced upload-artifact outputs, and that the download step resolved the right run-id."
+            exit 1
+          fi
+          echo "OK: staged $count artifact(s) for publish."
 
       - name: Resolve and validate release version
         run: |
