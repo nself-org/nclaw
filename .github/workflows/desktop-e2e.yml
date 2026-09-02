@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths: ['desktop/**', '.github/workflows/desktop-e2e.yml']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   e2e:
     strategy:
