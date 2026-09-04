@@ -75,6 +75,23 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           path: artifacts/
 
+      # A download that resolves to zero artifacts must not produce a green
+      # tick. Run 33839518035 signed nothing, uploaded nothing, and reported
+      # success — which let "Publish to R2" fail with "No artifacts to publish"
+      # and left all four updater manifests 404 while every workflow looked
+      # healthy. publish-r2.yml already guards this; mirror it here so the
+      # emptiness is caught at the step that causes it.
+      - name: Fail if nothing was downloaded to sign
+        if: steps.preflight.outputs.skip != 'true'
+        run: |
+          count=$(find artifacts -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No artifacts to sign. The triggering run (${{ github.event.workflow_run.id }}) produced no upload-artifact outputs, or the run-id did not resolve."
+            echo "Check that 'Desktop Linux Build' uploaded artifacts and that this job's run-id points at it."
+            exit 1
+          fi
+          echo "OK: $count artifact(s) staged for signing."
+
       - name: Install signing tools
         if: steps.preflight.outputs.skip != 'true'
         run: |
