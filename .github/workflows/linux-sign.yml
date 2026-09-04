@@ -57,8 +57,18 @@ jobs:
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "OK: all required secrets are set."
 
+      # Unconditional (not gated on the signing preflight): this step's only
+      # job is to pull the unsigned build artifacts into this run so they can
+      # be re-uploaded below. Gating it on `skip != 'true'` meant that with
+      # the GPG secrets absent (the current gate-open state — see
+      # EXTERNAL-GATES.md), this job "succeeded" while never touching an
+      # artifact at all, which starved the "Upload signed artifacts" step of
+      # anything to upload. publish-r2.yml then found 0 artifacts on this
+      # run and failed loudly (proven live 2026-09-04, run 33839541080: "find:
+      # 'release-artifacts': No such file or directory" — traced back to this
+      # workflow's own run 33839518035 having uploaded nothing at all despite
+      # a green tick).
       - name: Download build artifacts
-        if: steps.preflight.outputs.skip != 'true'
         uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -142,8 +152,15 @@ jobs:
             [[ -f "$asc" ]] && echo "Verified: $asc"
           done
 
+      # Unconditional (not gated on the signing preflight), same reasoning as
+      # "Download build artifacts" above: this is the pass-through step that
+      # hands artifacts to publish-r2.yml, signed or not. When the GPG gate
+      # is open, this re-uploads the unsigned artifacts as-is (the
+      # AppImage.asc glob simply matches nothing in that case — no signing
+      # steps ran to create it — and upload-artifact's default
+      # if-no-files-found: warn tolerates that, same pattern as the
+      # macOS/Windows unsigned-build two-mode gates elsewhere in this repo).
       - name: Upload signed artifacts
-        if: steps.preflight.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: linux-signed
