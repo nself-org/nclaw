@@ -20,7 +20,14 @@ jobs:
           - os: macos-15-intel
             target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    # 25m was too tight for the macos-15-intel (x86_64-apple-darwin) leg — it
+    # was observed running to timeout and being marked "cancelled" (not
+    # "failure") twice live (2026-08-31 run 33383693338, 2026-09-04 run
+    # 33838067027, both ~25.5m elapsed on that leg while the macos-14/aarch64
+    # leg finished the same matrix in ~14m). Raised with headroom rather than
+    # re-tuned to the exact observed ceiling, since GitHub-hosted macOS
+    # runner speed is not guaranteed stable across runs.
+    timeout-minutes: 45
     env:
       # Job-level env indirection: GitHub Actions' `if:` expression parser
       # rejects direct `secrets.X` references on some step conditions

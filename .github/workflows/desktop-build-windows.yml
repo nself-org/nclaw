@@ -20,7 +20,13 @@ jobs:
     # Skip gracefully on branch pushes; only run on tag pushes, workflow_call (from release.yml), or workflow_dispatch.
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch'
     runs-on: windows-2022
-    timeout-minutes: 20
+    # 20m was too tight — observed running to timeout and being marked
+    # "cancelled" (not "failure") on every recent attempt (2026-08-31 runs
+    # 33380063389/33382006488/33383696190/33402547288, 2026-09-04 run
+    # 33838068460, all ~20m elapsed with no upload-artifacts step ever
+    # reached). Raised with headroom for a cold Rust/cargo-install + Tauri
+    # build on windows-2022 runners.
+    timeout-minutes: 40
     steps:
       # pnpm-workspace.yaml (nclaw/pnpm-workspace.yaml) globs
       # '../packages/@nself/*', i.e. the nself-org/packages repo as a SIBLING
