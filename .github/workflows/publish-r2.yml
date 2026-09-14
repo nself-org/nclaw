@@ -25,7 +25,21 @@ jobs:
     # Only run for a successful upstream build, or an explicit manual dispatch —
     # never a failed/cancelled upstream run, which would otherwise publish
     # whatever partial artifacts that run happened to produce.
-    if: (github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch')
+    #
+    # Also require the upstream run to be a TAG build. The upstream workflows
+    # run on ordinary branch pushes too, and "Resolve and validate release
+    # version" below correctly refuses to publish those — but it did so with
+    # exit 1, which turned every successful non-tag desktop build into a red X
+    # on main. Refusing to publish something that was never publishable is not
+    # a failure; skip the job instead, the same way linux-sign.yml treats its
+    # own gate-open state rather than showing a bare red X.
+    #
+    # head_branch carries the tag name for a tag-triggered upstream run and the
+    # branch name otherwise, which is exactly the discriminator needed here.
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
