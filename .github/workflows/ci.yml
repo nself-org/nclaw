@@ -143,6 +143,12 @@ jobs:
 
       - name: Dependency audit
         # P4-E5-W3-S05-T17: fail on HIGH/CRITICAL advisories.
+        # Ignored via pnpm.auditConfig.ignoreGhsas in package.json (no patched
+        # release exists; review date 2026-11-01, drop each entry once a fix ships):
+        #   GHSA-vfj7-8cjw-p6xm  braces: reached only through micromatch in build/dev
+        #                        tooling (jest, metro, graphql-codegen, tailwind, fast-glob).
+        #   GHSA-86w9-cpqp-85rv  node-forge: reached only through @expo/cli and
+        #                        @expo/code-signing-certificates (dev CLI), not shipped code.
         run: pnpm audit --audit-level=high
 
       - name: Typecheck
