@@ -54,7 +54,6 @@ Expected: All smoke tests pass. Resolve any failures before proceeding.
 ### Step 4: Staging Soak (30 min)
 Manual verification on staging:
 ```bash
-# SSH to staging: 167.235.233.65 (nself-staging)
 nself version  # should show 1.1.1
 nself admin start  # admin UI at localhost:3021
 nself license validate nself_pro_xxxx  # test license validation
