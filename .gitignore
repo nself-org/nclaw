@@ -232,3 +232,6 @@ docker-compose.override.yml
 Thumbs.db
 *.generated.env
 **/*.gen.yml
+
+# vitest JSON report written by the Web Unit Tests CI job
+apps/web/vitest-report.json

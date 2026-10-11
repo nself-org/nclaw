@@ -128,9 +128,9 @@ jobs:
             "${{ github.workspace }}/../packages" \
             --depth 1
 
+      # pnpm version comes from packageManager in package.json (D-0568): a
+      # `version:` input here would be a hard mismatch error in action-setup v6.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 9
 
       - uses: actions/setup-node@v7
         with:
@@ -149,6 +149,9 @@ jobs:
         #                        tooling (jest, metro, graphql-codegen, tailwind, fast-glob).
         #   GHSA-86w9-cpqp-85rv  node-forge: reached only through @expo/cli and
         #                        @expo/code-signing-certificates (dev CLI), not shipped code.
+        # Ignored via pnpm.auditConfig.ignoreCves (no patched release upstream):
+        #   CVE-2025-71330, CVE-2025-71329  image-size: build-time dep of the expo/metro
+        #                        image pipeline, never fed untrusted runtime input.
         run: pnpm audit --audit-level=high
 
       - name: Typecheck
@@ -159,6 +162,52 @@ jobs:
 
       - name: Unit tests
         run: pnpm --filter @nclaw/mobile test
+
+  # ============================================================
+  # Web: claw-web unit tests (vitest + jsdom)
+  # ============================================================
+  web-unit-test:
+    name: Web Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same sibling layout as mobile-unit-test: the workspace resolves
+      # @nself/* from ../packages.
+      - name: Clone @nself/packages (sibling dir)
+        run: |
+          git clone \
+            "https://x-access-token:${{ secrets.NSELF_PACKAGES_READ_TOKEN }}@github.com/nself-org/packages.git" \
+            "${{ github.workspace }}/../packages" \
+            --depth 1
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: >-
+          pnpm --filter claw-web exec vitest run
+          --reporter=default --reporter=json --outputFile=vitest-report.json
+
+      # D-0567: a broken test environment once ran 0 tests without anyone
+      # noticing. Fail unless the report shows at least one test ran.
+      - name: Require at least one test
+        working-directory: apps/web
+        run: |
+          node -e '
+            const r = require("./vitest-report.json");
+            console.log(`tests: ${r.numTotalTests}, passed: ${r.numPassedTests}`);
+            if (!(r.numTotalTests > 0)) { console.error("no tests ran"); process.exit(1); }
+          '
 
   # ─── Android / iOS mobile builds ────────────────────────────────
   # NOTE (T-P3-E4-W2-S3-T09 2026-06-16): Flutter mobile build jobs removed.

@@ -107,7 +107,9 @@ export default function HistoryPage(): React.ReactElement {
   // When online and data loads, write to IndexedDB cache.
   useEffect(() => {
     if (!isOnline || items.length === 0) return;
-    void cacheConversations(items, {});
+    // Best-effort: IndexedDB can be missing (private browsing, jsdom), and a
+    // failed cache write must not surface as an unhandled rejection.
+    cacheConversations(items, {}).catch(() => undefined);
   }, [isOnline, items]);
 
   // When offline, read IndexedDB cache.

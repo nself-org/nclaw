@@ -8,7 +8,7 @@
     "start": "next start -p 3020",
     "type-check": "tsc --noEmit",
     "lint": "next lint",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:e2e": "playwright test"
   },
@@ -37,9 +37,10 @@
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitest/ui": "^3.2.6",
+    "@vitest/ui": "^4.1.11",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.5.3",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   }
 }
