@@ -18,7 +18,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // ─── Global mocks ─────────────────────────────────────────────────────────────
@@ -231,7 +231,25 @@ describe('ChatHomePage — 7 states', () => {
 
 // ─── Page 2: ChatConversationPage ────────────────────────────────────────────
 
+// The page unwraps params with React.use(). Next 15 supplies React 19 at
+// runtime, but these tests run claw-web's own React 18, which has no use().
+// React 19's use() returns an already-fulfilled thenable's value
+// synchronously; fulfilled() builds one and the shim mirrors that on React 18.
+type Fulfilled<T> = Promise<T> & { status: 'fulfilled'; value: T };
+function fulfilled<T>(value: T): Fulfilled<T> {
+  return Object.assign(Promise.resolve(value), { status: 'fulfilled' as const, value });
+}
+const reactWithUse = React as unknown as { use?: <T>(t: Fulfilled<T>) => T };
+const hadUse = typeof reactWithUse.use === 'function';
+
 describe('ChatConversationPage — 7 states', () => {
+  beforeAll(() => {
+    if (!hadUse) reactWithUse.use = <T,>(t: Fulfilled<T>) => t.value;
+  });
+  afterAll(() => {
+    if (!hadUse) delete reactWithUse.use;
+  });
+
   beforeEach(() => {
     setOnline();
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: null, sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
@@ -239,43 +257,43 @@ describe('ChatConversationPage — 7 states', () => {
 
   it('State 1 — loading: shows skeleton', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: true, error: null, sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-loading')).toBeTruthy();
   });
 
   it('State 2 — offline: shows offline UI', () => {
     setOffline();
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-offline')).toBeTruthy();
   });
 
   it('State 3 — error: shows error card', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: new Error('Fetch failed'), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-error')).toBeTruthy();
   });
 
   it('State 4 — rate-limited: shows rate-limit UI', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: make429(), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-rate-limited')).toBeTruthy();
   });
 
   it('State 5 — permission-denied: shows perm-denied UI', () => {
     mockUseMessages.mockReturnValue({ messages: [], isLoading: false, error: make401(), sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-permission-denied')).toBeTruthy();
   });
 
   it('State 6 — empty: shows start-conversation CTA', () => {
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-empty')).toBeTruthy();
     expect(screen.getByText(/Start the conversation/i)).toBeTruthy();
   });
 
   it('State 7 — populated: renders message list stub', () => {
     mockUseMessages.mockReturnValue({ messages: [{ id: '1', conversationId: 'abc', role: 'user', content: 'Hi', createdAt: new Date().toISOString(), tokens: null }], isLoading: false, error: null, sendMessage: vi.fn(), isStreaming: false, stopStream: vi.fn() });
-    render(<ChatConversationPage params={Promise.resolve({ id: 'abc' })} />);
+    render(<ChatConversationPage params={fulfilled({ id: 'abc' })} />);
     expect(screen.getByTestId('async-screen-populated')).toBeTruthy();
   });
 });
