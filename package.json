@@ -3,6 +3,7 @@
   "version": "1.1.6",
   "license": "MIT",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "description": "ɳClaw \u2014 AI assistant monorepo (Tauri 2 desktop + React Native mobile + Rust core)",
   "scripts": {
     "mobile": "pnpm --filter @nclaw/mobile start",
@@ -46,6 +47,7 @@
       "shell-quote": ">=1.11.0",
       "tar": ">=7.5.19",
       "undici": "^7.29.1 || >=8.10.2",
+      "jsdom>undici": "^7.29.1",
       "brace-expansion@1": ">=1.1.20 <2",
       "brace-expansion@2": ">=2.1.6 <3",
       "brace-expansion@3": ">=5.0.11 <6",
