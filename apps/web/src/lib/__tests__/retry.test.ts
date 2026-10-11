@@ -73,9 +73,11 @@ describe('withRetry', () => {
     const fn = vi.fn().mockRejectedValue(err);
 
     const promise = withRetry(fn, { maxAttempts: 3, baseDelay: 10, maxDelay: 100 });
+    // Attach the rejection handler before the timers settle the promise.
+    const rejected = expect(promise).rejects.toBe(err);
     await vi.runAllTimersAsync();
 
-    await expect(promise).rejects.toBe(err);
+    await rejected;
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
@@ -91,9 +93,10 @@ describe('withRetry', () => {
       .mockRejectedValue(stopErr);
 
     const promise = withRetry(fn, { maxAttempts: 5, baseDelay: 10, shouldRetry });
+    const rejected = expect(promise).rejects.toBe(stopErr);
     await vi.runAllTimersAsync();
 
-    await expect(promise).rejects.toBe(stopErr);
+    await rejected;
     expect(fn).toHaveBeenCalledTimes(2); // one retry, stopped on second
   });
 
