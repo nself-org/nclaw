@@ -28,7 +28,7 @@ jobs:
         # debug_closure_helpers, darling 0.23, idna_adapter, image, keyring,
         # serde_with) tracks the latest stable Rust, so a pinned older MSRV is
         # not buildable. Reintroduce a pin if/when the deps support one.
-        os: [macos-14, ubuntu-latest, windows-latest]
+        os: [macos-15, ubuntu-latest, windows-latest]
         rust: [stable]
     steps:
       - uses: actions/checkout@v7
