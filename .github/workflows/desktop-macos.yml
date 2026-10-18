@@ -63,7 +63,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml'
+          cache-dependency-path: 'nclaw/pnpm-lock.yaml'
 
       - uses: dtolnay/rust-toolchain@stable
         with:

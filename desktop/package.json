@@ -33,7 +33,7 @@
     "cmdk": "^1",
     "cytoscape": "^3.28.0",
     "cytoscape-cola": "^2.5.0",
-    "katex": "^0.16.0",
+    "katex": "^0.18.2",
     "react": "^19.1.0",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^19.1.0",
