@@ -58,7 +58,7 @@ jobs:
         with: { version: '9' }
 
       - uses: actions/setup-node@v7
-        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/desktop/pnpm-lock.yaml' }
+        with: { node-version: '20', cache: 'pnpm', cache-dependency-path: 'nclaw/pnpm-lock.yaml' }
 
       - uses: dtolnay/rust-toolchain@stable
         with:
