@@ -1,5 +1,7 @@
 # Build ɳClaw from Source
 
+> **Legacy page.** It describes the archived Flutter mobile app (`mobile-flutter-archive/`). The mobile app is being rebuilt on React Native + Expo under P8-CLAW; do not use these steps for new work.
+
 This directory contains platform-specific guides for building ɳClaw on macOS, Windows, Linux, iOS, and Android.
 
 ## Platform Matrix
@@ -15,7 +17,7 @@ This directory contains platform-specific guides for building ɳClaw on macOS, W
 ## Quick Start
 
 1. Choose your platform above.
-2. Install prerequisites (Xcode, Visual Studio, Flutter SDK, etc.).
+2. Install prerequisites (Xcode, Visual Studio, plus the archived Flutter app's toolchain if you build it, etc.).
 3. Run the build command in your platform's guide.
 4. Output appears in `desktop/src-tauri/target/...` (Tauri) or `mobile/build/...` (Flutter).
 

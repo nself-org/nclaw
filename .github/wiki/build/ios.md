@@ -1,5 +1,7 @@
 # Build ɳClaw for iOS
 
+> **Legacy page.** It describes the archived Flutter mobile app (`mobile-flutter-archive/`). The mobile app is being rebuilt on React Native + Expo under P8-CLAW; do not use these steps for new work.
+
 Build and deploy to App Store or TestFlight via Flutter iOS.
 
 ## Prerequisites
@@ -60,7 +62,7 @@ Submit via App Store Connect after TestFlight approval; same IPA file.
 
 1. **"Provisioning profile not found"** — Ensure bundle ID matches profile in App Store Connect. Regenerate: Xcode → Signing & Capabilities.
 2. **"Code-signing certs not in Keychain"** — Download from Apple Developer → Certificates. Import `.cer` and `.p8` files.
-3. **"Bitcode compilation error"** — Update Flutter SDK: `flutter upgrade`. Bitcode support was removed in iOS 14.
+3. **"Bitcode compilation error"** — Update the Flutter toolchain of the archived app: `flutter upgrade`. Bitcode support was removed in iOS 14.
 4. **"FRB iOS framework missing"** — Regenerate: `cd mobile && dart run build_runner build --release`.
 5. **"sqlite-vec iOS lib build fails"** — Use precompiled XCFramework; verify `ios/Pods/sqlite-vec/` exists.
 

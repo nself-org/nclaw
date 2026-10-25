@@ -1,10 +1,12 @@
 # ɳClaw Mobile Development Guide
 
+> **Legacy page.** It describes the archived Flutter mobile app (`mobile-flutter-archive/`). The mobile app is being rebuilt on React Native + Expo under P8-CLAW; do not use these steps for new work.
+
 **Audience:** Flutter developers building on the nclaw/ mobile app.
 
 ## Prerequisites
 
-- Flutter SDK 3.24+ (`flutter --version`)
+- Flutter 3.24+ for the archived app (`flutter --version`)
 - Dart 3.5+ (bundled with Flutter)
 - Xcode 15+ (macOS/iOS) or Android Studio (Android)
 - Rust 1.75+ for core FFI compilation
