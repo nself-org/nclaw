@@ -35,7 +35,7 @@ export const memorySchema = z.object({
     .min(1, 'Memory content cannot be empty')
     .refine((val: string) => val.trim().length > 0, 'Memory content cannot be empty or whitespace only'),
   type: z.enum(['context', 'fact', 'preference', 'goal', 'rule'], {
-    errorMap: () => ({ message: 'Please select a memory type' }),
+    error: 'Please select a memory type',
   }),
   confidence: z
     .number()
@@ -94,7 +94,7 @@ export const integrationSchema = z.object({
     .refine((tools: string[]) => new Set(tools).size === tools.length, 'Duplicate tools selected'),
   auth_type: z
     .enum(['none', 'bearer', 'api_key', 'oauth2'], {
-      errorMap: () => ({ message: 'Please select an authentication type' }),
+      error: 'Please select an authentication type',
     })
     .optional(),
 });
@@ -113,7 +113,7 @@ export const budgetSchema = z.object({
     .gt(0, 'Amount must be greater than 0')
     .refine((val: number) => !isNaN(val), 'Amount must be a valid number'),
   period: z.enum(['daily', 'monthly', 'yearly'], {
-    errorMap: () => ({ message: 'Please select a billing period' }),
+    error: 'Please select a billing period',
   }),
   currency: z.enum(['USD', 'EUR', 'GBP', 'JPY']).optional(),
 });
