@@ -4,6 +4,10 @@ All notable changes to nClaw clients are documented here.
 
 ## [Unreleased]
 
+### Removed
+
+- **Flutter SDK package** (`packages/nself_flutter_sdk`) and its publish step: Flutter is eliminated for new surfaces (React Native + Expo, Tauri 2). The archived Flutter app under `mobile-flutter-archive/` is untouched; the TypeScript SDK is the supported client.
+
 ### Planned
 
 - **`mcp` plugin integration**: Model Context Protocol plugin (from ɳClaw bundle) installable with `nself bundle install claw`. Enables external MCP server connections from the ɳClaw assistant.
