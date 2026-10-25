@@ -1,10 +1,12 @@
 # Build ɳClaw for Android
 
+> **Legacy page.** It describes the archived Flutter mobile app (`mobile-flutter-archive/`). The mobile app is being rebuilt on React Native + Expo under P8-CLAW; do not use these steps for new work.
+
 Build and deploy to Google Play via Flutter Android.
 
 ## Prerequisites
 
-- Flutter SDK with Android toolchain: `flutter doctor`
+- The archived Flutter app's toolchain with Android support: `flutter doctor`
 - Android SDK API 34+, NDK r26+ (via Android Studio's SDK Manager)
 - Keystore file (JKS or PKCS12) — use Play App Signing (Google manages final signing cert)
 - Google Play Developer account + app registered
