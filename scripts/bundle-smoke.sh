@@ -40,7 +40,6 @@ echo "  Checking SDK availability..."
 echo "    → TypeScript: @nself/sdk-ts@$VERSION (npm)"
 echo "    → Python: nself-sdk@$VERSION (PyPI)"
 echo "    → Go: github.com/nself-org/nself-sdk-go@v$VERSION"
-echo "    → Flutter: nself_sdk@$VERSION (pub.dev)"
 echo "  ℹ Would verify via package manager APIs"
 
 # Test 5: Crates.io

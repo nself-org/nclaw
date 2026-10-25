@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sdk-publish.sh — publish SDKs for v1.1.1
-# Go, Python, TypeScript, Flutter SDKs → language registries
+# Go, Python, TypeScript SDKs → language registries
 set -euo pipefail
 
 VERSION="${1:?Usage: $0 <version>}"
@@ -34,15 +34,6 @@ if [ -f "cli/sdk/go/go.mod" ]; then
   echo "  ℹ Go module available via git tag (no registry needed)"
 else
   echo "  ⚠ cli/sdk/go not found"
-fi
-
-# Flutter SDK → pub.dev
-echo -e "\n[Flutter SDK]"
-if [ -f "cli/sdk/flutter/pubspec.yaml" ]; then
-  echo "  nself_sdk v$VERSION"
-  echo "  ℹ flutter pub publish (manual or via CI)"
-else
-  echo "  ⚠ cli/sdk/flutter not found"
 fi
 
 echo -e "\n=== SDK Publish Complete ==="
