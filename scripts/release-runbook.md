@@ -195,7 +195,7 @@ Deployed:
   - CLI: homebrew, GitHub Releases
   - Admin: Docker Hub nself/nself-admin:1.1.1
   - Plugins: npm @nself/plugins@1.1.1
-  - SDKs: npm, PyPI, crates.io, pub.dev
+  - SDKs: npm, PyPI, crates.io
   - Mobile: App Store, Google Play
   - Web: Vercel (nself.org + subdomains)
 

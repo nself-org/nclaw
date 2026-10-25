@@ -29,9 +29,6 @@ CHANGELOG_ENTRY="## [v$VERSION] - $(date -u +'%Y-%m-%d')
 - GitHub Actions CI 100% green enforcement
 - Multi-tenant convention wall (no data leaks)
 
-### Deprecated
-- nMedia bundle renamed to ɳTV bundle
-
 For full details, see UPGRADE.md and MIGRATION.md in each repo."
 
 # Append to main CHANGELOG (if it exists at project level)
