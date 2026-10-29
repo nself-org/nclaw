@@ -2,13 +2,16 @@
 # Managed by: nself CLI
 # DO NOT run docker-compose directly. Use: nself build && nself start
 
-project:
+cli_min_version: 1.4.15
+
+# Keys the nself CLI does not read are x- extension keys (contract:config.nself-yaml).
+x-project:
   name: nclaw
   display_name: nClaw
   description: ɳClaw AI assistant backend powered by nSelf CLI + nClaw plugin bundle
 
 # Optional services enabled for ɳClaw
-services:
+x-services:
   redis:
     enabled: true
     # Session caching, conversation state, rate limiting
@@ -26,26 +29,18 @@ services:
 # Pro plugins (nClaw bundle — $0.99/mo)
 # Required: nself plugin install ai claw mux
 # Optional bundle members: nself plugin install claw-web voice browser google notify cron
-plugins:
-  pro:
-    - name: ai
-      # AI provider routing, model management, streaming (required)
-    - name: claw
-      # Conversation management, memory, tool dispatch, personas (required)
-    - name: mux
-      # Messaging pipeline, email integration, webhook routing (required)
-    - name: claw-web
-      # Web client surface (optional bundle member)
-    - name: voice
-      # Speech-to-text and text-to-speech (optional bundle member)
-    - name: browser
-      # Browser automation via Chrome DevTools Protocol (optional bundle member)
-    - name: google
-      # Gmail, Calendar, Drive integration (optional bundle member)
-    - name: notify
-      # Push notifications via FCM / APNs (optional bundle member)
-    - name: cron
-      # Scheduled jobs and proactive triggers (optional bundle member)
+# nClaw is "coming soon": the CLI installs no plugins for it, so the list
+# lives under an x- key (the old map-of-maps shape failed `nself build`).
+x-plugins-pro:
+  - ai            # AI provider routing, model management, streaming (required)
+  - claw          # Conversation management, memory, tool dispatch, personas (required)
+  - mux           # Messaging pipeline, email integration, webhook routing (required)
+  - claw-web      # Web client surface (optional bundle member)
+  - voice         # Speech-to-text and text-to-speech (optional bundle member)
+  - browser       # Browser automation via Chrome DevTools Protocol (optional bundle member)
+  - google        # Gmail, Calendar, Drive integration (optional bundle member)
+  - notify        # Push notifications via FCM / APNs (optional bundle member)
+  - cron          # Scheduled jobs and proactive triggers (optional bundle member)
 
 # Environment: overridden by .env / .env.prod
 # Run `nself build` after changing this file.
