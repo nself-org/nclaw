@@ -87,7 +87,7 @@
       "^@nclaw/(.*)$": "<rootDir>/$1/index.ts"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(\\.pnpm/|(jest-)?react-native|@react-native(-community)?|@react-native/[^/]+|@react-native\\+[^/]+)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|nativewind)",
+      "node_modules/(?!(\\.pnpm/|(jest-)?react-native|@react-native(-community)?|@react-native/[^/]+|@react-native\\+[^/]+)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|nativewind|decode-uri-component)",
       "/node_modules/react-native-reanimated/plugin/"
     ],
     "setupFiles": [],
